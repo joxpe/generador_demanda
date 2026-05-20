@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador Reportes Demanda LIMSA v2026-05-11.32</title>
+  <style>
+    :root{--bg:#f6f8fb;--card:#fff;--text:#1f2937;--muted:#64748b;--primary:#2563eb;--primary2:#1d4ed8;--border:#dbe3ef;--ok:#16a34a;--err:#dc2626;--warn:#92400e;--soft:#eff6ff;--dark:#0f172a}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1180px;margin:24px auto;padding:0 16px 40px}.hero{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:24px;border-radius:18px;margin-bottom:18px;box-shadow:0 10px 22px rgba(30,58,138,.18)}
+    .hero h1{margin:0 0 8px;font-size:28px}.hero p{margin:0;color:#dbeafe;line-height:1.45}.tag{font-size:14px;font-weight:700;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:999px;vertical-align:middle;white-space:nowrap}
+    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 6px 16px rgba(15,23,42,.05)}
+    h2{margin:0 0 12px;font-size:20px} h3{margin:18px 0 8px;font-size:16px}.muted{color:var(--muted)}
+    .drop{border:2px dashed #93c5fd;border-radius:16px;padding:24px;text-align:center;background:#eff6ff}.drop.drag{background:#dbeafe}.drop input{display:none}.drop label{display:inline-block;padding:12px 18px;background:var(--primary);color:#fff;border-radius:12px;cursor:pointer;font-weight:700}
+    .filebox{margin-top:14px;padding:12px 14px;border-radius:12px;background:#f8fafc;border:1px solid var(--border);font-size:14px;line-height:1.45}.actions{display:grid;gap:10px;margin-top:12px}
+    .btn{width:100%;border:none;border-radius:14px;padding:13px 16px;text-align:left;cursor:pointer;background:#eef2ff;color:#1e3a8a;font-weight:700}.btn:hover{background:#dbeafe}.btn:disabled{opacity:.55;cursor:not-allowed}.btn small{display:block;color:#475569;font-weight:400;margin-top:4px;line-height:1.35}.btn.primary{background:var(--primary);color:#fff}.btn.primary:hover{background:var(--primary2)}.btn.primary small{color:#dbeafe}.btn.danger{background:#fee2e2;color:#991b1b}.btn.danger:hover{background:#fecaca}.btn.ok{background:#dcfce7;color:#166534}.btn.ok:hover{background:#bbf7d0}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.field{display:grid;gap:6px;margin-top:12px}.field label{font-size:13px;font-weight:700;color:#334155}.field input,.field select{border:1px solid var(--border);border-radius:12px;padding:11px 12px;font-size:14px;background:#fff}.field select[multiple]{min-height:110px}
+    .status{margin-top:12px;min-height:24px;font-size:14px;line-height:1.45}.oktxt{color:var(--ok)}.errtxt{color:var(--err)}.warntxt{color:var(--warn)}
+    table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid var(--border);padding:8px 10px;text-align:left}th{background:#f1f5f9}.mini td:first-child{font-weight:700}.preview{max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:12px}.preview table{font-size:13px}.preview th{position:sticky;top:0;background:#eaf2ff}.note{background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:12px 14px;color:#92400e;line-height:1.45}.pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:700;margin-right:6px;margin-bottom:6px}.saved{display:grid;gap:8px;margin-top:8px}.savedItem{border:1px solid var(--border);border-radius:14px;padding:12px;background:#f8fafc}.savedItem strong{font-size:15px}.savedItem .meta{font-size:12px;color:#64748b;margin-top:4px}.savedItem .row{justify-content:space-between}.linkbtn{border:none;background:none;color:#2563eb;font-weight:700;cursor:pointer;padding:4px 0}.linkbtn.red{color:#dc2626}.check{display:flex;gap:8px;align-items:center;font-size:14px;color:#334155;margin-top:10px}.check input{width:16px;height:16px}
+    .summaryBox{margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:#f8fafc;line-height:1.45}.summaryBox strong{color:#0f172a}.compactToolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.smallbtn{border:1px solid var(--border);border-radius:999px;background:#fff;color:#334155;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}.smallbtn:hover{background:#eff6ff;border-color:#93c5fd}.smallbtn.primaryMini{background:#eff6ff;color:#1e40af;border-color:#bfdbfe}.monthsPanel{display:none;margin-top:12px;border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff}.monthsPanel.open{display:block}.chipGrid{display:flex;gap:8px;flex-wrap:wrap;max-height:150px;overflow:auto;padding:8px;border:1px solid var(--border);border-radius:12px;background:#f8fafc}.monthChip{border:1px solid #cbd5e1;border-radius:999px;background:#fff;color:#334155;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}.monthChip.selected{background:#dcfce7;border-color:#86efac;color:#166534}.monthChip:hover{background:#eff6ff}.deleteList{max-height:180px;overflow:auto;margin-top:12px}.hiddenSelect{display:none}.savedCountLine{color:#64748b;font-size:13px;margin-top:4px}.yearButtons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+    .progressPanel{position:fixed;right:18px;bottom:18px;width:min(420px,calc(100vw - 36px));background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 40px rgba(15,23,42,.18);padding:14px;z-index:999;display:none}
+    .progressPanel.open{display:block}
+    .progressTitle{font-weight:800;color:#0f172a;margin-bottom:8px;font-size:14px;line-height:1.35}
+    .progressTrack{height:13px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+    .progressFill{height:100%;width:0%;background:linear-gradient(90deg,#2563eb,#16a34a);transition:width .18s ease}
+    .progressMeta{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:12px;color:#64748b}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.hero h1{font-size:23px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-11.32</span></h1>
+      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61; ya no existen las combinaciones Ags-SnJuan ni Leon-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda sugerida usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1) Cargar y guardar mes</h2>
+        <div id="drop" class="drop">
+          <p><strong>Arrastra aquí tu archivo .csv / .xlsx</strong></p><p class="muted">o</p>
+          <label for="fileInput">Seleccionar archivo</label><input id="fileInput" type="file" accept=".csv,.xlsx,.xlsm,.xls" />
+        </div>
+        <div id="fileInfo" class="filebox muted">Aún no has cargado ningún archivo.</div>
+        <div class="field"><label for="periodoInput">Mes del archivo</label><input id="periodoInput" type="month" /></div>
+        <div class="check"><input id="replaceMonth" type="checkbox" checked /><label for="replaceMonth">Si el mes ya existe, reemplazarlo</label></div>
+        <div class="actions">
+          <button id="btnSaveMonth" class="btn primary" disabled>Guardar mes en base local<small>Conserva la información para acumular varios meses y calcular demanda después.</small></button>
+        </div>
+        <h3>Reportes del archivo cargado</h3>
+        <div class="field"><label for="currentReportType">Tipo de reporte</label><select id="currentReportType"><option value="zona">Por zona / localización</option><option value="cia">Por Cia exacta</option></select></div>
+        <div class="actions">
+          <button id="btnGenerateCurrent" class="btn ok" disabled>Generar reporte del archivo cargado<small>Usa el tipo seleccionado arriba: por zona/localización o por Cia exacta.</small></button>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>2) Meses guardados localmente</h2>
+        <div class="note">La información se guarda en tu navegador mediante IndexedDB. No se sube a internet. Si cambias de computadora/navegador o borras datos del sitio, se pierde.</div>
+        <div id="savedSummary" class="summaryBox"><div class="muted">Cargando meses guardados...</div></div>
+        <div class="compactToolbar">
+          <button id="btnToggleMonths" type="button" class="smallbtn primaryMini">Ver / ocultar meses</button>
+          <button id="btnSelectAllMonths" type="button" class="smallbtn">Todos</button>
+          <button id="btnSelectLast24" type="button" class="smallbtn">Últimos 24</button>
+          <button id="btnSelectLast12" type="button" class="smallbtn">Últimos 12</button>
+          <button id="btnSelectLast6" type="button" class="smallbtn">Últimos 6</button>
+          <button id="btnSelectCurrentYear" type="button" class="smallbtn">Año actual</button>
+          <button id="btnSelectPrevYear" type="button" class="smallbtn">Año anterior</button>
+          <button id="btnClearMonthSelection" type="button" class="smallbtn">Limpiar</button>
+        </div>
+        <div id="savedYearButtons" class="yearButtons"></div>
+        <div id="monthsPanel" class="monthsPanel">
+          <div class="field"><label for="monthsSelect">Selecciona uno o varios meses</label><select id="monthsSelect" class="hiddenSelect" multiple></select></div>
+          <div id="savedMonthChips" class="chipGrid"><span class="muted">Cargando...</span></div>
+          <div id="savedList" class="saved deleteList"><div class="muted">Cargando meses guardados...</div></div>
+        </div>
+        <h3>3) Generar desde meses guardados</h3>
+        <div class="check"><input id="includeRaw" type="checkbox" /><label for="includeRaw">Incluir pestaña Base histórico</label></div>
+        <div class="actions">
+          <button id="btnGenerateSaved" class="btn ok" disabled>Generar Reporte con meses seleccionados<small>Genera el reporte acumulado normal con los meses seleccionados.</small></button>
+        </div>
+
+        <div class="field"><label for="targetPeriod">Mes objetivo a calcular</label><input id="targetPeriod" type="month" /></div>
+        <div class="field"><label for="reportTypeSaved">Tipo de reporte</label><select id="reportTypeSaved"><option value="zona">Por zona / localización</option><option value="cia">Por Cia exacta</option></select></div>
+        <div class="field"><label id="demandUnitsLabel" for="demandZones">Zonas a generar</label><select id="demandZones" multiple></select></div>
+        <div class="check"><input id="includeBaseDemand" type="checkbox" /><label for="includeBaseDemand">Incluir pestaña Base usada para demanda</label></div>
+        <div class="check"><input id="includeBacktestDemand" type="checkbox" /><label for="includeBacktestDemand">Incluir backtesting rápido de demanda (últimos 6 meses, puede tardar)</label></div>
+        <div class="check"><input id="sortArticles" type="checkbox" checked /><label for="sortArticles">Ordenar artículos de A a Z</label></div>
+        <div class="actions">
+          <button id="btnGenerateDemand" class="btn primary" disabled>Generar Demanda Sugerida<small>Genera el detalle de demanda sugerida por zona/localización o por Cia exacta, según el Tipo de reporte.</small></button>
+        </div>
+
+        <div class="field"><label for="demandMode">Demanda sugerida por</label><select id="demandMode"><option value="zona">Por zona / localización</option><option value="cia">Por Cia exacta</option></select></div>
+        <div class="actions">
+          <button id="btnGenerateDemandCiaMatrix" class="btn ok" disabled>Generar Resumen demanda calculada<small>Genera la matriz usando Demanda calculada sin redondear. No reemplaza el detalle de Demanda Sugerida.</small></button>
+        </div>
+        <h3>Respaldos</h3>
+        <div class="actions">
+          <button id="btnExportBackup" class="btn" disabled>Exportar respaldo de base local<small>Descarga un JSON con todos los meses guardados.</small></button>
+          <button id="btnImportZip" class="btn">Importar ZIP de demandas mensuales<small>Carga varios CSV/XLSX de una sola vez; detecta el periodo desde cada nombre de archivo.</small></button>
+          <input id="zipInput" type="file" accept=".zip,application/zip" style="display:none" />
+          <button id="btnImportBackup" class="btn">Importar / Restaurar respaldo JSON<small>Restaura meses guardados desde un archivo respaldo_demanda_local.json.</small></button>
+          <input id="backupInput" type="file" accept=".json,application/json" style="display:none" />
+          <button id="btnClearAll" class="btn danger" disabled>Borrar toda la base local<small>Elimina todos los meses guardados en este navegador.</small></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:18px">
+      <div class="card"><h2>Lectura de Cia</h2><table class="mini"><thead><tr><th>Cia</th><th>Localización</th></tr></thead><tbody>
+        <tr><td>25</td><td>Ags</td></tr><tr><td>27</td><td>Ags</td></tr><tr><td>30</td><td>Ags</td></tr><tr><td>33</td><td>Ags-Vtas Calle</td></tr><tr><td>35</td><td>Ags</td></tr><tr><td>37</td><td>Ags</td></tr><tr><td>40</td><td>Ags</td></tr><tr><td>45</td><td>Ags</td></tr><tr><td>50</td><td>Ags</td></tr><tr><td>61</td><td>SnJuan</td></tr><tr><td>71</td><td>Leon</td></tr><tr><td>72</td><td>Leon</td></tr><tr><td>73</td><td>Leon-Vtas Calle</td></tr><tr><td>74</td><td>Leon</td></tr>
+      </tbody></table><p class="muted">Ags no incluye Cia 33 ni Cia 61. SnJuan queda separado como Cia 61. Leon no incluye Cia 73 ni Cia 61. Las combinaciones Ags-SnJuan y Leon-SnJuan ya no se generan.</p></div>
+      <div class="card"><h2>Vista previa</h2><div id="preview" class="preview muted" style="padding:14px">Cuando cargues un archivo, aquí aparecerán las primeras filas detectadas.</div></div>
+    </div>
+  </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>4) Inventario disponible</h2>
+      <p class="muted">Carga el archivo de inventario. Solo se suman las combinaciones Cia+Bodega autorizadas. Cualquier otra bodega se ignora para inventario disponible.</p>
+      <div class="row">
+        <input id="inventoryInput" type="file" accept=".csv,.xlsx,.xlsm,.xls" style="display:none" />
+        <button id="btnLoadInventory" class="btn" type="button" style="max-width:340px">Cargar archivo de inventario<small>Lee Articulo, Cia, Bodega y Existencia.</small></button>
+      </div>
+      <div id="inventoryInfo" class="filebox muted">Aún no has cargado inventario.</div>
+      <div class="actions">
+        <button id="btnGenerateInventory" class="btn ok" disabled>Generar reporte de inventario disponible<small>Genera inventario por el Tipo de reporte seleccionado: zona/localización o Cia exacta.</small></button>
+      </div>
+      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas sí suman. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura.</div>
+    </div>
+
+  <div id="progressPanel" class="progressPanel" aria-live="polite">
+    <div id="progressTitle" class="progressTitle">Preparando...</div>
+    <div class="progressTrack"><div id="progressFill" class="progressFill"></div></div>
+    <div class="progressMeta"><span id="progressMsg">0%</span><span id="progressPct">0%</span></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+    const DB_NAME='limsa_demanda_db_v1', STORE='meses';
+    const CIA_LOCALIZACION={25:'Ags',27:'Ags',30:'Ags',33:'Ags-Vtas Calle',35:'Ags',37:'Ags',40:'Ags',45:'Ags',50:'Ags',61:'SnJuan',71:'Leon',72:'Leon',73:'Leon-Vtas Calle',74:'Leon'};
+    const REPORTES=[
+      {nombre:'Ags',cias:[25,27,30,35,37,40,45,50]},
+      {nombre:'SnJuan',cias:[61]},
+      {nombre:'Ags-Vtas Calle',cias:[33]},
+      {nombre:'Leon',cias:[71,72,74]},
+      {nombre:'Leon-Vtas Calle',cias:[73]}
+    ];
+    const CIA_REPORTES=Object.keys(CIA_LOCALIZACION).map(Number).sort((a,b)=>a-b).map(c=>({nombre:'Cia '+c,cias:[c],localizacion:CIA_LOCALIZACION[c]}));
+    const INVENTORY_BODEGAS={
+      25:['ai','ci','cr','ti','tr'],30:['ac','cc','tc'],33:['ay'],35:['as','cs','ts'],37:['at','ct','tt'],40:['am','cm','tm'],45:['al','cl','tl'],50:['ab','cb','tb'],
+      61:['aj','cj','tj'],70:['ag','cg','tg'],71:['ah','ch','th'],72:['aa','ta'],73:['az'],74:['ad','cd','td']
+    };
+    const INVENTORY_REPORTES=[
+      {nombre:'Ags',cias:[25,30,35,37,40,45,50]},
+      {nombre:'SnJuan',cias:[61]},
+      {nombre:'Ags-Vtas Calle',cias:[33]},
+      {nombre:'Leon',cias:[71,72,74]},
+      {nombre:'Leon-Vtas Calle',cias:[73]}
+    ];
+    const INVENTORY_CIA_REPORTES=Object.keys(INVENTORY_BODEGAS).map(Number).sort((a,b)=>a-b).map(c=>({nombre:'Cia '+c,cias:[c],localizacion:CIA_LOCALIZACION[c]||''}));
+    const REQUIRED=['Grupo','Proveedor','Articulo','Cia','Ventas','Devoluciones','Neto','Importe Ventas','Importe Devoluciones','Importe Neto'];
+    let parsedRows=[], sourceName='', headers=[], db=null, savedMonths=[], inventoryRows=[], inventorySourceName='';
+    const $=id=>document.getElementById(id); const drop=$('drop'), input=$('fileInput'), btnSave=$('btnSaveMonth'), btnCurrent=$('btnGenerateCurrent'), statusBox=$('status'), fileInfo=$('fileInfo'), preview=$('preview');
+    function setStatus(msg,cls=''){statusBox.className='status '+cls;statusBox.innerHTML=msg;}
+    function waitUI(){return new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));}
+    function setProgress(percent,msg){
+      const panel=$('progressPanel'), fill=$('progressFill'), pct=$('progressPct'), pmsg=$('progressMsg'), title=$('progressTitle');
+      if(!panel||!fill)return;
+      const value=Math.max(0,Math.min(100,Math.round(Number(percent)||0)));
+      panel.classList.add('open');
+      fill.style.width=value+'%';
+      if(pct)pct.textContent=value+'%';
+      if(pmsg)pmsg.textContent=msg||'';
+      if(title)title.innerHTML=msg||'Procesando...';
+    }
+    async function progress(percent,msg){setProgress(percent,msg); setStatus(msg); await waitUI();}
+    function finishProgress(msg,cls='oktxt'){setProgress(100,msg); setStatus(msg,cls); setTimeout(()=>{const p=$('progressPanel'); if(p)p.classList.remove('open');},1800);}
+    function hideProgress(){const p=$('progressPanel'); if(p)p.classList.remove('open');}
+    function failProgress(msg){setProgress(100,msg); setStatus(msg,'errtxt');}
+    function norm(s){return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');} function toNumber(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;let s=String(v).trim();if(!s)return 0;s=s.replace(/[$,\s]/g,'');const n=Number(s);return isFinite(n)?n:0;} function round2(v){return Math.round((Number(v)||0)*100)/100;} function ciaNum(v){if(typeof v==='number')return Math.trunc(v);const m=String(v??'').match(/\d+/);return m?Number(m[0]):null;} function safeSheetName(n){return String(n).replace(/[\\/*?:\[\]]/g,'-').slice(0,31)||'Hoja';} function articuloReporte(v){const s=String(v??'').trim(); return s.startsWith('30')?s.slice(2):s;}
+    function bodegaTipo(bodega){
+      const b=String(bodega??'').trim().toLowerCase();
+      if(b.startsWith('c'))return 'Cerámicos';
+      if(b.startsWith('a'))return 'Accesorios';
+      return '';
+    }
+    function buildSkuTypeMap(rows){
+      const flags=new Map();
+      for(const r of rows||[]){
+        const art=r.ArticuloReporte||articuloReporte(r.Articulo); if(!art)continue;
+        const tipo=bodegaTipo(r.Bodega);
+        if(!tipo)continue;
+        if(!flags.has(art))flags.set(art,{cer:false,acc:false});
+        const f=flags.get(art);
+        if(tipo==='Cerámicos')f.cer=true;
+        if(tipo==='Accesorios')f.acc=true;
+      }
+      const out=new Map();
+      flags.forEach((f,art)=>{
+        if(f.cer&&f.acc)out.set(art,'Mixto / revisar');
+        else if(f.cer)out.set(art,'Cerámicos');
+        else if(f.acc)out.set(art,'Accesorios');
+      });
+      return out;
+    }
+    function buildResurtido25Maps(rows){
+      const cer=new Map(), acc=new Map();
+      for(const r of rows||[]){
+        if(ciaNum(r.Cia)!==25)continue;
+        const art=r.ArticuloReporte||articuloReporte(r.Articulo); if(!art)continue;
+        const b=String(r.Bodega||'').toLowerCase(); const ex=toNumber(r.Existencia);
+        if(b==='ci'||b==='cr')cer.set(art,(cer.get(art)||0)+ex);
+        if(b==='ai')acc.set(art,(acc.get(art)||0)+ex);
+      }
+      cer.forEach((v,k)=>cer.set(k,round2(v))); acc.forEach((v,k)=>acc.set(k,round2(v)));
+      return {cer,acc};
+    }
+    function makeInventoryContext(inventoryMap=null){
+      if(!inventoryMap)return null;
+      return {map:inventoryMap,typeMap:buildSkuTypeMap(inventoryRows),resurtido25:buildResurtido25Maps(inventoryRows)};
+    }
+    function tipoSkuForArt(art,ctx){return (ctx&&ctx.typeMap&&ctx.typeMap.get(art))||'Sin clasificar';}
+    function inventarioResurtido25(art,tipo,ctx){
+      if(!ctx||!ctx.resurtido25)return 0;
+      if(tipo==='Cerámicos')return round2(ctx.resurtido25.cer.get(art)||0);
+      if(tipo==='Accesorios')return round2(ctx.resurtido25.acc.get(art)||0);
+      if(tipo==='Mixto / revisar')return round2((ctx.resurtido25.cer.get(art)||0)+(ctx.resurtido25.acc.get(art)||0));
+      return 0;
+    }
+    function usarResurtido25(unidad){return unidad!=='Ags' && unidad!=='Cia 25';}
+    function detectPeriodo(name){const m=String(name||'').match(/(20\d{2})[-_ ]?([01]\d)/); if(m){const mm=Number(m[2]); if(mm>=1&&mm<=12)return `${m[1]}-${String(mm).padStart(2,'0')}`;} return '';}
+    function findRequiredIndexes(headRow){const map={};headRow.forEach((h,i)=>map[norm(h)]=i);const idx={};const missing=[];for(const r of REQUIRED){const k=norm(r);if(map[k]===undefined)missing.push(r);else idx[r]=map[k];}if(missing.length)throw new Error('Faltan columnas requeridas: '+missing.join(', '));return idx;}
+    function parseMatrix(matrix){let headerRow=-1, idx=null;for(let r=0;r<Math.min(matrix.length,20);r++){try{idx=findRequiredIndexes(matrix[r]||[]);headerRow=r;break;}catch(e){}} if(headerRow<0)throw new Error('No se encontró encabezado válido.'); headers=REQUIRED.concat(['Localizacion','Periodo']); const out=[]; for(let r=headerRow+1;r<matrix.length;r++){const row=matrix[r]||[]; if(row.every(v=>v===null||v===undefined||String(v).trim()===''))continue; const cia=ciaNum(row[idx.Cia]); const rec={}; for(const h of REQUIRED)rec[h]=row[idx[h]]??''; rec.Cia=cia; rec.Ventas=toNumber(rec.Ventas); rec.Devoluciones=toNumber(rec.Devoluciones); rec.Neto=toNumber(rec.Neto); rec['Importe Ventas']=toNumber(rec['Importe Ventas']); rec['Importe Devoluciones']=toNumber(rec['Importe Devoluciones']); rec['Importe Neto']=toNumber(rec['Importe Neto']); rec.Localizacion=CIA_LOCALIZACION[cia]||'SIN MAPEO'; out.push(rec);} return out;}
+    async function parseFile(file){sourceName=file.name; const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:'array',raw:true}); const ws=wb.Sheets[wb.SheetNames[0]]; const matrix=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}); const rows=parseMatrix(matrix); const periodo=detectPeriodo(file.name); rows.forEach(r=>r.Periodo=periodo); return {rows,periodo};}
+    function findIndexesFlexible(headRow,required){const map={};headRow.forEach((h,i)=>map[norm(h)]=i);const idx={};const missing=[];for(const r of required){const k=norm(r);if(map[k]===undefined)missing.push(r);else idx[r]=map[k];}if(missing.length)throw new Error('Faltan columnas requeridas: '+missing.join(', '));return idx;}
+    function parseInventoryMatrix(matrix){
+      let headerRow=-1, idx=null; const req=['Articulo','Cia','Bodega','Existencia'];
+      for(let r=0;r<Math.min(matrix.length,20);r++){try{idx=findIndexesFlexible(matrix[r]||[],req);headerRow=r;break;}catch(e){}}
+      if(headerRow<0)throw new Error('No se encontró encabezado válido de inventario. Debe traer Articulo, Cia, Bodega y Existencia.');
+      const rows=[], omitted={count:0,existencia:0,bodegas:new Map()};
+      for(let r=headerRow+1;r<matrix.length;r++){
+        const row=matrix[r]||[]; if(row.every(v=>v===null||v===undefined||String(v).trim()===''))continue;
+        const cia=ciaNum(row[idx.Cia]); const bodega=String(row[idx.Bodega]??'').trim().toLowerCase(); const artRaw=String(row[idx.Articulo]??'').trim(); const existencia=toNumber(row[idx.Existencia]);
+        if(!artRaw||cia===null)continue;
+        const autorizadas=INVENTORY_BODEGAS[cia]||[];
+        if(!autorizadas.includes(bodega)){omitted.count++; omitted.existencia+=existencia; const k=(cia||'')+' '+bodega; omitted.bodegas.set(k,(omitted.bodegas.get(k)||0)+1); continue;}
+        rows.push({Articulo:artRaw,ArticuloReporte:articuloReporte(artRaw),Cia:cia,Bodega:bodega,Existencia:existencia});
+      }
+      return {rows,omitted};
+    }
+    async function parseInventoryFile(file){inventorySourceName=file.name; const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:'array',raw:true}); const ws=wb.Sheets[wb.SheetNames[0]]; const matrix=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}); return parseInventoryMatrix(matrix);}
+    function renderPreview(rows){if(!rows.length){preview.innerHTML='Sin filas.';return;} const hs=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Neto']; let html='<table><thead><tr>'+hs.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'; rows.slice(0,10).forEach(r=>{html+='<tr>'+hs.map(h=>`<td>${r[h]??''}</td>`).join('')+'</tr>';}); html+='</tbody></table>'; preview.innerHTML=html;}
+    input.addEventListener('change',()=>{if(input.files[0])handleFile(input.files[0]);}); ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');})); ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(f)handleFile(f);});
+    async function handleFile(file){try{setStatus('Leyendo archivo...'); const {rows,periodo}=await parseFile(file); parsedRows=rows; if(periodo)$('periodoInput').value=periodo; fileInfo.innerHTML=`<strong>${file.name}</strong><br>${rows.length.toLocaleString('es-MX')} registros detectados${periodo?` | Mes detectado: <strong>${periodo}</strong>`:''}`; renderPreview(rows); btnSave.disabled=false; btnCurrent.disabled=false; setStatus('Archivo listo para guardar o generar reporte.','oktxt');}catch(err){parsedRows=[];btnSave.disabled=true;btnCurrent.disabled=true;fileInfo.textContent='No se pudo leer el archivo.';preview.textContent='Sin vista previa.';setStatus('Error: '+err.message,'errtxt');}}
+    function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'periodo'});};req.onsuccess=e=>resolve(e.target.result);req.onerror=()=>reject(req.error);});}
+    function tx(mode='readonly'){return db.transaction(STORE,mode).objectStore(STORE);} function getAllMonths(){return new Promise((resolve,reject)=>{const req=tx().getAll();req.onsuccess=()=>resolve(req.result.sort((a,b)=>a.periodo.localeCompare(b.periodo)));req.onerror=()=>reject(req.error);});}
+    function getMonth(periodo){return new Promise((resolve,reject)=>{const req=tx().get(periodo);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+    function putMonth(obj){return new Promise((resolve,reject)=>{const req=tx('readwrite').put(obj);req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);});}
+    function deleteMonth(periodo){return new Promise((resolve,reject)=>{const req=tx('readwrite').delete(periodo);req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);});}
+    function clearDB(){return new Promise((resolve,reject)=>{const req=tx('readwrite').clear();req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);});}
+    function readTextFile(file){return new Promise((resolve,reject)=>{const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result||'')); reader.onerror=()=>reject(reader.error||new Error('No se pudo leer el archivo.')); reader.readAsText(file);});}
+    function populateDemandOptions(mode){
+      const sel=$('demandZones'); if(!sel)return;
+      sel.innerHTML='';
+      const reps=mode==='cia'?CIA_REPORTES:REPORTES;
+      reps.forEach(r=>{
+        const o=document.createElement('option');
+        o.value=r.nombre;
+        o.textContent=mode==='cia'?`${r.nombre} - ${r.localizacion||''}`:r.nombre;
+        o.selected=true;
+        sel.appendChild(o);
+      });
+      const lbl=$('demandUnitsLabel'); if(lbl)lbl.textContent=mode==='cia'?'Cias a generar':'Zonas a generar';
+    }
+    function normalizeBackupPayload(data){
+      const arr=Array.isArray(data)?data:(Array.isArray(data?.meses)?data.meses:(Array.isArray(data?.data)?data.data:null));
+      if(!arr)throw new Error('El respaldo JSON no tiene el formato esperado. Debe ser una lista de meses guardados.');
+      return arr.map((m,i)=>{
+        const periodo=String(m?.periodo||'').trim();
+        if(!/^20\d{2}-[01]\d$/.test(periodo))throw new Error('Periodo inválido en el respaldo, registro '+(i+1)+'.');
+        const rows=Array.isArray(m?.rows)?m.rows:null;
+        if(!rows)throw new Error('El periodo '+periodo+' no trae filas rows[].');
+        const cleanRows=rows.map(r=>{
+          const cia=ciaNum(r.Cia);
+          return {...r,Cia:cia??r.Cia,Localizacion:r.Localizacion||CIA_LOCALIZACION[cia]||'SIN MAPEO',Periodo:periodo};
+        });
+        return {periodo,sourceName:m.sourceName||'respaldo_json',createdAt:m.createdAt||new Date().toISOString(),restoredAt:new Date().toISOString(),rows:cleanRows};
+      });
+    }
+    function toggleCiaDemandDetail(){
+      const wrap=$('detailCiaDemandWrap');
+      if(!wrap)return;
+      wrap.style.display=($('demandMode')?.value==='cia')?'flex':'none';
+    }
+    function selectedPeriods(){return Array.from($('monthsSelect').selectedOptions).map(o=>o.value);}
+    function setMonthSelection(periods){
+      const wanted=new Set(periods);
+      Array.from($('monthsSelect').options).forEach(o=>{o.selected=wanted.has(o.value);});
+      renderMonthChips(); renderSavedSummary();
+    }
+    function renderMonthChips(){
+      const box=$('savedMonthChips'); if(!box)return;
+      if(!savedMonths.length){box.innerHTML='<span class="muted">No hay meses guardados.</span>'; return;}
+      const selected=new Set(selectedPeriods());
+      box.innerHTML=savedMonths.map(m=>`<button type="button" class="monthChip ${selected.has(m.periodo)?'selected':''}" data-periodo="${m.periodo}">${m.periodo}</button>`).join('');
+      box.querySelectorAll('.monthChip').forEach(btn=>btn.addEventListener('click',()=>{
+        const opt=Array.from($('monthsSelect').options).find(o=>o.value===btn.dataset.periodo);
+        if(opt)opt.selected=!opt.selected;
+        renderMonthChips();
+      }));
+    }
+    function renderSavedSummary(){
+      const box=$('savedSummary'); if(!box)return;
+      if(!savedMonths.length){box.innerHTML='<div class="muted">No hay meses guardados todavía.</div>'; return;}
+      const total=savedMonths.reduce((s,m)=>s+(m.rows?.length||0),0);
+      const first=savedMonths[0].periodo, last=savedMonths[savedMonths.length-1].periodo;
+      const selCount=selectedPeriods().length;
+      box.innerHTML=`<strong>${savedMonths.length.toLocaleString('es-MX')} meses guardados</strong><div class="savedCountLine">Desde <strong>${first}</strong> hasta <strong>${last}</strong> | ${total.toLocaleString('es-MX')} registros | ${selCount.toLocaleString('es-MX')} meses seleccionados</div>`;
+    }
+    function renderYearButtons(){
+      const box=$('savedYearButtons'); if(!box)return;
+      const years=[...new Set(savedMonths.map(m=>String(m.periodo).slice(0,4)))];
+      box.innerHTML=years.map(y=>`<button type="button" class="smallbtn" data-year="${y}">${y}</button>`).join('');
+      box.querySelectorAll('[data-year]').forEach(btn=>btn.addEventListener('click',()=>{selectMonthsByYear(btn.dataset.year);}));
+    }
+    function selectLastMonths(n){setMonthSelection(savedMonths.slice(-n).map(m=>m.periodo));}
+    function selectMonthsByYear(year){setMonthSelection(savedMonths.filter(m=>String(m.periodo).startsWith(year+'-')).map(m=>m.periodo));}
+    async function refreshSaved(){
+      savedMonths=await getAllMonths();
+      const list=$('savedList'), sel=$('monthsSelect'), zoneSel=$('demandZones');
+      sel.innerHTML='';
+      if(zoneSel && !zoneSel.options.length){populateDemandOptions($('reportTypeSaved')?.value||'zona');}
+      if(!savedMonths.length){
+        list.innerHTML='<div class="muted">No hay meses guardados todavía.</div>';
+      } else {
+        savedMonths.forEach(m=>{const o=document.createElement('option');o.value=m.periodo;o.textContent=`${m.periodo} (${m.rows.length.toLocaleString('es-MX')} registros)`;o.selected=true;sel.appendChild(o);});
+        list.innerHTML=savedMonths.map(m=>`<div class="savedItem"><div class="row"><div><strong>${m.periodo}</strong><div class="meta">${m.rows.length.toLocaleString('es-MX')} registros | ${m.sourceName||''}</div></div><button class="linkbtn red" onclick="removeSavedMonth('${m.periodo}')">Eliminar</button></div></div>`).join('');
+        const target=$('targetPeriod'); if(target && !target.value){target.value=addMonths(savedMonths[savedMonths.length-1].periodo,1);}
+      }
+      renderSavedSummary(); renderMonthChips(); renderYearButtons(); toggleCiaDemandDetail();
+      const has=savedMonths.length>0;
+      $('btnGenerateSaved').disabled=!has; $('btnGenerateDemand').disabled=!has; $('btnGenerateDemandCiaMatrix').disabled=!has; $('btnExportBackup').disabled=!has; $('btnClearAll').disabled=!has;
+    }
+    window.removeSavedMonth=async function(periodo){if(!confirm('¿Eliminar el mes '+periodo+' de la base local?'))return; await deleteMonth(periodo); await refreshSaved(); setStatus('Mes eliminado: '+periodo,'oktxt');}
+    btnSave.addEventListener('click',async()=>{try{if(!parsedRows.length)throw new Error('Primero carga un archivo.'); const periodo=$('periodoInput').value; if(!periodo)throw new Error('Indica el mes del archivo.'); const exists=await getMonth(periodo); if(exists&&!$('replaceMonth').checked)throw new Error('Ese mes ya existe. Marca reemplazar o elimina el mes guardado.'); const rows=parsedRows.map(r=>({...r,Periodo:periodo})); await putMonth({periodo,sourceName,createdAt:new Date().toISOString(),rows}); await refreshSaved(); setStatus(`Mes ${periodo} guardado correctamente con ${rows.length.toLocaleString('es-MX')} registros.`,'oktxt');}catch(err){setStatus('Error: '+err.message,'errtxt');}});
+    btnCurrent.addEventListener('click',async()=>{try{if(!parsedRows.length)throw new Error('Primero carga un archivo.'); await progress(2,'Preparando datos del archivo cargado...'); const periodo=$('periodoInput').value||detectPeriodo(sourceName)||'archivo'; const rows=parsedRows.map(r=>({...r,Periodo:periodo})); const tipo=$('currentReportType').value; if(tipo==='cia'){await buildWorkbookByCia(rows,[periodo],`demanda_${periodo}_por_cia.xlsx`,false);}else{await buildWorkbook(rows,[periodo],`demanda_${periodo}_reporte.xlsx`,false);}}catch(err){failProgress('Error: '+err.message);}});
+    $('btnGenerateSaved').addEventListener('click',async()=>{try{const selected=Array.from($('monthsSelect').selectedOptions).map(o=>o.value); if(!selected.length)throw new Error('Selecciona al menos un mes.'); let rows=[]; for(let i=0;i<selected.length;i++){const p=selected[i]; await progress(Math.round((i/Math.max(selected.length,1))*20),`Cargando mes ${p} (${i+1}/${selected.length})...`); const m=await getMonth(p); if(m)rows=rows.concat(m.rows.map(r=>({...r,Periodo:p})));} const tipo=$('reportTypeSaved').value; if(tipo==='cia'){await buildWorkbookByCia(rows,selected,`demanda_historico_${selected[0]}_a_${selected[selected.length-1]}_por_cia.xlsx`,$('includeRaw').checked);}else{await buildWorkbook(rows,selected,`demanda_historico_${selected[0]}_a_${selected[selected.length-1]}.xlsx`,$('includeRaw').checked);}}catch(err){failProgress('Error: '+err.message);}});
+    $('reportTypeSaved').addEventListener('change',()=>{populateDemandOptions($('reportTypeSaved').value); if($('demandMode')) $('demandMode').value=$('reportTypeSaved').value; toggleCiaDemandDetail();});
+    $('demandMode').addEventListener('change',()=>{toggleCiaDemandDetail();});
+    $('btnToggleMonths').addEventListener('click',()=>{$('monthsPanel').classList.toggle('open');});
+    $('btnSelectAllMonths').addEventListener('click',()=>setMonthSelection(savedMonths.map(m=>m.periodo)));
+    $('btnSelectLast24').addEventListener('click',()=>selectLastMonths(24));
+    $('btnSelectLast12').addEventListener('click',()=>selectLastMonths(12));
+    $('btnSelectLast6').addEventListener('click',()=>selectLastMonths(6));
+    $('btnSelectCurrentYear').addEventListener('click',()=>{const y=savedMonths.length?String(savedMonths[savedMonths.length-1].periodo).slice(0,4):String(new Date().getFullYear()); selectMonthsByYear(y);});
+    $('btnSelectPrevYear').addEventListener('click',()=>{const y=savedMonths.length?Number(String(savedMonths[savedMonths.length-1].periodo).slice(0,4))-1:new Date().getFullYear()-1; selectMonthsByYear(String(y));});
+    $('btnClearMonthSelection').addEventListener('click',()=>setMonthSelection([]));
+    $('btnGenerateDemand').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('reportTypeSaved').value; const selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value); if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia_':'por_zona_'; await buildDemandWorkbook(rows,target,selectedUnits,`demanda_sugerida_${suffix}${target}.xlsx`,$('includeBaseDemand').checked,mode,$('includeBacktestDemand').checked);}catch(err){failProgress('Error: '+err.message);}});
+    $('btnGenerateDemandCiaMatrix').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('demandMode').value; let selectedUnits; if(mode===$('reportTypeSaved').value){selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value);}else{selectedUnits=(mode==='cia'?CIA_REPORTES:REPORTES).map(r=>r.nombre);} if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia':'por_zona'; await buildDemandMatrixWorkbook(rows,target,selectedUnits,`resumen_demanda_calculada_${suffix}_${target}.xlsx`,mode);}catch(err){failProgress('Error: '+err.message);}});
+    $('btnExportBackup').addEventListener('click',async()=>{const data=await getAllMonths(); downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'respaldo_demanda_local.json');});
+    $('btnImportBackup').addEventListener('click',()=>{$('backupInput').value=''; $('backupInput').click();});
+    $('backupInput').addEventListener('change',async()=>{
+      const file=$('backupInput').files[0]; if(!file)return;
+      try{
+        if(savedMonths.length&&!confirm('Se importará el respaldo y se reemplazarán los meses que ya existan. ¿Continuar?'))return;
+        setStatus('Leyendo respaldo JSON...');
+        const text=await readTextFile(file);
+        const payload=normalizeBackupPayload(JSON.parse(text));
+        if(!payload.length)throw new Error('El respaldo no contiene meses.');
+        let importados=0,reemplazados=0,totalRegistros=0;
+        for(const mes of payload){
+          const exists=await getMonth(mes.periodo);
+          if(exists)reemplazados++; else importados++;
+          totalRegistros+=mes.rows.length;
+          await putMonth(mes);
+        }
+        await refreshSaved();
+        setStatus(`Respaldo restaurado correctamente: <strong>${importados}</strong> meses nuevos, <strong>${reemplazados}</strong> meses reemplazados y <strong>${totalRegistros.toLocaleString('es-MX')}</strong> registros.`, 'oktxt');
+      }catch(err){setStatus('Error al importar respaldo: '+err.message,'errtxt');}
+    });
+    $('btnImportZip').addEventListener('click',()=>{$('zipInput').value=''; $('zipInput').click();});
+    $('zipInput').addEventListener('change',async()=>{
+      const file=$('zipInput').files[0]; if(!file)return;
+      try{
+        if(savedMonths.length&&!confirm('Se importarán los archivos del ZIP y se reemplazarán los meses que ya existan. ¿Continuar?'))return;
+        setStatus('Leyendo ZIP de demandas...');
+        const zip=await JSZip.loadAsync(await file.arrayBuffer());
+        const entries=Object.values(zip.files).filter(f=>!f.dir && /\.(csv|xlsx|xlsm|xls)$/i.test(f.name)).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+        if(!entries.length)throw new Error('El ZIP no contiene archivos CSV/XLSX válidos.');
+        let importados=0,reemplazados=0,totalRegistros=0,omitidos=[];
+        for(let i=0;i<entries.length;i++){
+          const entry=entries[i];
+          const periodo=detectPeriodo(entry.name);
+          if(!periodo){omitidos.push(entry.name+' (no se detectó periodo)'); continue;}
+          setStatus(`Procesando ZIP ${i+1}/${entries.length}: <strong>${entry.name}</strong>...`);
+          const buf=await entry.async('arraybuffer');
+          const wb=XLSX.read(buf,{type:'array',raw:true});
+          const ws=wb.Sheets[wb.SheetNames[0]];
+          const matrix=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+          const rows=parseMatrix(matrix).map(r=>({...r,Periodo:periodo}));
+          const exists=await getMonth(periodo);
+          if(exists)reemplazados++; else importados++;
+          totalRegistros+=rows.length;
+          await putMonth({periodo,sourceName:entry.name,createdAt:new Date().toISOString(),rows});
+        }
+        await refreshSaved();
+        const extra=omitidos.length?`<br><span class="warntxt">Omitidos: ${omitidos.slice(0,8).join('; ')}${omitidos.length>8?'...':''}</span>`:'';
+        setStatus(`ZIP importado correctamente: <strong>${importados}</strong> meses nuevos, <strong>${reemplazados}</strong> meses reemplazados, <strong>${totalRegistros.toLocaleString('es-MX')}</strong> registros.${extra}`,'oktxt');
+      }catch(err){setStatus('Error al importar ZIP: '+err.message,'errtxt');}
+    });
+    $('btnLoadInventory').addEventListener('click',()=>{$('inventoryInput').value=''; $('inventoryInput').click();});
+    $('inventoryInput').addEventListener('change',async()=>{
+      const file=$('inventoryInput').files[0]; if(!file)return;
+      try{
+        await progress(5,'Leyendo archivo de inventario...');
+        const result=await parseInventoryFile(file); inventoryRows=result.rows;
+        const omitted=result.omitted||{count:0,existencia:0,bodegas:new Map()};
+        const topOmit=Array.from(omitted.bodegas||[]).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0]+' ('+x[1]+')').join(', ');
+        $('inventoryInfo').innerHTML=`<strong>${file.name}</strong><br>${inventoryRows.length.toLocaleString('es-MX')} registros autorizados para inventario disponible.${omitted.count?`<br><span class="warntxt">Ignorados por bodega no autorizada: ${omitted.count.toLocaleString('es-MX')} registros${topOmit?' | '+topOmit:''}</span>`:''}`;
+        $('btnGenerateInventory').disabled=false;
+        finishProgress('Inventario listo para generar reportes.','oktxt');
+      }catch(err){inventoryRows=[]; $('btnGenerateInventory').disabled=true; $('inventoryInfo').textContent='No se pudo leer inventario.'; failProgress('Error inventario: '+err.message);}
+    });
+    $('btnGenerateInventory').addEventListener('click',async()=>{try{const mode=$('reportTypeSaved').value; const suffix=mode==='cia'?'por_cia':'por_zona'; await buildInventoryWorkbook(`inventario_disponible_${suffix}.xlsx`,mode);}catch(err){}});
+    if($('btnGenerateDemandInventory')) $('btnGenerateDemandInventory').addEventListener('click',async()=>{
+      try{
+        if(!savedMonths.length)throw new Error('Primero importa o guarda meses de demanda en la base local.');
+        if(!inventoryRows.length)throw new Error('Primero carga el archivo de inventario.');
+        const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.');
+        const mode=$('reportTypeSaved').value; const selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value); if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.');
+        const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target);
+        for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));}
+        if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.');
+        const suffix=mode==='cia'?'por_cia':'por_zona'; await buildDemandInventoryWorkbook(rows,target,selectedUnits,`demanda_vs_inventario_${suffix}_${target}.xlsx`,mode);
+      }catch(err){failProgress('Error: '+err.message);}
+    });
+    $('btnClearAll').addEventListener('click',async()=>{if(!confirm('¿Borrar TODA la base local de demanda?'))return; await clearDB(); await refreshSaved(); setStatus('Base local borrada.','oktxt');});
+
+    function periodToIndex(p){const m=String(p||'').match(/^(20\d{2})-([01]\d)$/); if(!m)return null; return Number(m[1])*12 + Number(m[2])-1;}
+    function indexToPeriod(i){const y=Math.floor(i/12), m=i%12+1; return y+'-'+String(m).padStart(2,'0');}
+    function addMonths(p,n){const i=periodToIndex(p); return i===null?'':indexToPeriod(i+n);}
+    function lastNPeriods(target,n,offset=0){const end=periodToIndex(target)-1-offset; const arr=[]; for(let i=end-n+1;i<=end;i++)arr.push(indexToPeriod(i)); return arr;}
+    function sumPeriods(map,periods){return periods.reduce((s,p)=>s+(map[p]||0),0);}
+    function avgNonEmpty(map,periods){const vals=periods.filter(p=>map[p]!==undefined).map(p=>map[p]||0); return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;}
+    function monthsWithSales(map,periods){return periods.filter(p=>(map[p]||0)>0).length;}
+    function lastSalePeriod(map,periods){for(let i=periods.length-1;i>=0;i--){if((map[periods[i]]||0)>0)return periods[i];} return '';}
+    function clamp(n,min,max){return Math.max(min,Math.min(max,n));}
+    function sameCalendarMonthPeriods(monthsAll,target){const mm=String(target).slice(5,7); return monthsAll.filter(p=>p<target && p.slice(5,7)===mm);}
+    function trendState(t){return t>0.20?'Sube':(t<-0.20?'Baja':'Estable');}
+    function demandType(mesesVenta12, ultimaVenta, target, sameMonthSalesYears, histSameAvg, totalHist){
+      const last6=lastNPeriods(target,6); const sinVenta6=last6.every(p=>(totalHist[p]||0)<=0);
+      if(sinVenta6 && sameMonthSalesYears>=2 && histSameAvg>0)return 'Estacional dormido';
+      if(sinVenta6)return 'Sin movimiento';
+      if(mesesVenta12<=2 && sameMonthSalesYears<=1)return 'Intermitente';
+      if(sameMonthSalesYears>=2 && histSameAvg>0 && mesesVenta12>=3)return mesesVenta12>=9?'Constante / estacional':'Estacional';
+      if(mesesVenta12>=9)return 'Constante';
+      if(mesesVenta12>=5)return 'Regular';
+      if(mesesVenta12>=1)return 'Intermitente';
+      return 'Sin movimiento';
+    }
+    function confidenceSmart(tipo, mesesVenta12, sameMonthAvailable, sameMonthSalesYears, totalMonths, picosAjustados){
+      if(tipo==='Sin movimiento')return 'Media';
+      if(tipo==='Estacional dormido')return sameMonthSalesYears>=3?'Media':'Baja';
+      if(totalMonths>=24 && mesesVenta12>=9 && sameMonthAvailable>=2 && (sameMonthSalesYears>=2 || tipo.indexOf('estacional')<0) && picosAjustados<=2)return 'Alta';
+      if(totalMonths>=12 && (mesesVenta12>=5 || sameMonthSalesYears>=2))return 'Media';
+      return 'Baja';
+    }
+    function avgArray(vals){return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;}
+    function stdArray(vals){if(vals.length<2)return 0; const avg=avgArray(vals); const variance=vals.reduce((s,v)=>s+Math.pow(v-avg,2),0)/(vals.length-1); return Math.sqrt(variance);}
+    function medianArray(vals){if(!vals.length)return 0; const a=vals.slice().sort((x,y)=>x-y); const mid=Math.floor(a.length/2); return a.length%2?a[mid]:(a[mid-1]+a[mid])/2;}
+    function dispersionLevel(avg,sd){if(avg<=0)return 'Sin datos'; const cv=sd/avg; if(cv<0.30)return 'Bajo'; if(cv<0.75)return 'Moderado'; if(cv<1)return 'Alto'; return 'Alto-Alto';}
+    function positiveMap(originalMap,months){const out={}; months.forEach(p=>out[p]=Math.max(0,Number(originalMap[p]||0))); return out;}
+    function countSalesByCalendarMonth(originalMap,months){
+      const counts={};
+      months.forEach(p=>{const mm=String(p).slice(5,7); if(Math.max(0,Number(originalMap[p]||0))>0)counts[mm]=(counts[mm]||0)+1;});
+      return counts;
+    }
+    function cleanedDemandMap(originalMap,months){
+      const clean={};
+      const positiveBase=positiveMap(originalMap,months);
+      const values=months.map(p=>positiveBase[p]||0);
+      const positive=values.filter(v=>v>0);
+      const med=medianArray(positive);
+      const sd=stdArray(positive);
+      const monthCounts=countSalesByCalendarMonth(originalMap,months);
+      const threshold=med>0?Math.max(med*2.5,med+sd*2.5,med+1):Infinity;
+      let picos=0, picosEstacionalesConservados=0;
+      months.forEach(p=>{
+        let v=positiveBase[p]||0;
+        const mm=String(p).slice(5,7);
+        const seasonalRepeated=(monthCounts[mm]||0)>=2;
+        if(positive.length>=4 && v>threshold){
+          if(seasonalRepeated){
+            picosEstacionalesConservados++;
+          }else{
+            v=Math.max(med,threshold/2);
+            picos++;
+          }
+        }
+        clean[p]=v;
+      });
+      return {map:clean,picos,picosEstacionalesConservados,medianaPositiva:med,umbralPico:threshold};
+    }
+    function actionForDemand(tipo,confianza,calc){
+      if(tipo==='Sin movimiento')return 'No comprar automático';
+      if(tipo==='Estacional dormido')return 'Revisar temporada antes de comprar';
+      if(confianza==='Baja')return 'Revisar antes de comprar';
+      if(calc<=0)return 'No comprar automático';
+      if(confianza==='Alta')return 'Usar para planeación';
+      return 'Usar con revisión';
+    }
+    function buildComment(tipo, cleaned, sameMonthSalesYears, tendenciaRec, tendenciaAnual){
+      const parts=[];
+      if(tipo==='Estacional dormido')parts.push('Sin venta en últimos 6 meses, pero vendió este mismo mes en '+sameMonthSalesYears+' años; no se fuerza a cero.');
+      if(tipo==='Sin movimiento')parts.push('Sin venta en últimos 6 meses y sin patrón estacional suficiente.');
+      if(cleaned.picos>0)parts.push('Se ajustaron '+cleaned.picos+' pico(s) aislado(s).');
+      if(cleaned.picosEstacionalesConservados>0)parts.push('Se conservaron '+cleaned.picosEstacionalesConservados+' pico(s) repetido(s) por posible estacionalidad.');
+      if(tendenciaRec>0.20)parts.push('Tendencia reciente al alza.');
+      if(tendenciaRec<-0.20)parts.push('Tendencia reciente a la baja.');
+      if(tendenciaAnual>0.20)parts.push('Tendencia anual al alza.');
+      if(tendenciaAnual<-0.20)parts.push('Tendencia anual a la baja.');
+      return parts.join(' ');
+    }
+    function computeSmartDemandMetrics(g,monthsAll,target){
+      const historyMonths=monthsAll.filter(p=>p<target);
+      const cleaned=cleanedDemandMap(g.Meses,historyMonths);
+      const meses=cleaned.map;
+      const p3=lastNPeriods(target,3), p6=lastNPeriods(target,6), p12=lastNPeriods(target,12), prev3=lastNPeriods(target,3,3), prev12=lastNPeriods(target,12,12);
+      const same=addMonths(target,-12), same2=addMonths(target,-24), same3=addMonths(target,-36), sameHistPeriods=sameCalendarMonthPeriods(monthsAll,target);
+      const neto3=sumPeriods(meses,p3), neto6=sumPeriods(meses,p6), neto12=sumPeriods(meses,p12), prevNeto3=sumPeriods(meses,prev3), prevNeto12=sumPeriods(meses,prev12);
+      const prom3=neto3/3, prom6=neto6/6, prom12=neto12/12;
+      const sameYear=meses[same]||0, sameYear2=meses[same2]||0, sameYear3=meses[same3]||0;
+      const histSameAvg=avgNonEmpty(meses,sameHistPeriods);
+      const sameMonthAvailable=sameHistPeriods.filter(p=>meses[p]!==undefined).length;
+      const sameMonthSalesYears=sameHistPeriods.filter(p=>(meses[p]||0)>0).length;
+      const tendenciaBase=prevNeto3/3;
+      const tendenciaRec=tendenciaBase>0?(prom3/tendenciaBase)-1:(prom3>0?1:0);
+      const tendenciaAnual=prevNeto12>0?(neto12/prevNeto12)-1:(neto12>0?1:0);
+      const tendenciaAjustada=prom3*(1+clamp(tendenciaRec,-0.50,0.50));
+      const mesesVenta12=monthsWithSales(meses,p12), ultima=lastSalePeriod(meses,monthsAll);
+      const vals12=p12.map(p=>meses[p]||0);
+      const positivos12=vals12.filter(v=>v>0);
+      const avgPos12=avgArray(positivos12);
+      const freq12=mesesVenta12/12;
+      const sd12=stdArray(vals12);
+      const nivelVariacion=dispersionLevel(prom12,sd12);
+      const sinVenta6=lastNPeriods(target,6).every(p=>(meses[p]||0)<=0);
+      const factorEstacional=prom12>0?(histSameAvg/prom12):(histSameAvg>0?1:0);
+      const esEstacional=sameMonthSalesYears>=2 && histSameAvg>0 && (factorEstacional>=1.25 || mesesVenta12<9);
+      let tipo='Regular', metodo='Motor por perfiles: mezcla reciente, anual y estacional', raw=0;
+      if(sinVenta6 && sameMonthSalesYears>=2 && histSameAvg>0){
+        tipo='Estacional dormido'; metodo='Histórico mismo mes conservador'; raw=histSameAvg*0.60;
+      }else if(sinVenta6){
+        tipo='Sin movimiento'; metodo='Sin venta últimos 6 meses sin estacionalidad suficiente'; raw=0;
+      }else if(mesesVenta12<=2 && sameMonthSalesYears<=1){
+        tipo='Intermitente'; metodo='Promedio positivo ajustado por frecuencia'; raw=avgPos12*freq12;
+      }else if(esEstacional){
+        tipo=mesesVenta12>=9?'Constante / estacional':'Estacional'; metodo='Histórico del mismo mes + demanda reciente'; raw=(histSameAvg*.40)+(prom6*.30)+(prom3*.20)+(tendenciaAjustada*.10);
+      }else if(mesesVenta12>=9 && (nivelVariacion==='Bajo' || nivelVariacion==='Moderado')){
+        if(tendenciaRec>0.20){tipo='Constante con tendencia alta'; metodo='Mayor peso a últimos 3 y 6 meses'; raw=(prom3*.55)+(prom6*.30)+(prom12*.15);}
+        else if(tendenciaRec<-0.20){tipo='Constante con tendencia baja'; metodo='Conservador: reciente + menor promedio estable'; raw=(prom3*.35)+(Math.min(prom6,prom12)*.65);}
+        else{tipo='Constante estable'; metodo='Promedio estable 6M/12M'; raw=(prom6*.50)+(prom12*.30)+(prom3*.20);}
+      }else if(mesesVenta12>=5){
+        tipo='Regular'; metodo='Mezcla reciente, anual y estacional'; raw=(prom3*.40)+(prom6*.30)+(prom12*.20)+(histSameAvg*.10);
+      }else{
+        tipo='Intermitente'; metodo='Promedio positivo ajustado por frecuencia'; raw=avgPos12*freq12;
+        if(sameMonthSalesYears>=2 && histSameAvg>0){metodo='Intermitente con apoyo estacional'; raw=(raw*.70)+(histSameAvg*.30);}
+      }
+      if(tipo!=='Sin movimiento' && tipo!=='Estacional dormido'){
+        if(tendenciaRec>0.35 && tendenciaAnual>=0)raw*=1.08;
+        if(tendenciaRec<-0.35 && tendenciaAnual<=0)raw*=0.88;
+        const maxRef=Math.max(prom3,prom6,prom12,histSameAvg,avgPos12,0);
+        if(maxRef>0)raw=Math.min(raw,maxRef*1.75);
+      }
+      const calc=round2(Math.max(0,raw));
+      const conf=confidenceSmart(tipo,mesesVenta12,sameMonthAvailable,sameMonthSalesYears,monthsAll.length,cleaned.picos);
+      const accion=actionForDemand(tipo,conf,calc);
+      const comentario=buildComment(tipo,cleaned,sameMonthSalesYears,tendenciaRec,tendenciaAnual);
+      return {MesesConVenta:mesesVenta12,UltimaVenta:ultima,Neto3M:round2(neto3),Promedio3M:round2(prom3),Neto6M:round2(neto6),Promedio6M:round2(prom6),Neto12M:round2(neto12),Promedio12M:round2(prom12),MismoMesAnioAnterior:round2(sameYear),MismoMesHace2:round2(sameYear2),MismoMesHace3:round2(sameYear3),PromHistoricoMismoMes:round2(histSameAvg),AniosMismoMes:sameMonthAvailable,AniosConVentaMismoMes:sameMonthSalesYears,Tendencia:round2(tendenciaRec),EstadoTendencia:trendState(tendenciaRec),TendenciaAnual:round2(tendenciaAnual),EstadoTendenciaAnual:trendState(tendenciaAnual),NivelVariacion:nivelVariacion,PicosAjustados:cleaned.picos,MetodoAplicado:metodo,DemandaCalculada:calc,DemandaSugerida:calc,TipoDemanda:tipo,Confianza:conf,Accion:accion,Comentario:comentario,Meses:meses};
+    }
+    function buildDemandForZone(rows,rep,target){
+      const monthsAll=Array.from(new Set(rows.map(r=>r.Periodo).filter(Boolean).filter(p=>p<target))).sort();
+      const m=new Map();
+      for(const r of rows){
+        const cia=ciaNum(r.Cia); if(!rep.cias.includes(cia))continue;
+        const art=articuloReporte(r.Articulo); if(!art)continue;
+        const key=art+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
+        if(!m.has(key))m.set(key,{Articulo:art,Proveedor:r.Proveedor||'',Grupo:r.Grupo||'',Zona:rep.nombre,Meses:{},ImporteNeto:0});
+        const g=m.get(key); const p=r.Periodo||''; const neto=toNumber(r.Neto);
+        g.Meses[p]=(g.Meses[p]||0)+neto; g.ImporteNeto+=toNumber(r['Importe Neto']);
+      }
+      const out=[];
+      for(const g of m.values()){
+        const metrics=computeSmartDemandMetrics(g,monthsAll,target);
+        out.push({Articulo:g.Articulo,Proveedor:g.Proveedor,Grupo:g.Grupo,Zona:g.Zona,...metrics,ImporteNeto:g.ImporteNeto});
+      }
+      out.sort((a,b)=>a.Articulo.localeCompare(b.Articulo,'es'));
+      return out;
+    }
+
+    function buildDemandForReportsFast(rows,reports,target){
+      const monthsAll=Array.from(new Set(rows.map(r=>r.Periodo).filter(Boolean).filter(p=>p<target))).sort();
+      const reportByCia=new Map();
+      reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
+      const m=new Map();
+      for(const r of rows){
+        const cia=ciaNum(r.Cia); const rep=reportByCia.get(cia); if(!rep)continue;
+        const art=articuloReporte(r.Articulo); if(!art)continue;
+        const key=rep.nombre+'|'+art+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
+        if(!m.has(key))m.set(key,{Articulo:art,Proveedor:r.Proveedor||'',Grupo:r.Grupo||'',Zona:rep.nombre,Meses:{},ImporteNeto:0});
+        const g=m.get(key); const p=r.Periodo||''; const neto=toNumber(r.Neto);
+        if(p)g.Meses[p]=(g.Meses[p]||0)+neto;
+        g.ImporteNeto+=toNumber(r['Importe Neto']);
+      }
+      const out=[];
+      for(const g of m.values()){
+        const metrics=computeSmartDemandMetrics(g,monthsAll,target);
+        out.push({Articulo:g.Articulo,Proveedor:g.Proveedor,Grupo:g.Grupo,Zona:g.Zona,...metrics,ImporteNeto:g.ImporteNeto});
+      }
+      out.sort((a,b)=>String(a.Zona).localeCompare(String(b.Zona),'es') || a.Articulo.localeCompare(b.Articulo,'es'));
+      return out;
+    }
+
+    function buildSeasonalityRows(demandRows,target){
+      const monthNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      return demandRows.map(r=>{
+        const avgs=[], months=[];
+        for(let i=0;i<12;i++){
+          const mm=String(i+1).padStart(2,'0');
+          const ps=Object.keys(r.Meses).filter(p=>p<target && p.slice(5,7)===mm).sort();
+          avgs.push(avgNonEmpty(r.Meses,ps)); months.push(ps.filter(p=>(r.Meses[p]||0)>0).length);
+        }
+        let maxIdx=0,minIdx=0;
+        for(let i=1;i<12;i++){if(avgs[i]>avgs[maxIdx])maxIdx=i; if(avgs[i]<avgs[minIdx])minIdx=i;}
+        return [r.Articulo,r.Proveedor,r.Grupo,r.Zona,...avgs,monthNames[maxIdx],monthNames[minIdx],...months];
+      });
+    }
+    function demandHeaders(includeInventory=false){
+      const hs=['Articulo','Proveedor','Grupo','Zona / Cia','Tipo SKU','Meses con venta 12M','Ultima venta','Neto 3M','Promedio 3M','Neto 6M','Promedio 6M','Neto 12M','Promedio 12M','Mismo mes año anterior','Mismo mes hace 2 años','Mismo mes hace 3 años','Promedio histórico mismo mes','Años disponibles mismo mes','Años con venta mismo mes','Tendencia reciente %','Estado tendencia reciente','Tendencia anual %','Estado tendencia anual','Nivel variación','Picos ajustados','Método aplicado','Demanda calculada','Demanda sugerida'];
+      if(includeInventory) hs.push('Inventario disponible','Diferencia inventario-demanda','Necesidad','Cobertura demanda','Inventario resurtido 25','Resurtido posible 25','Necesidad final');
+      hs.push('Tipo demanda','Confianza','Acción recomendada','Comentario','Importe Neto histórico');
+      return hs;
+    }
+    function inventoryColsForDemand(r,ctx){
+      if(!ctx||!ctx.map)return [];
+      const inv=round2(ctx.map.get(r.Zona+'|'+r.Articulo)||0);
+      const dem=Number(r.DemandaCalculada)||0;
+      const dif=round2(inv-dem);
+      const nec=round2(Math.max(0,dem-inv));
+      const cob=dem>0?round2(inv/dem):'';
+      const tipo=tipoSkuForArt(r.Articulo,ctx);
+      const inv25=inventarioResurtido25(r.Articulo,tipo,ctx);
+      const resurtir=usarResurtido25(r.Zona)?round2(Math.min(nec,inv25)):0;
+      const necFinal=round2(Math.max(0,nec-resurtir));
+      return [inv,dif,nec,cob,inv25,resurtir,necFinal];
+    }
+    function addDemandSheet(wb,name,rows,inventoryContext=null){
+      const ws=wb.addWorksheet(safeSheetName(name));
+      const includeInventory=!!inventoryContext;
+      const hs=demandHeaders(includeInventory);
+      ws.addRow(hs);
+      rows.forEach(r=>{
+        const tipo=tipoSkuForArt(r.Articulo,inventoryContext);
+        ws.addRow([r.Articulo,r.Proveedor,r.Grupo,r.Zona,tipo,r.MesesConVenta,r.UltimaVenta,r.Neto3M,r.Promedio3M,r.Neto6M,r.Promedio6M,r.Neto12M,r.Promedio12M,r.MismoMesAnioAnterior,r.MismoMesHace2,r.MismoMesHace3,r.PromHistoricoMismoMes,r.AniosMismoMes,r.AniosConVentaMismoMes,r.Tendencia,r.EstadoTendencia,r.TendenciaAnual,r.EstadoTendenciaAnual,r.NivelVariacion,r.PicosAjustados,r.MetodoAplicado,r.DemandaCalculada,r.DemandaSugerida,...inventoryColsForDemand(r,inventoryContext),r.TipoDemanda,r.Confianza,r.Accion,r.Comentario,r.ImporteNeto]);
+      });
+      styleDemandSheet(ws,hs.length);
+      if(includeInventory){
+        const invCol=hs.indexOf('Inventario disponible')+1, difCol=hs.indexOf('Diferencia inventario-demanda')+1, necCol=hs.indexOf('Necesidad')+1, cobCol=hs.indexOf('Cobertura demanda')+1, inv25Col=hs.indexOf('Inventario resurtido 25')+1, resCol=hs.indexOf('Resurtido posible 25')+1, nfCol=hs.indexOf('Necesidad final')+1;
+        [invCol,difCol,necCol,inv25Col,resCol,nfCol].forEach(c=>{if(c>0)ws.getColumn(c).numFmt='#,##0.00';});
+        if(cobCol>0)ws.getColumn(cobCol).numFmt='0.00';
+      }
+      return ws;
+    }
+
+    function addDemandMatrixSheet(wb,rows,selectedReports,mode='cia'){
+      const unidades=selectedReports.map(r=>r.nombre);
+      const m=new Map();
+      for(const r of rows){
+        const key=r.Articulo+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
+        if(!m.has(key))m.set(key,{Articulo:r.Articulo,Proveedor:r.Proveedor||'',Grupo:r.Grupo||'',Valores:{},Total:0});
+        const g=m.get(key);
+        const val=Number(r.DemandaCalculada)||0;
+        g.Valores[r.Zona]=(g.Valores[r.Zona]||0)+val;
+        g.Total+=val;
+      }
+      const arr=Array.from(m.values()).sort((a,b)=>a.Articulo.localeCompare(b.Articulo,'es'));
+      const ws=wb.addWorksheet(mode==='cia'?'Resumen Demanda Cia':'Resumen Demanda Zona');
+      const hs=['Articulo','Proveedor','Grupo',...unidades,'Total general'];
+      ws.addRow(hs);
+      arr.forEach(x=>ws.addRow([x.Articulo,x.Proveedor,x.Grupo,...unidades.map(u=>x.Valores[u]||0),x.Total]));
+      const totalRow=['Total general','',''];
+      unidades.forEach(u=>totalRow.push(arr.reduce((s,x)=>s+(x.Valores[u]||0),0)));
+      totalRow.push(arr.reduce((s,x)=>s+x.Total,0));
+      ws.addRow(totalRow);
+      styleDemandMatrixSheet(ws,hs.length);
+      return ws;
+    }
+
+    function addDemandDiagnosticsSheet(wb,rows){
+      const ws=wb.addWorksheet('Diagnostico Demanda');
+      ws.addRow(['Sección','Valor','Conteo','Demanda calculada']);
+      const addCounts=(section,field)=>{
+        const m=new Map();
+        rows.forEach(r=>{const k=r[field]||'Sin dato'; if(!m.has(k))m.set(k,{count:0,total:0}); const x=m.get(k); x.count++; x.total+=Number(r.DemandaCalculada)||0;});
+        Array.from(m.entries()).sort((a,b)=>b[1].count-a[1].count).forEach(([k,v])=>ws.addRow([section,k,v.count,round2(v.total)]));
+      };
+      addCounts('Tipo demanda','TipoDemanda');
+      addCounts('Confianza','Confianza');
+      addCounts('Acción recomendada','Accion');
+      addCounts('Método aplicado','MetodoAplicado');
+      styleSheet(ws,4,true);
+    }
+    function actualDemandMap(rows,reports,period){
+      const reportByCia=new Map(); reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
+      const m=new Map();
+      for(const r of rows){
+        if(r.Periodo!==period)continue;
+        const rep=reportByCia.get(ciaNum(r.Cia)); if(!rep)continue;
+        const art=articuloReporte(r.Articulo); if(!art)continue;
+        const key=rep.nombre+'|'+art+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
+        m.set(key,(m.get(key)||0)+Math.max(0,toNumber(r.Neto)));
+      }
+      return m;
+    }
+    function forecastKey(r){return r.Zona+'|'+r.Articulo+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');}
+    function computeBacktestRows(rows,reports,target,monthsToTest=6){
+      const monthsAll=Array.from(new Set(rows.map(r=>r.Periodo).filter(Boolean).filter(p=>p<target))).sort();
+      const testMonths=monthsAll.filter(p=>monthsAll.filter(x=>x<p).length>=12).slice(-monthsToTest);
+      const out=[];
+      for(const t of testMonths){
+        const forecasts=buildDemandForReportsFast(rows,reports,t);
+        const actual=actualDemandMap(rows,reports,t);
+        let real=0, forecast=0, absErr=0, combos=0;
+        const seen=new Set();
+        forecasts.forEach(f=>{
+          const k=forecastKey(f); const a=actual.get(k)||0; const fc=Number(f.DemandaCalculada)||0;
+          if(a>0 || fc>0){real+=a; forecast+=fc; absErr+=Math.abs(fc-a); combos++;}
+          seen.add(k);
+        });
+        actual.forEach((a,k)=>{if(!seen.has(k) && a>0){real+=a; absErr+=a; combos++;}});
+        out.push({Mes:t,Combinaciones:combos,Real:round2(real),Pronostico:round2(forecast),ErrorAbs:round2(absErr),WAPE:real>0?round2(absErr/real):0,Sesgo:real>0?round2((forecast-real)/real):0});
+      }
+      return out;
+    }
+    function addBacktestSheet(wb,rows,reports,target,mode){
+      const ws=wb.addWorksheet('Backtesting Rapido');
+      ws.addRow(['Mes evaluado','Combinaciones','Demanda real','Demanda pronosticada','Error absoluto','WAPE','Sesgo %']);
+      const bt=computeBacktestRows(rows,reports,target,6);
+      bt.forEach(r=>ws.addRow([r.Mes,r.Combinaciones,r.Real,r.Pronostico,r.ErrorAbs,r.WAPE,r.Sesgo]));
+      if(bt.length){
+        const real=bt.reduce((s,r)=>s+r.Real,0), fc=bt.reduce((s,r)=>s+r.Pronostico,0), err=bt.reduce((s,r)=>s+r.ErrorAbs,0);
+        ws.addRow(['Total / promedio',bt.reduce((s,r)=>s+r.Combinaciones,0),round2(real),round2(fc),round2(err),real>0?round2(err/real):0,real>0?round2((fc-real)/real):0]);
+      }else{
+        ws.addRow(['Sin meses suficientes para backtesting',0,0,0,0,0,0]);
+      }
+      ws.addRow([]);
+      ws.addRow(['Nota','Backtesting rápido calcula cómo se habría comportado el motor en los últimos 6 meses con al menos 12 meses previos de historia. Es una validación de pronóstico, no una orden de compra.']);
+      styleSheet(ws,7,true);
+      ws.getColumn(6).numFmt='0.00%'; ws.getColumn(7).numFmt='0.00%';
+    }
+
+    async function buildDemandWorkbook(rows,target,selectedZones,fileName,includeBase,mode='zona',includeBacktest=false){
+      try{
+        await progress(3,'Calculando demanda sugerida con estacionalidad histórica...');
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        const reportCatalog=mode==='cia'?CIA_REPORTES:REPORTES;
+        const selectedReports=reportCatalog.filter(r=>selectedZones.includes(r.nombre));
+        const inventoryEnabled=inventoryRows.length>0;
+        const invCatalog=inventoryReportsForMode(mode);
+        const selectedInventoryReports=invCatalog.filter(r=>selectedZones.includes(r.nombre));
+        const inventoryMap=inventoryEnabled?inventoryMapForReports(inventoryRows,selectedInventoryReports):null;
+        const inventoryContext=makeInventoryContext(inventoryMap);
+
+        await progress(10,'Creando pestaña Parametros...');
+        const params=wb.addWorksheet('Parametros');
+        params.addRow(['Concepto','Valor']);
+        params.addRow(['Mes objetivo',target]);
+        params.addRow(['Motor de cálculo','Demanda inteligente por perfiles: constante, tendencia alta/baja, estacional, estacional dormido, intermitente y sin movimiento.']);
+        params.addRow(['Historial usado','Todos los meses anteriores al mes objetivo cargados en la base local.']);
+        params.addRow([mode==='cia'?'Cias':'Zonas',selectedZones.join(', ')]);
+        params.addRow(['Notas', mode==='cia' ? 'Demanda inteligente por perfiles calculada por Cia exacta. Protege artículos de temporada dormidos: si no vendieron en los últimos 6 meses pero sí vendieron el mismo mes en años anteriores, no se fuerzan a cero. Los picos repetidos por temporada se conservan; solo se ajustan picos aislados.' : 'Demanda inteligente por perfiles calculada por zona/localización. Los artículos se muestran sin el prefijo inicial 30. Cia 33 y 73 se calculan como ventas de calle separadas. La demanda es pronóstico de venta observada; la compra debe cruzarse después con inventario, pendientes y lead time.']);
+        params.addRow(['Inventario integrado', inventoryEnabled ? 'Sí: se agregó inventario disponible, diferencia, necesidad, cobertura, tipo SKU y resurtido desde Cia 25 dentro de las pestañas de Demanda Sugerida.' : 'No: no se cargó archivo de inventario antes de generar la demanda.']);
+        styleSheet(params,2,true);
+
+        if(mode==='cia'){
+          // Modo Cia exacta corregido: calcula todas las Cias seleccionadas en una sola pasada.
+          // Evita repetir el escaneo del historial por cada Cia y conserva el detalle por Cia.
+          await progress(15,'Calculando demanda sugerida por Cia exacta en una sola pasada...');
+          const allCia=buildDemandForReportsFast(rows,selectedReports,target);
+          const byCia=new Map(selectedReports.map(r=>[r.nombre,[]]));
+          allCia.forEach(r=>{ if(byCia.has(r.Zona)) byCia.get(r.Zona).push(r); });
+          const resumen=[];
+          for(let i=0;i<selectedReports.length;i++){
+            const rep=selectedReports[i];
+            const part=byCia.get(rep.nombre)||[];
+            await progress(25+Math.round((i/Math.max(selectedReports.length,1))*55),`Agregando detalle ${rep.nombre} (${i+1}/${selectedReports.length})...`);
+            addDemandSheet(wb,rep.nombre,part,inventoryContext);
+            const totalCalc=round2(part.reduce((s,x)=>s+(Number(x.DemandaCalculada)||0),0));
+            const totalSug=round2(part.reduce((s,x)=>s+(Number(x.DemandaSugerida)||0),0));
+            const totalInv=inventoryMap?round2(part.reduce((s,x)=>s+(inventoryMap.get(x.Zona+'|'+x.Articulo)||0),0)):'';
+            const totalNec=inventoryMap?round2(part.reduce((s,x)=>s+Math.max(0,(Number(x.DemandaCalculada)||0)-(inventoryMap.get(x.Zona+'|'+x.Articulo)||0)),0)):'';
+            const sinMov=part.filter(x=>x.TipoDemanda==='Sin movimiento').length;
+            resumen.push([rep.nombre,rep.cias.join(', '),rep.localizacion||'',part.length,totalCalc,totalSug,totalInv,totalNec,sinMov]);
+            part.forEach(x=>delete x.Meses);
+            await waitUI();
+          }
+          await progress(82,'Agregando resumen por Cia...');
+          const res=wb.addWorksheet('Resumen Cia');
+          const hs=['Cia','Cia num','Localizacion','Articulos','Total demanda calculada','Total demanda sugerida','Total inventario disponible','Total necesidad','Articulos sin movimiento'];
+          res.addRow(hs); resumen.forEach(r=>res.addRow(r)); styleSheet(res,hs.length,true);
+          await progress(84,'Agregando diagnóstico de perfiles...');
+          addDemandDiagnosticsSheet(wb,allCia);
+          if(includeBacktest){
+            await progress(86,'Calculando backtesting rápido de los últimos 6 meses...');
+            addBacktestSheet(wb,rows,selectedReports,target,mode);
+          }
+
+          if(includeBase){
+            if(rows.length>200000){
+              const warn=wb.addWorksheet('Base usada omitida');
+              warn.addRow(['Aviso']);
+              warn.addRow(['La pestaña Base usada se omitió automáticamente porque contiene más de 200,000 registros y puede cerrar el navegador.']);
+              styleSheet(warn,1,true);
+            }else{
+              await progress(88,'Agregando Base usada...');
+              const ws=wb.addWorksheet('Base usada'); const hs2=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Neto']; ws.addRow(hs2);
+              for(let i=0;i<rows.length;i++){ws.addRow(hs2.map(h=>h==='Articulo'?articuloReporte(rows[i][h]):(rows[i][h]??''))); if(i%5000===0)await progress(88+Math.min(4,Math.round((i/Math.max(rows.length,1))*4)),`Agregando Base usada ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);}
+              styleSheet(ws,hs2.length,true);
+            }
+          }
+          await progress(93,'Preparando archivo Excel de demanda sugerida por Cia...');
+          const buffer=await wb.xlsx.writeBuffer();
+          await progress(97,'Descargando archivo...');
+          downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+          finishProgress(`Demanda inteligente por Cia generada: <strong>${fileName}</strong> | ${selectedReports.length} Cias con detalle.`, 'oktxt');
+          return;
+        }
+
+        let all=[];
+        for(let i=0;i<selectedReports.length;i++){
+          const rep=selectedReports[i];
+          await progress(15+Math.round((i/Math.max(selectedReports.length,1))*28),`Calculando ${rep.nombre} (${i+1}/${selectedReports.length})...`);
+          all=all.concat(buildDemandForZone(rows,rep,target));
+          await waitUI();
+        }
+        await progress(45,'Agregando pestaña Demanda Sugerida...');
+        addDemandSheet(wb,'Demanda Sugerida',all,inventoryContext);
+        for(let i=0;i<selectedReports.length;i++){
+          const rep=selectedReports[i];
+          await progress(48+Math.round((i/Math.max(selectedReports.length,1))*18),`Agregando zona ${rep.nombre} (${i+1}/${selectedReports.length})...`);
+          addDemandSheet(wb,rep.nombre,all.filter(r=>r.Zona===rep.nombre),inventoryContext);
+          await waitUI();
+        }
+        await progress(68,'Agregando estacionalidad histórica...');
+        const est=wb.addWorksheet('Estacionalidad Historica'); const monthNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; const estHs=['Articulo','Proveedor','Grupo','Zona',...monthNames.map(m=>'Prom '+m),'Mes fuerte','Mes bajo',...monthNames.map(m=>'Años venta '+m)]; est.addRow(estHs); buildSeasonalityRows(all,target).forEach(row=>est.addRow(row)); styleSheet(est,estHs.length,true);
+        await progress(76,'Agregando Sin Movimiento, Estacional Dormido y Top Impacto...');
+        const sin=all.filter(r=>r.TipoDemanda==='Sin movimiento'); addDemandSheet(wb,'Sin Movimiento',sin,inventoryContext);
+        const dormidos=all.filter(r=>r.TipoDemanda==='Estacional dormido'); addDemandSheet(wb,'Estacional Dormido',dormidos,inventoryContext);
+        const top=all.slice().sort((a,b)=>b.ImporteNeto-a.ImporteNeto).slice(0,5000); addDemandSheet(wb,'Top Impacto',top,inventoryContext);
+        await progress(78,'Agregando diagnóstico de perfiles...');
+        addDemandDiagnosticsSheet(wb,all);
+        if(includeBacktest){
+          await progress(80,'Calculando backtesting rápido de los últimos 6 meses...');
+          addBacktestSheet(wb,rows,selectedReports,target,mode);
+        }
+        if(includeBase){
+          await progress(80,'Agregando Base usada...');
+          const ws=wb.addWorksheet('Base usada'); const hs=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Neto']; ws.addRow(hs);
+          for(let i=0;i<rows.length;i++){ws.addRow(hs.map(h=>h==='Articulo'?articuloReporte(rows[i][h]):(rows[i][h]??''))); if(i%5000===0)await progress(80+Math.min(8,Math.round((i/Math.max(rows.length,1))*8)),`Agregando Base usada ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);}
+          styleSheet(ws,hs.length,true);
+        }
+        await progress(90,'Preparando archivo Excel de demanda sugerida...');
+        const buffer=await wb.xlsx.writeBuffer();
+        await progress(96,'Descargando archivo...');
+        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+        finishProgress(`Demanda inteligente generada: <strong>${fileName}</strong> | ${all.length.toLocaleString('es-MX')} combinaciones artículo/zona.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+
+    async function buildDemandMatrixWorkbook(rows,target,selectedUnits,fileName,mode='cia'){
+      try{
+        const unitName=mode==='cia'?'Cia':'zona/localización';
+        await progress(5,`Calculando resumen matriz de Demanda calculada por ${unitName}...`);
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        const reportCatalog=mode==='cia'?CIA_REPORTES:REPORTES;
+        const selectedReports=reportCatalog.filter(r=>selectedUnits.includes(r.nombre));
+        let all=[];
+        for(let i=0;i<selectedReports.length;i++){
+          const rep=selectedReports[i];
+          await progress(10+Math.round((i/Math.max(selectedReports.length,1))*45),`Calculando ${rep.nombre} para resumen matriz (${i+1}/${selectedReports.length})...`);
+          all=all.concat(buildDemandForZone(rows,rep,target));
+          await waitUI();
+        }
+        await progress(60,'Creando pestaña Parametros...');
+        const params=wb.addWorksheet('Parametros');
+        params.addRow(['Concepto','Valor']);
+        params.addRow(['Tipo de reporte',mode==='cia'?'Resumen matriz de Demanda calculada por Cia':'Resumen matriz de Demanda calculada por zona/localización']);
+        params.addRow(['Mes objetivo',target]);
+        params.addRow([mode==='cia'?'Cias':'Zonas',selectedUnits.join(', ')]);
+        params.addRow(['Dato usado en matriz','Demanda calculada, sin redondear a entero']);
+        params.addRow(['Notas','Este reporte es independiente y no reemplaza el reporte detallado de Demanda Sugerida. Usa el Tipo de reporte seleccionado: Cia exacta o zona/localización.']);
+        styleSheet(params,2,true);
+        await progress(72,`Agregando matriz por ${unitName}...`);
+        addDemandMatrixSheet(wb,all,selectedReports,mode);
+        await progress(90,`Preparando archivo Excel de resumen matriz por ${unitName}...`);
+        const buffer=await wb.xlsx.writeBuffer();
+        await progress(96,'Descargando archivo...');
+        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+        finishProgress(`Resumen Demanda Calculada por ${unitName} generado: <strong>${fileName}</strong> | ${all.length.toLocaleString('es-MX')} combinaciones artículo/${unitName}.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+
+    function inventoryReportsForMode(mode){return mode==='cia'?INVENTORY_CIA_REPORTES:INVENTORY_REPORTES;}
+    function buildInventoryForReports(rows,reports){
+      const reportByCia=new Map(); reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
+      const m=new Map();
+      for(const r of rows){
+        const rep=reportByCia.get(ciaNum(r.Cia)); if(!rep)continue;
+        const art=r.ArticuloReporte||articuloReporte(r.Articulo); if(!art)continue;
+        const key=rep.nombre+'|'+art;
+        if(!m.has(key))m.set(key,{Articulo:art,Unidad:rep.nombre,Existencia:0});
+        m.get(key).Existencia+=toNumber(r.Existencia);
+      }
+      return Array.from(m.values()).map(x=>({...x,Existencia:round2(x.Existencia)})).sort((a,b)=>String(a.Unidad).localeCompare(String(b.Unidad),'es')||String(a.Articulo).localeCompare(String(b.Articulo),'es'));
+    }
+    function inventoryMapForReports(rows,reports){
+      const map=new Map();
+      buildInventoryForReports(rows,reports).forEach(r=>map.set(r.Unidad+'|'+r.Articulo, r.Existencia));
+      return map;
+    }
+    function addInventoryMatrixSheet(wb,inventoryRowsAgg,reports){
+      const ws=wb.addWorksheet('Inventario Disponible');
+      const typeMap=buildSkuTypeMap(inventoryRows);
+      const hs=['Articulo','Tipo SKU',...reports.map(r=>r.nombre),'Total general']; ws.addRow(hs);
+      const byArt=new Map();
+      inventoryRowsAgg.forEach(r=>{if(!byArt.has(r.Articulo))byArt.set(r.Articulo,{}); byArt.get(r.Articulo)[r.Unidad]=(byArt.get(r.Articulo)[r.Unidad]||0)+Number(r.Existencia||0);});
+      Array.from(byArt.keys()).sort((a,b)=>a.localeCompare(b,'es')).forEach(art=>{
+        const obj=byArt.get(art); const vals=reports.map(rep=>round2(obj[rep.nombre]||0)); const total=round2(vals.reduce((s,v)=>s+v,0)); ws.addRow([art,typeMap.get(art)||'Sin clasificar',...vals,total]);
+      });
+      styleDemandMatrixSheet(ws,hs.length); return ws;
+    }
+    function addInventoryDetailSheet(wb,name,rows){
+      const ws=wb.addWorksheet(safeSheetName(name)); const typeMap=buildSkuTypeMap(inventoryRows); const hs=['Articulo','Tipo SKU','Unidad','Existencia disponible']; ws.addRow(hs); rows.forEach(r=>ws.addRow([r.Articulo,typeMap.get(r.Articulo)||'Sin clasificar',r.Unidad,r.Existencia])); styleSheet(ws,hs.length,true); return ws;
+    }
+    async function buildInventoryWorkbook(fileName,mode='zona'){
+      try{
+        if(!inventoryRows.length)throw new Error('Primero carga el archivo de inventario.');
+        const unitName=mode==='cia'?'Cia':'zona/localización';
+        const reports=inventoryReportsForMode(mode);
+        await progress(10,`Calculando inventario disponible por ${unitName}...`);
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        const params=wb.addWorksheet('Parametros'); params.addRow(['Concepto','Valor']); params.addRow(['Archivo inventario',inventorySourceName||'']); params.addRow(['Tipo de reporte',mode==='cia'?'Inventario por Cia exacta':'Inventario por zona/localización']); params.addRow(['Regla','Solo se suman bodegas autorizadas por Cia. Cualquier otra bodega se ignora. Tipo SKU se clasifica por bodega autorizada: c=Cerámicos, a=Accesorios. Resurtido 25: Cerámicos=25ci+25cr, Accesorios=25ai.']); styleSheet(params,2,true);
+        const invAgg=buildInventoryForReports(inventoryRows,reports);
+        await progress(35,'Agregando matriz de inventario disponible...'); addInventoryMatrixSheet(wb,invAgg,reports);
+        await progress(60,'Agregando detalle por unidad...');
+        for(let i=0;i<reports.length;i++){const rep=reports[i]; const part=invAgg.filter(r=>r.Unidad===rep.nombre); addInventoryDetailSheet(wb,rep.nombre,part); await progress(60+Math.round((i/Math.max(reports.length,1))*25),`Agregando ${rep.nombre} (${i+1}/${reports.length})...`);}
+        await progress(90,'Preparando archivo Excel de inventario...'); const buffer=await wb.xlsx.writeBuffer(); await progress(96,'Descargando archivo...'); downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName); finishProgress(`Reporte de inventario disponible generado: <strong>${fileName}</strong> | ${invAgg.length.toLocaleString('es-MX')} artículos/unidad.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+    function addDemandInventorySheet(wb,demandRows,invMap,reports,mode){
+      const ws=wb.addWorksheet('Demanda vs Inventario');
+      const hs=['Articulo','Proveedor','Grupo','Unidad','Tipo SKU','Demanda calculada','Demanda sugerida','Inventario disponible','Diferencia inventario-demanda','Necesidad','Cobertura demanda','Inventario resurtido 25','Resurtido posible 25','Necesidad final','Tipo demanda','Confianza','Acción recomendada','Comentario'];
+      ws.addRow(hs);
+      const ctx=makeInventoryContext(invMap);
+      demandRows.forEach(r=>{
+        const tipo=tipoSkuForArt(r.Articulo,ctx); const inv=round2(invMap.get(r.Zona+'|'+r.Articulo)||0); const dem=Number(r.DemandaCalculada)||0; const dif=round2(inv-dem); const nec=round2(Math.max(0,dem-inv)); const cob=dem>0?round2(inv/dem):''; const inv25=inventarioResurtido25(r.Articulo,tipo,ctx); const res=usarResurtido25(r.Zona)?round2(Math.min(nec,inv25)):0; const nf=round2(Math.max(0,nec-res));
+        ws.addRow([r.Articulo,r.Proveedor,r.Grupo,r.Zona,tipo,r.DemandaCalculada,r.DemandaSugerida,inv,dif,nec,cob,inv25,res,nf,r.TipoDemanda,r.Confianza,r.Accion,r.Comentario]);
+      });
+      styleSheet(ws,hs.length,true); ws.views=[{state:'frozen',ySplit:1,xSplit:4}]; return ws;
+    }
+    async function buildDemandInventoryWorkbook(rows,target,selectedUnits,fileName,mode='zona'){
+      try{
+        if(!inventoryRows.length)throw new Error('Primero carga el archivo de inventario.');
+        const unitName=mode==='cia'?'Cia':'zona/localización';
+        const demandCatalog=mode==='cia'?CIA_REPORTES:REPORTES;
+        const selectedDemandReports=demandCatalog.filter(r=>selectedUnits.includes(r.nombre));
+        const invCatalog=inventoryReportsForMode(mode);
+        const selectedInventoryReports=invCatalog.filter(r=>selectedUnits.includes(r.nombre));
+        if(!selectedDemandReports.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.');
+        await progress(10,`Calculando demanda inteligente por ${unitName}...`);
+        const demandRows=buildDemandForReportsFast(rows,selectedDemandReports,target);
+        await progress(35,'Calculando inventario disponible autorizado...');
+        const invMap=inventoryMapForReports(inventoryRows,selectedInventoryReports);
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        const params=wb.addWorksheet('Parametros'); params.addRow(['Concepto','Valor']); params.addRow(['Reporte','Demanda vs Inventario']); params.addRow(['Mes objetivo',target]); params.addRow(['Tipo',mode==='cia'?'Por Cia exacta':'Por zona/localización']); params.addRow([mode==='cia'?'Cias':'Zonas',selectedUnits.join(', ')]); params.addRow(['Inventario','Solo existencia en bodegas autorizadas por Cia.']); params.addRow(['Nota','Necesidad = Demanda calculada - Inventario disponible, limitada a cero. Si hay necesidad, se muestra resurtido posible desde Cia 25 según Tipo SKU: Cerámicos desde 25ci+25cr y Accesorios desde 25ai. Esto aún no considera pendiente, ordenado, lead time ni inventario de seguridad.']); styleSheet(params,2,true);
+        await progress(55,'Agregando Demanda vs Inventario...'); addDemandInventorySheet(wb,demandRows,invMap,selectedDemandReports,mode);
+        await progress(70,'Agregando matriz de inventario disponible...'); addInventoryMatrixSheet(wb,buildInventoryForReports(inventoryRows,selectedInventoryReports),selectedInventoryReports);
+        await progress(78,'Agregando diagnóstico de perfiles...'); addDemandDiagnosticsSheet(wb,demandRows);
+        await progress(90,'Preparando archivo Excel Demanda vs Inventario...'); const buffer=await wb.xlsx.writeBuffer(); await progress(96,'Descargando archivo...'); downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName); finishProgress(`Demanda vs Inventario generado: <strong>${fileName}</strong> | ${demandRows.length.toLocaleString('es-MX')} artículos/${unitName}.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+
+    function styleDemandMatrixSheet(ws,cols){
+      ws.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};
+      ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}};
+      ws.views=[{state:'frozen',ySplit:1,xSplit:3}];
+      ws.autoFilter={from:{row:1,column:1},to:{row:1,column:cols}};
+      ws.getColumn(1).width=36; ws.getColumn(2).width=16; ws.getColumn(3).width=16;
+      for(let c=4;c<=cols;c++){ws.getColumn(c).width=14; ws.getColumn(c).numFmt='#,##0.00';}
+      const last=ws.lastRow.number;
+      ws.getRow(last).font={bold:true}; ws.getRow(last).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE0F2FE'}};
+    }
+
+    function styleDemandSheet(ws,cols){
+      styleSheet(ws,cols,true);
+      ws.getColumn(1).width=34; ws.getColumn(2).width=16; ws.getColumn(3).width=16; ws.getColumn(4).width=18;
+      for(let c=7;c<=18;c++){ws.getColumn(c).numFmt='#,##0.00';}
+      ws.getColumn(19).numFmt='0.00%'; ws.getColumn(21).numFmt='0.00%';
+      ws.getColumn(23).width=16; ws.getColumn(24).numFmt='#,##0'; ws.getColumn(25).width=34;
+      ws.getColumn(26).numFmt='#,##0.00'; ws.getColumn(27).numFmt='#,##0.00';
+      ws.getColumn(30).width=24; ws.getColumn(31).width=70; ws.getColumn(32).numFmt='$#,##0.00';
+    }
+
+    function groupByArticulo(rows,cias){const m=new Map(); for(const r of rows){const cia=ciaNum(r.Cia); if(!cias.includes(cia))continue; const artOriginal=String(r.Articulo??'').trim(); const art=articuloReporte(artOriginal); if(!art)continue; if(!m.has(art)){m.set(art,{Articulo:art,Total:0,Meses:{}});} const g=m.get(art); const neto=toNumber(r.Neto); g.Total+=neto; const p=r.Periodo||''; g.Meses[p]=(g.Meses[p]||0)+neto;} let arr=Array.from(m.values()); if($('sortArticles').checked)arr.sort((a,b)=>a.Articulo.localeCompare(b.Articulo,'es')); return arr;}
+
+    function presentCias(rows){
+      const known=Object.keys(CIA_LOCALIZACION).map(Number).sort((a,b)=>a-b);
+      const present=new Set(rows.map(r=>ciaNum(r.Cia)).filter(c=>c!==null));
+      const ordered=known.filter(c=>present.has(c));
+      const extras=Array.from(present).filter(c=>!known.includes(c)).sort((a,b)=>a-b);
+      return ordered.concat(extras);
+    }
+    function summaryCia(rows){
+      const m=new Map();
+      for(const r of rows){
+        const cia=ciaNum(r.Cia); const loc=CIA_LOCALIZACION[cia]||'SIN MAPEO';
+        if(!m.has(cia))m.set(cia,{Cia:cia,Localizacion:loc,Registros:0,Ventas:0,Devoluciones:0,Neto:0,ImporteNeto:0});
+        const g=m.get(cia); g.Registros++; g.Ventas+=toNumber(r.Ventas); g.Devoluciones+=toNumber(r.Devoluciones); g.Neto+=toNumber(r.Neto); g.ImporteNeto+=toNumber(r['Importe Neto']);
+      }
+      return Array.from(m.values()).sort((a,b)=>(a.Cia||0)-(b.Cia||0));
+    }
+    async function buildWorkbookByCia(rows,periodos,fileName,includeRaw){
+      try{
+        if(includeRaw && rows.length>200000){includeRaw=false; setStatus('La pestaña Base histórico se omitió automáticamente porque contiene demasiados registros. Se genera el reporte por Cia para evitar que el navegador se cierre.','warntxt');}
+        await progress(5,'Preparando reporte por Cia exacta...');
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        if(includeRaw){
+          await progress(10,'Agregando pestaña Base histórico...');
+          const ws=wb.addWorksheet('Base historico'); const hs=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Ventas','Importe Devoluciones','Importe Neto']; ws.addRow(hs);
+          for(let i=0;i<rows.length;i++){ws.addRow(hs.map(h=>rows[i][h]??'')); if(i%5000===0)await progress(10+Math.min(18,Math.round((i/Math.max(rows.length,1))*18)),`Agregando Base histórico ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);}
+          styleSheet(ws,hs.length,true);
+        }
+        await progress(30,'Generando resumen por Cia...');
+        const res=wb.addWorksheet('Resumen por Cia');
+        res.addRow(['Cia','Localizacion','Registros','Ventas','Devoluciones','Neto','Importe Neto']);
+        summaryCia(rows).forEach(x=>res.addRow([x.Cia,x.Localizacion,x.Registros,x.Ventas,x.Devoluciones,x.Neto,x.ImporteNeto]));
+        styleSheet(res,7,true);
+        const cias=presentCias(rows);
+        for(let ci=0;ci<cias.length;ci++){
+          const cia=cias[ci];
+          await progress(35+Math.round((ci/Math.max(cias.length,1))*42),`Generando Cia ${cia} (${ci+1}/${cias.length})...`);
+          const loc=CIA_LOCALIZACION[cia]||'SIN MAPEO';
+          const ws=wb.addWorksheet(safeSheetName('Cia '+cia));
+          const hs=['Etiquetas de fila',...periodos,'Total general'];
+          ws.addRow(['Cia',cia]); ws.addRow(['Localizacion',loc]); ws.addRow([]); ws.addRow(hs);
+          const data=groupByArticulo(rows,[cia]);
+          data.forEach(x=>ws.addRow([x.Articulo,...periodos.map(p=>x.Meses[p]||0),x.Total]));
+          const totalRow=['Total general']; periodos.forEach(p=>totalRow.push(data.reduce((s,x)=>s+(x.Meses[p]||0),0))); totalRow.push(data.reduce((s,x)=>s+x.Total,0)); ws.addRow(totalRow); stylePivotSheetCia(ws,hs.length);
+          await waitUI();
+        }
+        await progress(88,'Preparando archivo Excel por Cia...');
+        const buffer=await wb.xlsx.writeBuffer();
+        await progress(96,'Descargando archivo...');
+        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+        finishProgress(`Reporte por Cia generado: <strong>${fileName}</strong> | ${cias.length} pestañas de Cia.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+    function stylePivotSheetCia(ws,cols){
+      ws.getCell('A1').font={bold:true}; ws.getCell('B1').font={bold:true}; ws.getCell('A2').font={bold:true}; ws.getCell('B2').font={bold:true};
+      ws.getRow(4).font={bold:true,color:{argb:'FFFFFFFF'}}; ws.getRow(4).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}};
+      ws.views=[{state:'frozen',ySplit:4}]; ws.getColumn(1).width=42;
+      for(let c=2;c<=cols;c++){ws.getColumn(c).width=15; ws.getColumn(c).numFmt='#,##0.00';}
+      const last=ws.lastRow.number; ws.getRow(last).font={bold:true}; ws.getRow(last).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE0F2FE'}};
+      ws.eachRow(row=>row.eachCell(cell=>{cell.border={top:{style:'thin',color:{argb:'FFE2E8F0'}},left:{style:'thin',color:{argb:'FFE2E8F0'}},bottom:{style:'thin',color:{argb:'FFE2E8F0'}},right:{style:'thin',color:{argb:'FFE2E8F0'}}};}));
+    }
+
+    function summaryLocalizacion(rows){const m=new Map(); for(const r of rows){const loc=r.Localizacion||CIA_LOCALIZACION[ciaNum(r.Cia)]||'SIN MAPEO'; if(!m.has(loc))m.set(loc,{Localizacion:loc,Registros:0,Ventas:0,Devoluciones:0,Neto:0,ImporteNeto:0}); const g=m.get(loc); g.Registros++; g.Ventas+=toNumber(r.Ventas); g.Devoluciones+=toNumber(r.Devoluciones); g.Neto+=toNumber(r.Neto); g.ImporteNeto+=toNumber(r['Importe Neto']);} return Array.from(m.values()).sort((a,b)=>a.Localizacion.localeCompare(b.Localizacion,'es'));}
+    async function buildWorkbook(rows,periodos,fileName,includeRaw){
+      try{
+        if(includeRaw && rows.length>200000){includeRaw=false; setStatus('La pestaña Base histórico se omitió automáticamente porque contiene demasiados registros. Se genera el reporte para evitar que el navegador se cierre.','warntxt');}
+        await progress(5,'Preparando reporte por zona/localización...');
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        if(includeRaw){
+          await progress(10,'Agregando pestaña Base histórico...');
+          const ws=wb.addWorksheet('Base historico'); const hs=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Ventas','Importe Devoluciones','Importe Neto']; ws.addRow(hs);
+          for(let i=0;i<rows.length;i++){ws.addRow(hs.map(h=>rows[i][h]??'')); if(i%5000===0)await progress(10+Math.min(18,Math.round((i/Math.max(rows.length,1))*18)),`Agregando Base histórico ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);}
+          styleSheet(ws,hs.length,true);
+        }
+        await progress(30,'Generando resumen...');
+        const res=wb.addWorksheet('Resumen'); res.addRow(['Localizacion','Registros','Ventas','Devoluciones','Neto','Importe Neto']); summaryLocalizacion(rows).forEach(x=>res.addRow([x.Localizacion,x.Registros,x.Ventas,x.Devoluciones,x.Neto,x.ImporteNeto])); styleSheet(res,6,true);
+        const totalReports=REPORTES.length;
+        for(let ri=0;ri<REPORTES.length;ri++){
+          const rep=REPORTES[ri];
+          await progress(35+Math.round((ri/Math.max(totalReports,1))*40),`Generando pestaña ${rep.nombre} (${ri+1}/${totalReports})...`);
+          const ws=wb.addWorksheet(safeSheetName(rep.nombre)); const hs=['Etiquetas de fila',...periodos,'Total general']; ws.addRow(['Cia','(Varios elementos)']); ws.addRow([]); ws.addRow(hs); const data=groupByArticulo(rows,rep.cias);
+          data.forEach(x=>ws.addRow([x.Articulo,...periodos.map(p=>x.Meses[p]||0),x.Total])); const totalRow=['Total general']; periodos.forEach(p=>totalRow.push(data.reduce((s,x)=>s+(x.Meses[p]||0),0))); totalRow.push(data.reduce((s,x)=>s+x.Total,0)); ws.addRow(totalRow); stylePivotSheet(ws,hs.length);
+          await waitUI();
+        }
+        await progress(88,'Preparando archivo Excel para descargar...');
+        const buffer=await wb.xlsx.writeBuffer();
+        await progress(96,'Descargando archivo...');
+        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+        finishProgress(`Reporte generado: <strong>${fileName}</strong>`,'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+    function styleSheet(ws,cols,freeze){ws.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}}; ws.getRow(1).alignment={vertical:'middle'}; ws.autoFilter={from:{row:1,column:1},to:{row:1,column:cols}}; if(freeze)ws.views=[{state:'frozen',ySplit:1}]; for(let c=1;c<=cols;c++){ws.getColumn(c).width=c===4?38:16; if(c>=7)ws.getColumn(c).numFmt='#,##0.00';} ws.eachRow(row=>row.eachCell(cell=>{cell.border={top:{style:'thin',color:{argb:'FFE2E8F0'}},left:{style:'thin',color:{argb:'FFE2E8F0'}},bottom:{style:'thin',color:{argb:'FFE2E8F0'}},right:{style:'thin',color:{argb:'FFE2E8F0'}}};}));}
+    function stylePivotSheet(ws,cols){ws.getCell('A1').font={bold:true}; ws.getCell('B1').font={bold:true}; ws.getRow(3).font={bold:true,color:{argb:'FFFFFFFF'}}; ws.getRow(3).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}}; ws.views=[{state:'frozen',ySplit:3}]; ws.getColumn(1).width=42; for(let c=2;c<=cols;c++){ws.getColumn(c).width=15; ws.getColumn(c).numFmt='#,##0.00';} const last=ws.lastRow.number; ws.getRow(last).font={bold:true}; ws.getRow(last).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE0F2FE'}}; ws.eachRow(row=>row.eachCell(cell=>{cell.border={top:{style:'thin',color:{argb:'FFE2E8F0'}},left:{style:'thin',color:{argb:'FFE2E8F0'}},bottom:{style:'thin',color:{argb:'FFE2E8F0'}},right:{style:'thin',color:{argb:'FFE2E8F0'}}};}));}
+    function downloadBlob(blob,name){const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000);}
+    (async()=>{try{db=await openDB(); await refreshSaved();}catch(err){$('savedList').innerHTML='<div class="errtxt">No se pudo abrir la base local: '+err.message+'</div>';}})();
+  </script>
+</body>
+</html>
