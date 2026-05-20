@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador Reportes Demanda LIMSA v2026-05-11.32</title>
+  <title>Generador Reportes Demanda LIMSA v2026-05-20.5</title>
   <style>
     :root{--bg:#f6f8fb;--card:#fff;--text:#1f2937;--muted:#64748b;--primary:#2563eb;--primary2:#1d4ed8;--border:#dbe3ef;--ok:#16a34a;--err:#dc2626;--warn:#92400e;--soft:#eff6ff;--dark:#0f172a}
     *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -31,7 +31,7 @@
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-11.32</span></h1>
+      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-20.5</span></h1>
       <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61; ya no existen las combinaciones Ags-SnJuan ni Leon-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda sugerida usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
     </div>
 
@@ -90,6 +90,7 @@
         <div class="check"><input id="sortArticles" type="checkbox" checked /><label for="sortArticles">Ordenar artículos de A a Z</label></div>
         <div class="actions">
           <button id="btnGenerateDemand" class="btn primary" disabled>Generar Demanda Sugerida<small>Genera el detalle de demanda sugerida por zona/localización o por Cia exacta, según el Tipo de reporte.</small></button>
+          <button id="btnGenerateDemandCsv" class="btn ok" disabled>Generar CSV demanda + inventario<small>Genera un CSV plano en una sola pestaña con Articulo, Proveedor, Grupo, Cia, Bodega, Tipo SKU por Cia/bodega, Demanda calculada e Inventario.</small></button>
         </div>
 
         <div class="field"><label for="demandMode">Demanda sugerida por</label><select id="demandMode"><option value="zona">Por zona / localización</option><option value="cia">Por Cia exacta</option></select></div>
@@ -127,7 +128,7 @@
       <div class="actions">
         <button id="btnGenerateInventory" class="btn ok" disabled>Generar reporte de inventario disponible<small>Genera inventario por el Tipo de reporte seleccionado: zona/localización o Cia exacta.</small></button>
       </div>
-      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas sí suman. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura.</div>
+      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas se suman a su bodega correspondiente: ti→ci, tr→cr y las demás t*→c*; en Cia 72, ta→aa. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura.</div>
     </div>
 
   <div id="progressPanel" class="progressPanel" aria-live="polite">
@@ -162,6 +163,10 @@
       {nombre:'Leon-Vtas Calle',cias:[73]}
     ];
     const INVENTORY_CIA_REPORTES=Object.keys(INVENTORY_BODEGAS).map(Number).sort((a,b)=>a-b).map(c=>({nombre:'Cia '+c,cias:[c],localizacion:CIA_LOCALIZACION[c]||''}));
+    const SKU_BODEGA_POR_CIA={
+      25:{'Accesorios':'ai','Cerámicos':'ci'},30:{'Accesorios':'ac','Cerámicos':'cc'},33:{'Accesorios':'ay'},35:{'Accesorios':'as','Cerámicos':'cs'},37:{'Accesorios':'at','Cerámicos':'ct'},40:{'Accesorios':'am','Cerámicos':'cm'},45:{'Accesorios':'al','Cerámicos':'cl'},50:{'Accesorios':'ab','Cerámicos':'cb'},
+      61:{'Accesorios':'aj','Cerámicos':'cj'},70:{'Accesorios':'ag','Cerámicos':'cg'},71:{'Accesorios':'ah','Cerámicos':'ch'},72:{'Accesorios':'aa'},73:{'Accesorios':'az'},74:{'Accesorios':'ad','Cerámicos':'cd'}
+    };
     const REQUIRED=['Grupo','Proveedor','Articulo','Cia','Ventas','Devoluciones','Neto','Importe Ventas','Importe Devoluciones','Importe Neto'];
     let parsedRows=[], sourceName='', headers=[], db=null, savedMonths=[], inventoryRows=[], inventorySourceName='';
     const $=id=>document.getElementById(id); const drop=$('drop'), input=$('fileInput'), btnSave=$('btnSaveMonth'), btnCurrent=$('btnGenerateCurrent'), statusBox=$('status'), fileInfo=$('fileInfo'), preview=$('preview');
@@ -182,17 +187,42 @@
     function hideProgress(){const p=$('progressPanel'); if(p)p.classList.remove('open');}
     function failProgress(msg){setProgress(100,msg); setStatus(msg,'errtxt');}
     function norm(s){return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');} function toNumber(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;let s=String(v).trim();if(!s)return 0;s=s.replace(/[$,\s]/g,'');const n=Number(s);return isFinite(n)?n:0;} function round2(v){return Math.round((Number(v)||0)*100)/100;} function ciaNum(v){if(typeof v==='number')return Math.trunc(v);const m=String(v??'').match(/\d+/);return m?Number(m[0]):null;} function safeSheetName(n){return String(n).replace(/[\\/*?:\[\]]/g,'-').slice(0,31)||'Hoja';} function articuloReporte(v){const s=String(v??'').trim(); return s.startsWith('30')?s.slice(2):s;}
+    function bodegaInventarioDestino(cia,bodega){
+      const c=ciaNum(cia);
+      const b=String(bodega??'').trim().toLowerCase();
+      const mapa={
+        25:{ti:'ci',tr:'cr'},
+        72:{ta:'aa'}
+      };
+      if(mapa[c]&&mapa[c][b])return mapa[c][b];
+      if(/^t[a-z0-9]+$/.test(b))return 'c'+b.slice(1);
+      return b;
+    }
     function bodegaTipo(bodega){
       const b=String(bodega??'').trim().toLowerCase();
       if(b.startsWith('c'))return 'Cerámicos';
       if(b.startsWith('a'))return 'Accesorios';
       return '';
     }
+    function bodegaPorTipoYCia(tipo,cia){
+      const c=ciaNum(cia);
+      const t=String(tipo||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+      const tipoStd=t.startsWith('acc')?'Accesorios':(t.startsWith('cer')?'Cerámicos':'');
+      return tipoStd && SKU_BODEGA_POR_CIA[c] ? (SKU_BODEGA_POR_CIA[c][tipoStd]||'') : '';
+    }
+    function tipoSkuForCiaBodega(cia,bodega){
+      const c=ciaNum(cia);
+      const b=String(bodega||'').trim().toLowerCase();
+      const mapa=SKU_BODEGA_POR_CIA[c]||{};
+      if(mapa['Accesorios']===b)return 'Accesorios';
+      if(mapa['Cerámicos']===b)return 'Cerámicos';
+      return bodegaTipo(bodega);
+    }
     function buildSkuTypeMap(rows){
       const flags=new Map();
       for(const r of rows||[]){
         const art=r.ArticuloReporte||articuloReporte(r.Articulo); if(!art)continue;
-        const tipo=bodegaTipo(r.Bodega);
+        const tipo=tipoSkuForCiaBodega(r.Cia,r.Bodega);
         if(!tipo)continue;
         if(!flags.has(art))flags.set(art,{cer:false,acc:false});
         const f=flags.get(art);
@@ -244,11 +274,12 @@
       const rows=[], omitted={count:0,existencia:0,bodegas:new Map()};
       for(let r=headerRow+1;r<matrix.length;r++){
         const row=matrix[r]||[]; if(row.every(v=>v===null||v===undefined||String(v).trim()===''))continue;
-        const cia=ciaNum(row[idx.Cia]); const bodega=String(row[idx.Bodega]??'').trim().toLowerCase(); const artRaw=String(row[idx.Articulo]??'').trim(); const existencia=toNumber(row[idx.Existencia]);
+        const cia=ciaNum(row[idx.Cia]); const bodegaOrigen=String(row[idx.Bodega]??'').trim().toLowerCase(); const artRaw=String(row[idx.Articulo]??'').trim(); const existencia=toNumber(row[idx.Existencia]);
         if(!artRaw||cia===null)continue;
         const autorizadas=INVENTORY_BODEGAS[cia]||[];
-        if(!autorizadas.includes(bodega)){omitted.count++; omitted.existencia+=existencia; const k=(cia||'')+' '+bodega; omitted.bodegas.set(k,(omitted.bodegas.get(k)||0)+1); continue;}
-        rows.push({Articulo:artRaw,ArticuloReporte:articuloReporte(artRaw),Cia:cia,Bodega:bodega,Existencia:existencia});
+        if(!autorizadas.includes(bodegaOrigen)){omitted.count++; omitted.existencia+=existencia; const k=(cia||'')+' '+bodegaOrigen; omitted.bodegas.set(k,(omitted.bodegas.get(k)||0)+1); continue;}
+        const bodega=bodegaInventarioDestino(cia,bodegaOrigen);
+        rows.push({Articulo:artRaw,ArticuloReporte:articuloReporte(artRaw),Cia:cia,Bodega:bodega,BodegaOrigen:bodegaOrigen,Existencia:existencia});
       }
       return {rows,omitted};
     }
@@ -343,7 +374,7 @@
       }
       renderSavedSummary(); renderMonthChips(); renderYearButtons(); toggleCiaDemandDetail();
       const has=savedMonths.length>0;
-      $('btnGenerateSaved').disabled=!has; $('btnGenerateDemand').disabled=!has; $('btnGenerateDemandCiaMatrix').disabled=!has; $('btnExportBackup').disabled=!has; $('btnClearAll').disabled=!has;
+      $('btnGenerateSaved').disabled=!has; $('btnGenerateDemand').disabled=!has; if($('btnGenerateDemandCsv')) $('btnGenerateDemandCsv').disabled=!has; $('btnGenerateDemandCiaMatrix').disabled=!has; $('btnExportBackup').disabled=!has; $('btnClearAll').disabled=!has;
     }
     window.removeSavedMonth=async function(periodo){if(!confirm('¿Eliminar el mes '+periodo+' de la base local?'))return; await deleteMonth(periodo); await refreshSaved(); setStatus('Mes eliminado: '+periodo,'oktxt');}
     btnSave.addEventListener('click',async()=>{try{if(!parsedRows.length)throw new Error('Primero carga un archivo.'); const periodo=$('periodoInput').value; if(!periodo)throw new Error('Indica el mes del archivo.'); const exists=await getMonth(periodo); if(exists&&!$('replaceMonth').checked)throw new Error('Ese mes ya existe. Marca reemplazar o elimina el mes guardado.'); const rows=parsedRows.map(r=>({...r,Periodo:periodo})); await putMonth({periodo,sourceName,createdAt:new Date().toISOString(),rows}); await refreshSaved(); setStatus(`Mes ${periodo} guardado correctamente con ${rows.length.toLocaleString('es-MX')} registros.`,'oktxt');}catch(err){setStatus('Error: '+err.message,'errtxt');}});
@@ -436,6 +467,21 @@
         for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));}
         if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.');
         const suffix=mode==='cia'?'por_cia':'por_zona'; await buildDemandInventoryWorkbook(rows,target,selectedUnits,`demanda_vs_inventario_${suffix}_${target}.xlsx`,mode);
+      }catch(err){failProgress('Error: '+err.message);}
+    });
+    if($('btnGenerateDemandCsv')) $('btnGenerateDemandCsv').addEventListener('click',async()=>{
+      try{
+        if(!savedMonths.length)throw new Error('Primero importa o guarda meses de demanda en la base local.');
+        if(!inventoryRows.length)throw new Error('Primero carga el archivo de inventario.');
+        const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.');
+        const mode=$('reportTypeSaved').value;
+        const selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value);
+        if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.');
+        const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target);
+        for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));}
+        if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.');
+        const suffix=mode==='cia'?'por_cia':'por_zona';
+        await buildDemandInventoryCsv(rows,target,selectedUnits,`demanda_inventario_csv_${suffix}_${target}.csv`,mode);
       }catch(err){failProgress('Error: '+err.message);}
     });
     $('btnClearAll').addEventListener('click',async()=>{if(!confirm('¿Borrar TODA la base local de demanda?'))return; await clearDB(); await refreshSaved(); setStatus('Base local borrada.','oktxt');});
@@ -953,7 +999,7 @@
         const reports=inventoryReportsForMode(mode);
         await progress(10,`Calculando inventario disponible por ${unitName}...`);
         const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
-        const params=wb.addWorksheet('Parametros'); params.addRow(['Concepto','Valor']); params.addRow(['Archivo inventario',inventorySourceName||'']); params.addRow(['Tipo de reporte',mode==='cia'?'Inventario por Cia exacta':'Inventario por zona/localización']); params.addRow(['Regla','Solo se suman bodegas autorizadas por Cia. Cualquier otra bodega se ignora. Tipo SKU se clasifica por bodega autorizada: c=Cerámicos, a=Accesorios. Resurtido 25: Cerámicos=25ci+25cr, Accesorios=25ai.']); styleSheet(params,2,true);
+        const params=wb.addWorksheet('Parametros'); params.addRow(['Concepto','Valor']); params.addRow(['Archivo inventario',inventorySourceName||'']); params.addRow(['Tipo de reporte',mode==='cia'?'Inventario por Cia exacta':'Inventario por zona/localización']); params.addRow(['Regla','Solo se suman bodegas autorizadas por Cia. Cualquier otra bodega se ignora. Tipo SKU y bodega de salida se clasifican con mapa por Cia: Accesorios=a*, Cerámicos=c* según la compañía. Resurtido 25: Cerámicos=25ci+25cr, Accesorios=25ai.']); styleSheet(params,2,true);
         const invAgg=buildInventoryForReports(inventoryRows,reports);
         await progress(35,'Agregando matriz de inventario disponible...'); addInventoryMatrixSheet(wb,invAgg,reports);
         await progress(60,'Agregando detalle por unidad...');
@@ -971,6 +1017,82 @@
         ws.addRow([r.Articulo,r.Proveedor,r.Grupo,r.Zona,tipo,r.DemandaCalculada,r.DemandaSugerida,inv,dif,nec,cob,inv25,res,nf,r.TipoDemanda,r.Confianza,r.Accion,r.Comentario]);
       });
       styleSheet(ws,hs.length,true); ws.views=[{state:'frozen',ySplit:1,xSplit:4}]; return ws;
+    }
+
+    function csvValue(v){
+      const s=String(v??'');
+      return /[",\n\r;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+    }
+    function downloadCsv(rows,fileName){
+      const text='\ufeff'+rows.map(row=>row.map(csvValue).join(',')).join('\n');
+      downloadBlob(new Blob([text],{type:'text/csv;charset=utf-8'}),fileName);
+    }
+    function inventoryBodegaRowsForReports(rows,reports){
+      const reportByCia=new Map(); reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
+      const m=new Map();
+      for(const r of rows||[]){
+        const cia=ciaNum(r.Cia); const rep=reportByCia.get(cia); if(!rep)continue;
+        const art=r.ArticuloReporte||articuloReporte(r.Articulo); if(!art)continue;
+        const bodegaOriginal=String(r.Bodega||'').trim().toLowerCase();
+        const tipo=tipoSkuForCiaBodega(cia,bodegaOriginal);
+        const bodega=bodegaPorTipoYCia(tipo,cia)||bodegaOriginal;
+        const key=rep.nombre+'|'+art+'|'+bodega;
+        if(!m.has(key))m.set(key,{Unidad:rep.nombre,Cia:cia,Articulo:art,Bodega:bodega,TipoSKU:tipo||'',Inventario:0});
+        m.get(key).Inventario+=toNumber(r.Existencia);
+      }
+      return Array.from(m.values()).map(x=>({...x,Inventario:round2(x.Inventario)})).sort((a,b)=>String(a.Unidad).localeCompare(String(b.Unidad),'es')||String(a.Articulo).localeCompare(String(b.Articulo),'es')||String(a.Bodega).localeCompare(String(b.Bodega),'es'));
+    }
+    function demandReportsByExactCiaForCsv(mode,selectedUnits){
+      const selectedReports=(mode==='cia'?CIA_REPORTES:REPORTES).filter(r=>selectedUnits.includes(r.nombre));
+      const cias=[...new Set(selectedReports.flatMap(r=>r.cias.map(c=>Number(c))))].sort((a,b)=>a-b);
+      return cias.map(c=>({nombre:'Cia '+c,cias:[c],localizacion:CIA_LOCALIZACION[c]||''}));
+    }
+    function inventoryReportsByExactCiaForCsv(mode,selectedUnits){
+      if(mode==='cia')return INVENTORY_CIA_REPORTES.filter(r=>selectedUnits.includes(r.nombre));
+      const selectedZones=REPORTES.filter(r=>selectedUnits.includes(r.nombre));
+      const cias=[...new Set(selectedZones.flatMap(r=>r.cias.map(c=>Number(c))))].sort((a,b)=>a-b);
+      return INVENTORY_CIA_REPORTES.filter(r=>cias.includes(Number(r.cias[0])));
+    }
+    async function buildDemandInventoryCsv(rows,target,selectedUnits,fileName,mode='zona'){
+      try{
+        if(!inventoryRows.length)throw new Error('Primero carga el archivo de inventario.');
+        const unitName=mode==='cia'?'Cia':'zona/localización';
+        const selectedDemandReports=demandReportsByExactCiaForCsv(mode,selectedUnits);
+        const selectedInventoryReports=inventoryReportsByExactCiaForCsv(mode,selectedUnits);
+        if(!selectedDemandReports.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.');
+        await progress(20,`Calculando demanda por Cia exacta...`);
+        const demandRows=buildDemandForReportsFast(rows,selectedDemandReports,target);
+        await progress(45,'Agrupando inventario por Cia y bodega autorizada...');
+        const invRows=inventoryBodegaRowsForReports(inventoryRows,selectedInventoryReports);
+        const invByCiaArt=new Map();
+        invRows.forEach(r=>{
+          const key=r.Cia+'|'+r.Articulo;
+          if(!invByCiaArt.has(key))invByCiaArt.set(key,[]);
+          invByCiaArt.get(key).push(r);
+        });
+        const ctx=makeInventoryContext(inventoryMapForReports(inventoryRows,selectedInventoryReports));
+        const out=[['Articulo','Proveedor','Grupo','Cia','Bodega','Tipo SKU','Demanda calculada','Inventario']];
+        await progress(65,'Construyendo CSV...');
+        for(const r of demandRows){
+          const cia=Number(String(r.Zona||'').replace(/[^0-9]/g,''));
+          const unidad=Number.isFinite(cia)?cia:'';
+          const matches=invByCiaArt.get(cia+'|'+r.Articulo)||[];
+          if(matches.length){
+            matches.forEach(inv=>{
+              const tipo=inv.TipoSKU||tipoSkuForCiaBodega(cia,inv.Bodega)||tipoSkuForArt(r.Articulo,ctx);
+              const bodega=bodegaPorTipoYCia(tipo,cia)||inv.Bodega;
+              out.push([r.Articulo,r.Proveedor,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,inv.Inventario]);
+            });
+          }else{
+            const tipo=tipoSkuForArt(r.Articulo,ctx);
+            const bodega=bodegaPorTipoYCia(tipo,cia);
+            out.push([r.Articulo,r.Proveedor,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,0]);
+          }
+        }
+        await progress(92,'Descargando CSV...');
+        downloadCsv(out,fileName);
+        finishProgress(`CSV demanda + inventario generado: <strong>${fileName}</strong> | ${(out.length-1).toLocaleString('es-MX')} filas.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
     }
     async function buildDemandInventoryWorkbook(rows,target,selectedUnits,fileName,mode='zona'){
       try{
