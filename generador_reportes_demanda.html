@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador Reportes Demanda LIMSA v2026-05-20.5</title>
+  <title>Generador Reportes Demanda LIMSA v2026-05-20.6</title>
   <style>
     :root{--bg:#f6f8fb;--card:#fff;--text:#1f2937;--muted:#64748b;--primary:#2563eb;--primary2:#1d4ed8;--border:#dbe3ef;--ok:#16a34a;--err:#dc2626;--warn:#92400e;--soft:#eff6ff;--dark:#0f172a}
     *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -31,7 +31,7 @@
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-20.5</span></h1>
+      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-20.6</span></h1>
       <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61; ya no existen las combinaciones Ags-SnJuan ni Leon-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda sugerida usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
     </div>
 
@@ -1071,7 +1071,13 @@
           invByCiaArt.get(key).push(r);
         });
         const ctx=makeInventoryContext(inventoryMapForReports(inventoryRows,selectedInventoryReports));
+        const metaByArticulo=new Map();
+        for(const r of rows||[]){
+          const art=articuloReporte(r.Articulo); if(!art||metaByArticulo.has(art))continue;
+          metaByArticulo.set(art,{Proveedor:r.Proveedor||'',Grupo:r.Grupo||''});
+        }
         const out=[['Articulo','Proveedor','Grupo','Cia','Bodega','Tipo SKU','Demanda calculada','Inventario']];
+        const usedInventoryKeys=new Set();
         await progress(65,'Construyendo CSV...');
         for(const r of demandRows){
           const cia=Number(String(r.Zona||'').replace(/[^0-9]/g,''));
@@ -1081,6 +1087,7 @@
             matches.forEach(inv=>{
               const tipo=inv.TipoSKU||tipoSkuForCiaBodega(cia,inv.Bodega)||tipoSkuForArt(r.Articulo,ctx);
               const bodega=bodegaPorTipoYCia(tipo,cia)||inv.Bodega;
+              usedInventoryKeys.add(cia+'|'+r.Articulo+'|'+bodega);
               out.push([r.Articulo,r.Proveedor,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,inv.Inventario]);
             });
           }else{
@@ -1088,6 +1095,15 @@
             const bodega=bodegaPorTipoYCia(tipo,cia);
             out.push([r.Articulo,r.Proveedor,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,0]);
           }
+        }
+        for(const inv of invRows){
+          const cia=Number(inv.Cia);
+          const tipo=inv.TipoSKU||tipoSkuForCiaBodega(cia,inv.Bodega)||tipoSkuForArt(inv.Articulo,ctx);
+          const bodega=bodegaPorTipoYCia(tipo,cia)||inv.Bodega;
+          const key=cia+'|'+inv.Articulo+'|'+bodega;
+          if(usedInventoryKeys.has(key))continue;
+          const meta=metaByArticulo.get(inv.Articulo)||{};
+          out.push([inv.Articulo,meta.Proveedor||'',meta.Grupo||'',cia,bodega,tipo,0,inv.Inventario]);
         }
         await progress(92,'Descargando CSV...');
         downloadCsv(out,fileName);
