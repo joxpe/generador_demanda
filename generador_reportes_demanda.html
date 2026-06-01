@@ -32,7 +32,7 @@
   <div class="wrap">
     <div class="hero">
       <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-20.6</span></h1>
-      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61; ya no existen las combinaciones Ags-SnJuan ni Leon-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda sugerida usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
+      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61 y también existe el reporte combinado Ags-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda sugerida usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
     </div>
 
     <div class="grid">
@@ -112,7 +112,7 @@
     <div class="grid" style="margin-top:18px">
       <div class="card"><h2>Lectura de Cia</h2><table class="mini"><thead><tr><th>Cia</th><th>Localización</th></tr></thead><tbody>
         <tr><td>25</td><td>Ags</td></tr><tr><td>27</td><td>Ags</td></tr><tr><td>30</td><td>Ags</td></tr><tr><td>33</td><td>Ags-Vtas Calle</td></tr><tr><td>35</td><td>Ags</td></tr><tr><td>37</td><td>Ags</td></tr><tr><td>40</td><td>Ags</td></tr><tr><td>45</td><td>Ags</td></tr><tr><td>50</td><td>Ags</td></tr><tr><td>61</td><td>SnJuan</td></tr><tr><td>71</td><td>Leon</td></tr><tr><td>72</td><td>Leon</td></tr><tr><td>73</td><td>Leon-Vtas Calle</td></tr><tr><td>74</td><td>Leon</td></tr>
-      </tbody></table><p class="muted">Ags no incluye Cia 33 ni Cia 61. SnJuan queda separado como Cia 61. Leon no incluye Cia 73 ni Cia 61. Las combinaciones Ags-SnJuan y Leon-SnJuan ya no se generan.</p></div>
+      </tbody></table><p class="muted">Ags no incluye Cia 33 ni Cia 61. SnJuan queda separado como Cia 61. También se puede generar Ags-SnJuan sumando Ags + Cia 61. Leon no incluye Cia 73 ni Cia 61.</p></div>
       <div class="card"><h2>Vista previa</h2><div id="preview" class="preview muted" style="padding:14px">Cuando cargues un archivo, aquí aparecerán las primeras filas detectadas.</div></div>
     </div>
   </div>
@@ -128,7 +128,7 @@
       <div class="actions">
         <button id="btnGenerateInventory" class="btn ok" disabled>Generar reporte de inventario disponible<small>Genera inventario por el Tipo de reporte seleccionado: zona/localización o Cia exacta.</small></button>
       </div>
-      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas se suman a su bodega correspondiente: ti→ci, tr→cr y las demás t*→c*; en Cia 72, ta→aa. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura.</div>
+      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Ags-SnJuan suma Ags + SnJuan; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas se suman a su bodega correspondiente: ti→ci, tr→cr y las demás t*→c*; en Cia 72, ta→aa. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura.</div>
     </div>
 
   <div id="progressPanel" class="progressPanel" aria-live="polite">
@@ -146,6 +146,7 @@
     const REPORTES=[
       {nombre:'Ags',cias:[25,27,30,35,37,40,45,50]},
       {nombre:'SnJuan',cias:[61]},
+      {nombre:'Ags-SnJuan',cias:[25,27,30,35,37,40,45,50,61]},
       {nombre:'Ags-Vtas Calle',cias:[33]},
       {nombre:'Leon',cias:[71,72,74]},
       {nombre:'Leon-Vtas Calle',cias:[73]}
@@ -158,6 +159,7 @@
     const INVENTORY_REPORTES=[
       {nombre:'Ags',cias:[25,30,35,37,40,45,50]},
       {nombre:'SnJuan',cias:[61]},
+      {nombre:'Ags-SnJuan',cias:[25,30,35,37,40,45,50,61]},
       {nombre:'Ags-Vtas Calle',cias:[33]},
       {nombre:'Leon',cias:[71,72,74]},
       {nombre:'Leon-Vtas Calle',cias:[73]}
@@ -809,6 +811,74 @@
       ws.getColumn(6).numFmt='0.00%'; ws.getColumn(7).numFmt='0.00%';
     }
 
+
+    const BASE_USADA_SHEET_LIMIT=200000;
+    const BASE_USADA_HEADERS=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Neto'];
+    function safeFileBase(name){return String(name||'reporte').replace(/\.xlsx$/i,'').replace(/[^a-zA-Z0-9_\-]+/g,'_').replace(/^_+|_+$/g,'')||'reporte';}
+    function csvEscape(v){
+      const text=v===null||v===undefined?'':String(v);
+      return /[",\n\r]/.test(text)?'"'+text.replace(/"/g,'""')+'"':text;
+    }
+    async function makeBaseUsadaCsvBlob(rows,progressBase=91,progressSpan=4){
+      const parts=[BASE_USADA_HEADERS.join(',')+'\r\n'];
+      const chunk=[];
+      const flush=()=>{if(chunk.length){parts.push(chunk.join('')); chunk.length=0;}};
+      for(let i=0;i<rows.length;i++){
+        const r=rows[i];
+        chunk.push(BASE_USADA_HEADERS.map(h=>csvEscape(h==='Articulo'?articuloReporte(r[h]):(r[h]??''))).join(',')+'\r\n');
+        if(i%10000===0){
+          flush();
+          await progress(progressBase+Math.min(progressSpan,Math.round((i/Math.max(rows.length,1))*progressSpan)),`Generando Base usada CSV ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);
+          await waitUI();
+        }
+      }
+      flush();
+      return new Blob(parts,{type:'text/csv;charset=utf-8'});
+    }
+    async function addBaseUsadaSheet(wb,rows,progressBase=80,progressSpan=8){
+      const ws=wb.addWorksheet('Base usada');
+      ws.addRow(BASE_USADA_HEADERS);
+      for(let i=0;i<rows.length;i++){
+        ws.addRow(BASE_USADA_HEADERS.map(h=>h==='Articulo'?articuloReporte(rows[i][h]):(rows[i][h]??'')));
+        if(i%5000===0){
+          await progress(progressBase+Math.min(progressSpan,Math.round((i/Math.max(rows.length,1))*progressSpan)),`Agregando Base usada ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);
+          await waitUI();
+        }
+      }
+      styleSheet(ws,BASE_USADA_HEADERS.length,true);
+    }
+    async function downloadDemandWorkbookWithOptionalBase(wb,rows,fileName,includeBase,progressLabel){
+      const needsCsvBase=includeBase && rows.length>BASE_USADA_SHEET_LIMIT;
+      if(needsCsvBase){
+        const info=wb.addWorksheet('Base usada');
+        info.addRow(['Base usada para demanda']);
+        info.addRow(['Por tamaño, la base completa se descarga como CSV dentro del ZIP junto con este Excel.']);
+        info.addRow(['Registros',rows.length]);
+        info.addRow(['Archivo CSV',safeFileBase(fileName)+'_base_usada.csv']);
+        info.addRow(['Motivo','Evita que el navegador se cierre al intentar guardar cientos de miles de filas dentro del mismo XLSX.']);
+        styleSheet(info,2,true);
+      }
+      await progress(90,progressLabel||'Preparando archivo Excel de demanda sugerida...');
+      const buffer=await wb.xlsx.writeBuffer();
+      if(needsCsvBase){
+        const csvBlob=await makeBaseUsadaCsvBlob(rows,92,3);
+        await progress(96,'Empaquetando Excel y Base usada CSV...');
+        const zip=new JSZip();
+        zip.file(fileName,buffer);
+        zip.file(safeFileBase(fileName)+'_base_usada.csv',csvBlob);
+        const zipBlob=await zip.generateAsync({type:'blob',compression:'STORE'},meta=>{
+          if(meta && meta.percent) progress(96+Math.min(3,Math.round(meta.percent/34)),'Empaquetando ZIP '+Math.round(meta.percent)+'%...');
+        });
+        const zipName=safeFileBase(fileName)+'_con_base_usada.zip';
+        await progress(99,'Descargando ZIP con Excel y Base usada...');
+        downloadBlob(zipBlob,zipName);
+        return {downloadName:zipName,extra:` | Base usada completa en CSV: ${rows.length.toLocaleString('es-MX')} registros`};
+      }
+      await progress(96,'Descargando archivo...');
+      downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+      return {downloadName:fileName,extra:''};
+    }
+
     async function buildDemandWorkbook(rows,target,selectedZones,fileName,includeBase,mode='zona',includeBacktest=false){
       try{
         await progress(3,'Calculando demanda sugerida con estacionalidad histórica...');
@@ -865,24 +935,12 @@
             addBacktestSheet(wb,rows,selectedReports,target,mode);
           }
 
-          if(includeBase){
-            if(rows.length>200000){
-              const warn=wb.addWorksheet('Base usada omitida');
-              warn.addRow(['Aviso']);
-              warn.addRow(['La pestaña Base usada se omitió automáticamente porque contiene más de 200,000 registros y puede cerrar el navegador.']);
-              styleSheet(warn,1,true);
-            }else{
-              await progress(88,'Agregando Base usada...');
-              const ws=wb.addWorksheet('Base usada'); const hs2=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Neto']; ws.addRow(hs2);
-              for(let i=0;i<rows.length;i++){ws.addRow(hs2.map(h=>h==='Articulo'?articuloReporte(rows[i][h]):(rows[i][h]??''))); if(i%5000===0)await progress(88+Math.min(4,Math.round((i/Math.max(rows.length,1))*4)),`Agregando Base usada ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);}
-              styleSheet(ws,hs2.length,true);
-            }
+          if(includeBase && rows.length<=BASE_USADA_SHEET_LIMIT){
+            await progress(88,'Agregando Base usada...');
+            await addBaseUsadaSheet(wb,rows,88,4);
           }
-          await progress(93,'Preparando archivo Excel de demanda sugerida por Cia...');
-          const buffer=await wb.xlsx.writeBuffer();
-          await progress(97,'Descargando archivo...');
-          downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
-          finishProgress(`Demanda inteligente por Cia generada: <strong>${fileName}</strong> | ${selectedReports.length} Cias con detalle.`, 'oktxt');
+          const dl=await downloadDemandWorkbookWithOptionalBase(wb,rows,fileName,includeBase,'Preparando archivo Excel de demanda sugerida por Cia...');
+          finishProgress(`Demanda inteligente por Cia generada: <strong>${dl.downloadName}</strong> | ${selectedReports.length} Cias con detalle${dl.extra}.`, 'oktxt');
           return;
         }
 
@@ -913,17 +971,12 @@
           await progress(80,'Calculando backtesting rápido de los últimos 6 meses...');
           addBacktestSheet(wb,rows,selectedReports,target,mode);
         }
-        if(includeBase){
+        if(includeBase && rows.length<=BASE_USADA_SHEET_LIMIT){
           await progress(80,'Agregando Base usada...');
-          const ws=wb.addWorksheet('Base usada'); const hs=['Periodo','Grupo','Proveedor','Articulo','Cia','Localizacion','Ventas','Devoluciones','Neto','Importe Neto']; ws.addRow(hs);
-          for(let i=0;i<rows.length;i++){ws.addRow(hs.map(h=>h==='Articulo'?articuloReporte(rows[i][h]):(rows[i][h]??''))); if(i%5000===0)await progress(80+Math.min(8,Math.round((i/Math.max(rows.length,1))*8)),`Agregando Base usada ${i.toLocaleString('es-MX')} / ${rows.length.toLocaleString('es-MX')}...`);}
-          styleSheet(ws,hs.length,true);
+          await addBaseUsadaSheet(wb,rows,80,8);
         }
-        await progress(90,'Preparando archivo Excel de demanda sugerida...');
-        const buffer=await wb.xlsx.writeBuffer();
-        await progress(96,'Descargando archivo...');
-        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
-        finishProgress(`Demanda inteligente generada: <strong>${fileName}</strong> | ${all.length.toLocaleString('es-MX')} combinaciones artículo/zona.`, 'oktxt');
+        const dl=await downloadDemandWorkbookWithOptionalBase(wb,rows,fileName,includeBase,'Preparando archivo Excel de demanda sugerida...');
+        finishProgress(`Demanda inteligente generada: <strong>${dl.downloadName}</strong> | ${all.length.toLocaleString('es-MX')} combinaciones artículo/zona${dl.extra}.`, 'oktxt');
       }catch(err){failProgress('Error: '+err.message); throw err;}
     }
 
