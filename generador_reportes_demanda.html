@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador Reportes Demanda LIMSA v2026-06-01.1</title>
+  <title>Generador Reportes Demanda LIMSA v2026-06-01.6-VALOR</title>
   <style>
     :root{--bg:#f6f8fb;--card:#fff;--text:#1f2937;--muted:#64748b;--primary:#2563eb;--primary2:#1d4ed8;--border:#dbe3ef;--ok:#16a34a;--err:#dc2626;--warn:#92400e;--soft:#eff6ff;--dark:#0f172a}
     *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -31,8 +31,9 @@
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-05-20.6</span></h1>
-      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61 y también existe el reporte combinado Ags-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda sugerida usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
+      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-06-01.6-VALOR</span></h1>
+      <div class="note" style="border:2px solid #2563eb;background:#eff6ff;color:#1e3a8a"><strong>Versión activa:</strong> Demanda sugerida con análisis por proveedor en unidades y en pesos, participación de producto, crecimiento anual y conversión de $ a unidades. El Excel incluirá columnas de análisis por proveedor, análisis en $ y la pestaña <strong>Análisis por proveedor</strong>.</div>
+      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada por flujo: reporte acumulado, mes objetivo, tipo de reporte, unidades a generar, demanda sugerida y resumen de demanda calculada. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61 y también existe el reporte combinado Ags-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda calculada usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. La demanda sugerida ahora agrega análisis por proveedor usando las primeras 3 letras del artículo después de quitar el prefijo 30, crecimiento anual del proveedor, tendencia reciente y participación de cada producto dentro del proveedor. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
     </div>
 
     <div class="grid">
@@ -90,7 +91,7 @@
         <div class="check"><input id="sortArticles" type="checkbox" checked /><label for="sortArticles">Ordenar artículos de A a Z</label></div>
         <div class="actions">
           <button id="btnGenerateDemand" class="btn primary" disabled>Generar Demanda Sugerida<small>Genera el detalle de demanda sugerida por zona/localización o por Cia exacta, según el Tipo de reporte.</small></button>
-          <button id="btnGenerateDemandCsv" class="btn ok" disabled>Generar CSV demanda + inventario<small>Genera un CSV plano en una sola pestaña con Articulo, Proveedor, Grupo, Cia, Bodega, Tipo SKU por Cia/bodega, Demanda calculada e Inventario.</small></button>
+          <button id="btnGenerateDemandCsv" class="btn ok" disabled>Generar CSV demanda + inventario<small>Genera un CSV plano con Articulo, Proveedor demanda, Cia, Bodega, Tipo SKU, Demanda calculada, Demanda sugerida e Inventario.</small></button>
         </div>
 
         <div class="field"><label for="demandMode">Demanda sugerida por</label><select id="demandMode"><option value="zona">Por zona / localización</option><option value="cia">Por Cia exacta</option></select></div>
@@ -128,7 +129,7 @@
       <div class="actions">
         <button id="btnGenerateInventory" class="btn ok" disabled>Generar reporte de inventario disponible<small>Genera inventario por el Tipo de reporte seleccionado: zona/localización o Cia exacta.</small></button>
       </div>
-      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Ags-SnJuan suma Ags + SnJuan; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas se suman a su bodega correspondiente: ti→ci, tr→cr y las demás t*→c*; en Cia 72, ta→aa. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura.</div>
+      <div class="note" style="margin-top:12px">Segmentos de inventario: Ags no incluye Cia 33; Ags-Vtas Calle es 33/ay; SnJuan es 61; Ags-SnJuan suma Ags + SnJuan; Leon es 71, 72 y 74; Leon-Vtas Calle es 73/az. Las bodegas de tránsito autorizadas se suman a su bodega correspondiente: ti→ci, tr→cr y las demás t*→c*; en Cia 72, ta→aa. Si cargas inventario antes de generar Demanda Sugerida, el Excel de demanda incluirá inventario disponible, diferencia, necesidad y cobertura usando Demanda sugerida.</div>
     </div>
 
   <div id="progressPanel" class="progressPanel" aria-live="polite">
@@ -188,7 +189,14 @@
     function finishProgress(msg,cls='oktxt'){setProgress(100,msg); setStatus(msg,cls); setTimeout(()=>{const p=$('progressPanel'); if(p)p.classList.remove('open');},1800);}
     function hideProgress(){const p=$('progressPanel'); if(p)p.classList.remove('open');}
     function failProgress(msg){setProgress(100,msg); setStatus(msg,'errtxt');}
-    function norm(s){return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');} function toNumber(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;let s=String(v).trim();if(!s)return 0;s=s.replace(/[$,\s]/g,'');const n=Number(s);return isFinite(n)?n:0;} function round2(v){return Math.round((Number(v)||0)*100)/100;} function ciaNum(v){if(typeof v==='number')return Math.trunc(v);const m=String(v??'').match(/\d+/);return m?Number(m[0]):null;} function safeSheetName(n){return String(n).replace(/[\\/*?:\[\]]/g,'-').slice(0,31)||'Hoja';} function articuloReporte(v){const s=String(v??'').trim(); return s.startsWith('30')?s.slice(2):s;}
+    function norm(s){return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');} function toNumber(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return isFinite(v)?v:0;let s=String(v).trim();if(!s)return 0;s=s.replace(/[$,\s]/g,'');const n=Number(s);return isFinite(n)?n:0;} function round2(v){return Math.round((Number(v)||0)*100)/100;} function round6(v){return Math.round((Number(v)||0)*1000000)/1000000;} function ciaNum(v){if(typeof v==='number')return Math.trunc(v);const m=String(v??'').match(/\d+/);return m?Number(m[0]):null;} function safeSheetName(n){return String(n).replace(/[\\/*?:\[\]]/g,'-').slice(0,31)||'Hoja';} function articuloReporte(v){const s=String(v??'').trim(); return s.startsWith('30')?s.slice(2):s;}
+    function proveedorClaveArticulo(v){
+      const art=articuloReporte(v);
+      const clean=String(art||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+      return clean.slice(0,3);
+    }
+    function proveedorClaveFila(r){return proveedorClaveArticulo((r&&r.ArticuloReporte)||((r&&r.Articulo)||''));}
+    function pctTxt(v){return (round2((Number(v)||0)*100))+'%';} function moneyTxt(v){return '$'+(Number(v)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
     function bodegaInventarioDestino(cia,bodega){
       const c=ciaNum(cia);
       const b=String(bodega??'').trim().toLowerCase();
@@ -220,6 +228,31 @@
       if(mapa['Cerámicos']===b)return 'Cerámicos';
       return bodegaTipo(bodega);
     }
+    function updateLatestArticuloMeta(g,r){
+      const periodo=String(r.Periodo||'');
+      const prov=String(r.Proveedor??'').trim();
+      const grupo=String(r.Grupo??'').trim();
+      if(prov && (!g._ProveedorPeriodo || periodo>=g._ProveedorPeriodo)){
+        g.Proveedor=prov;
+        g._ProveedorPeriodo=periodo;
+      }
+      if(grupo && (!g._GrupoPeriodo || periodo>=g._GrupoPeriodo)){
+        g.Grupo=grupo;
+        g._GrupoPeriodo=periodo;
+      }
+    }
+
+    function buildGlobalArticuloMeta(rows){
+      const meta=new Map();
+      for(const r of rows||[]){
+        const art=articuloReporte(r.Articulo);
+        if(!art)continue;
+        if(!meta.has(art))meta.set(art,{Proveedor:'',Grupo:'',_ProveedorPeriodo:'',_GrupoPeriodo:''});
+        updateLatestArticuloMeta(meta.get(art),r);
+      }
+      return meta;
+    }
+
     function buildSkuTypeMap(rows){
       const flags=new Map();
       for(const r of rows||[]){
@@ -392,7 +425,7 @@
     $('btnSelectCurrentYear').addEventListener('click',()=>{const y=savedMonths.length?String(savedMonths[savedMonths.length-1].periodo).slice(0,4):String(new Date().getFullYear()); selectMonthsByYear(y);});
     $('btnSelectPrevYear').addEventListener('click',()=>{const y=savedMonths.length?Number(String(savedMonths[savedMonths.length-1].periodo).slice(0,4))-1:new Date().getFullYear()-1; selectMonthsByYear(String(y));});
     $('btnClearMonthSelection').addEventListener('click',()=>setMonthSelection([]));
-    $('btnGenerateDemand').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('reportTypeSaved').value; const selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value); if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia_':'por_zona_'; await buildDemandWorkbook(rows,target,selectedUnits,`demanda_sugerida_${suffix}${target}.xlsx`,$('includeBaseDemand').checked,mode,$('includeBacktestDemand').checked);}catch(err){failProgress('Error: '+err.message);}});
+    $('btnGenerateDemand').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('reportTypeSaved').value; const selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value); if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia_':'por_zona_'; await buildDemandWorkbook(rows,target,selectedUnits,`demanda_sugerida_analisis_proveedor_valor_${suffix}${target}.xlsx`,$('includeBaseDemand').checked,mode,$('includeBacktestDemand').checked);}catch(err){failProgress('Error: '+err.message);}});
     $('btnGenerateDemandCiaMatrix').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('demandMode').value; let selectedUnits; if(mode===$('reportTypeSaved').value){selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value);}else{selectedUnits=(mode==='cia'?CIA_REPORTES:REPORTES).map(r=>r.nombre);} if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia':'por_zona'; await buildDemandMatrixWorkbook(rows,target,selectedUnits,`resumen_demanda_calculada_${suffix}_${target}.xlsx`,mode);}catch(err){failProgress('Error: '+err.message);}});
     $('btnExportBackup').addEventListener('click',async()=>{const data=await getAllMonths(); downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'respaldo_demanda_local.json');});
     $('btnImportBackup').addEventListener('click',()=>{$('backupInput').value=''; $('backupInput').click();});
@@ -630,45 +663,280 @@
       const comentario=buildComment(tipo,cleaned,sameMonthSalesYears,tendenciaRec,tendenciaAnual);
       return {MesesConVenta:mesesVenta12,UltimaVenta:ultima,Neto3M:round2(neto3),Promedio3M:round2(prom3),Neto6M:round2(neto6),Promedio6M:round2(prom6),Neto12M:round2(neto12),Promedio12M:round2(prom12),MismoMesAnioAnterior:round2(sameYear),MismoMesHace2:round2(sameYear2),MismoMesHace3:round2(sameYear3),PromHistoricoMismoMes:round2(histSameAvg),AniosMismoMes:sameMonthAvailable,AniosConVentaMismoMes:sameMonthSalesYears,Tendencia:round2(tendenciaRec),EstadoTendencia:trendState(tendenciaRec),TendenciaAnual:round2(tendenciaAnual),EstadoTendenciaAnual:trendState(tendenciaAnual),NivelVariacion:nivelVariacion,PicosAjustados:cleaned.picos,MetodoAplicado:metodo,DemandaCalculada:calc,DemandaSugerida:calc,TipoDemanda:tipo,Confianza:conf,Accion:accion,Comentario:comentario,Meses:meses};
     }
+
+    function computeSupplierProjection(providerMap,monthsAll,target){
+      const historyMonths=monthsAll.filter(p=>p<target);
+      const cleaned=cleanedDemandMap(providerMap,historyMonths);
+      const meses=cleaned.map;
+      const p3=lastNPeriods(target,3), p6=lastNPeriods(target,6), p12=lastNPeriods(target,12), prev3=lastNPeriods(target,3,3), prev12=lastNPeriods(target,12,12);
+      const same=addMonths(target,-12), sameHistPeriods=sameCalendarMonthPeriods(monthsAll,target);
+      const neto3=sumPeriods(meses,p3), neto6=sumPeriods(meses,p6), neto12=sumPeriods(meses,p12), prevNeto3=sumPeriods(meses,prev3), prevNeto12=sumPeriods(meses,prev12);
+      const prom3=neto3/3, prom6=neto6/6, prom12=neto12/12;
+      const sameYear=meses[same]||0;
+      const histSameAvg=avgNonEmpty(meses,sameHistPeriods);
+      const recentBase=prevNeto3/3;
+      const tendenciaProveedor=recentBase>0?(prom3/recentBase)-1:(prom3>0?1:0);
+      const crecimientoProveedor=prevNeto12>0?(neto12/prevNeto12)-1:(neto12>0?0.15:0);
+      let base=0;
+      if(histSameAvg>0 && sameYear>0)base=(histSameAvg*.55)+(sameYear*.25)+(prom12*.20);
+      else if(histSameAvg>0)base=(histSameAvg*.65)+(prom12*.35);
+      else if(sameYear>0)base=(sameYear*.60)+(prom12*.40);
+      else base=prom6>0?(prom6*.55)+(prom12*.45):prom12;
+      const ajuste=clamp((crecimientoProveedor*.60)+(tendenciaProveedor*.25),-0.35,0.45);
+      let proyeccion=neto12>0?base*(1+ajuste):0;
+      const maxRef=Math.max(prom3,prom6,prom12,histSameAvg,sameYear,0);
+      if(maxRef>0)proyeccion=Math.min(proyeccion,maxRef*1.85);
+      const mesesVenta12=monthsWithSales(meses,p12);
+      const confianza=neto12<=0?'Baja':(historyMonths.length>=24 && mesesVenta12>=6?'Alta':(historyMonths.length>=12?'Media':'Baja'));
+      return {MesesProveedor:meses,Neto3MProveedor:round2(neto3),Neto6MProveedor:round2(neto6),Neto12MProveedor:round2(neto12),Neto12MProveedorAnterior:round2(prevNeto12),Promedio12MProveedor:round2(prom12),MismoMesProveedorAnterior:round2(sameYear),PromHistoricoProveedorMismoMes:round2(histSameAvg),CrecimientoProveedor:round2(crecimientoProveedor),TendenciaProveedor:round2(tendenciaProveedor),AjusteProveedorModelo:round2(ajuste),ProyeccionProveedor:round2(Math.max(0,proyeccion)),ConfianzaProveedor:confianza,PicosProveedorAjustados:cleaned.picos};
+    }
+    function computeSupplierMoneyProjection(providerAmountMap,monthsAll,target){
+      const historyMonths=monthsAll.filter(p=>p<target);
+      const meses=providerAmountMap||{};
+      const p3=lastNPeriods(target,3), p6=lastNPeriods(target,6), p12=lastNPeriods(target,12), prev3=lastNPeriods(target,3,3), prev12=lastNPeriods(target,12,12);
+      const same=addMonths(target,-12), sameHistPeriods=sameCalendarMonthPeriods(monthsAll,target);
+      const neto3=sumPeriods(meses,p3), neto6=sumPeriods(meses,p6), neto12=sumPeriods(meses,p12), prevNeto3=sumPeriods(meses,prev3), prevNeto12=sumPeriods(meses,prev12);
+      const prom3=neto3/3, prom6=neto6/6, prom12=neto12/12;
+      const sameYear=meses[same]||0;
+      const histSameAvg=avgNonEmpty(meses,sameHistPeriods);
+      const recentBase=prevNeto3/3;
+      const tendenciaValor=recentBase>0?(prom3/recentBase)-1:(prom3>0?1:0);
+      const crecimientoValor=prevNeto12>0?(neto12/prevNeto12)-1:(neto12>0?0.15:0);
+      let base=0;
+      if(histSameAvg>0 && sameYear>0)base=(histSameAvg*.55)+(sameYear*.25)+(prom12*.20);
+      else if(histSameAvg>0)base=(histSameAvg*.65)+(prom12*.35);
+      else if(sameYear>0)base=(sameYear*.60)+(prom12*.40);
+      else base=prom6>0?(prom6*.55)+(prom12*.45):prom12;
+      const ajuste=clamp((crecimientoValor*.60)+(tendenciaValor*.25),-0.35,0.45);
+      let proyeccion=neto12>0?base*(1+ajuste):0;
+      const maxRef=Math.max(prom3,prom6,prom12,histSameAvg,sameYear,0);
+      if(maxRef>0)proyeccion=Math.min(proyeccion,maxRef*1.85);
+      const mesesVenta12=monthsWithSales(meses,p12);
+      const confianza=neto12<=0?'Baja':(historyMonths.length>=24 && mesesVenta12>=6?'Alta':(historyMonths.length>=12?'Media':'Baja'));
+      return {Importe3MProveedor:round2(neto3),Importe6MProveedor:round2(neto6),Importe12MProveedor:round2(neto12),Importe12MProveedorAnterior:round2(prevNeto12),ImportePromedio12MProveedor:round2(prom12),ImporteMismoMesProveedorAnterior:round2(sameYear),ImportePromHistoricoProveedorMismoMes:round2(histSameAvg),CrecimientoProveedorValor:round2(crecimientoValor),TendenciaProveedorValor:round2(tendenciaValor),AjusteProveedorValorModelo:round2(ajuste),VentaProveedorProyectada:round2(Math.max(0,proyeccion)),ConfianzaProveedorValor:confianza};
+    }
+    function moneyShareRaw(itemAmountMap,providerAmountMap,monthsAll,target){
+      const p12=lastNPeriods(target,12), p6=lastNPeriods(target,6), p3=lastNPeriods(target,3), sameHistPeriods=sameCalendarMonthPeriods(monthsAll,target);
+      const comps=[];
+      const add=(weight,num,den)=>{if(den>0 && num>=0)comps.push({weight,value:num/den});};
+      add(.45,sumPeriods(itemAmountMap,p12),sumPeriods(providerAmountMap,p12));
+      add(.25,sumPeriods(itemAmountMap,p6),sumPeriods(providerAmountMap,p6));
+      add(.15,sumPeriods(itemAmountMap,p3),sumPeriods(providerAmountMap,p3));
+      add(.15,sumPeriods(itemAmountMap,sameHistPeriods),sumPeriods(providerAmountMap,sameHistPeriods));
+      if(!comps.length){
+        const hist=monthsAll.filter(p=>p<target);
+        add(1,sumPeriods(itemAmountMap,hist),sumPeriods(providerAmountMap,hist));
+      }
+      const w=comps.reduce((s,x)=>s+x.weight,0);
+      return w>0?comps.reduce((s,x)=>s+(x.value*x.weight),0)/w:0;
+    }
+    function weightedPriceForPeriods(unitsMap,amountMap,periods){
+      const units=sumPeriods(unitsMap||{},periods);
+      const amount=sumPeriods(amountMap||{},periods);
+      if(units>0 && amount>0)return amount/units;
+      return 0;
+    }
+    function priceUsedForMoneyAnalysis(row,providerUnitsMap,providerAmountMap,monthsAll,target){
+      const p6=lastNPeriods(target,6), p12=lastNPeriods(target,12), hist=monthsAll.filter(p=>p<target);
+      const candidates=[
+        {metodo:'Precio promedio producto 6M',precio:weightedPriceForPeriods(row.Meses||{},row.ImporteMeses||{},p6)},
+        {metodo:'Precio promedio producto 12M',precio:weightedPriceForPeriods(row.Meses||{},row.ImporteMeses||{},p12)},
+        {metodo:'Precio promedio producto histórico',precio:weightedPriceForPeriods(row.Meses||{},row.ImporteMeses||{},hist)},
+        {metodo:'Precio promedio proveedor 12M',precio:weightedPriceForPeriods(providerUnitsMap||{},providerAmountMap||{},p12)},
+        {metodo:'Precio promedio proveedor histórico',precio:weightedPriceForPeriods(providerUnitsMap||{},providerAmountMap||{},hist)}
+      ];
+      const found=candidates.find(x=>Number.isFinite(x.precio) && x.precio>0);
+      return found?{PrecioPromedioUsado:round2(found.precio),MetodoPrecio:found.metodo}:{PrecioPromedioUsado:0,MetodoPrecio:'Sin precio confiable'};
+    }
+    function moneyBlendWeight(row,statsMoney){
+      if(!statsMoney || (Number(statsMoney.VentaProveedorProyectada)||0)<=0)return 0;
+      if(row.TipoDemanda==='Sin movimiento')return 0;
+      let w=0.25;
+      if(row.Confianza==='Baja')w=0.35;
+      if(row.TipoDemanda==='Estacional dormido')w=0.30;
+      if(row.TipoDemanda==='Intermitente')w=0.32;
+      if(statsMoney.ConfianzaProveedorValor==='Media')w*=0.85;
+      if(statsMoney.ConfianzaProveedorValor==='Baja')w*=0.60;
+      return clamp(w,0,0.40);
+    }
+    function supplierShareRaw(itemMap,providerMap,monthsAll,target){
+      const p12=lastNPeriods(target,12), p6=lastNPeriods(target,6), p3=lastNPeriods(target,3), sameHistPeriods=sameCalendarMonthPeriods(monthsAll,target);
+      const comps=[];
+      const add=(weight,num,den)=>{if(den>0 && num>=0)comps.push({weight,value:num/den});};
+      add(.45,sumPeriods(itemMap,p12),sumPeriods(providerMap,p12));
+      add(.25,sumPeriods(itemMap,p6),sumPeriods(providerMap,p6));
+      add(.15,sumPeriods(itemMap,p3),sumPeriods(providerMap,p3));
+      add(.15,sumPeriods(itemMap,sameHistPeriods),sumPeriods(providerMap,sameHistPeriods));
+      if(!comps.length){
+        const hist=monthsAll.filter(p=>p<target);
+        add(1,sumPeriods(itemMap,hist),sumPeriods(providerMap,hist));
+      }
+      const w=comps.reduce((s,x)=>s+x.weight,0);
+      return w>0?comps.reduce((s,x)=>s+(x.value*x.weight),0)/w:0;
+    }
+    function supplierBlendWeight(row,stats){
+      if(!stats || (Number(stats.ProyeccionProveedor)||0)<=0)return 0;
+      if(row.TipoDemanda==='Sin movimiento')return 0;
+      let w=0.45;
+      if(row.Confianza==='Baja')w=0.62;
+      if(row.TipoDemanda==='Estacional dormido')w=0.55;
+      if(String(row.TipoDemanda||'').toLowerCase().includes('estacional'))w=Math.max(w,.50);
+      if(row.TipoDemanda==='Intermitente')w=Math.max(w,.55);
+      if(stats.ConfianzaProveedor==='Media')w*=0.85;
+      if(stats.ConfianzaProveedor==='Baja')w*=0.60;
+      return clamp(w,0,0.70);
+    }
+    function appendComentarioProveedor(row,stats,share){
+      const parts=[];
+      if(stats.ConfianzaProveedor!=='Baja')parts.push('Proveedor '+(row.ProveedorClave||'')+': crecimiento anual '+pctTxt(stats.CrecimientoProveedor)+', tendencia '+pctTxt(stats.TendenciaProveedor)+', participación producto '+pctTxt(share)+'.');
+      else parts.push('Proveedor '+(row.ProveedorClave||'')+': historial limitado para ajuste por proveedor.');
+      row.Comentario=String(row.Comentario||'').trim();
+      row.Comentario=(row.Comentario?row.Comentario+' ':'')+parts.join(' ');
+    }
+    function applySupplierGrowthSuggestions(rows,monthsAll,target){
+      const groups=new Map();
+      rows.forEach(r=>{
+        const prov=r.ProveedorClave||proveedorClaveArticulo(r.Articulo)||'SIN';
+        r.ProveedorClave=prov;
+        const key=String(r.Zona||'')+'|'+prov;
+        if(!groups.has(key))groups.set(key,{Unidad:r.Zona,ProveedorClave:prov,Rows:[],Meses:{},ImporteMeses:{}});
+        const g=groups.get(key); g.Rows.push(r);
+        const meses=r.Meses||{};
+        const importes=r.ImporteMeses||{};
+        monthsAll.filter(p=>p<target).forEach(p=>{
+          g.Meses[p]=(g.Meses[p]||0)+(Number(meses[p])||0);
+          g.ImporteMeses[p]=(g.ImporteMeses[p]||0)+(Number(importes[p])||0);
+        });
+      });
+      groups.forEach(g=>{
+        const stats=computeSupplierProjection(g.Meses,monthsAll,target);
+        const statsMoney=computeSupplierMoneyProjection(g.ImporteMeses,monthsAll,target);
+        let totalRaw=0, totalCalc=0, totalMoneyRaw=0, totalImporte=0;
+        g.Rows.forEach(r=>{
+          const raw=supplierShareRaw(r.Meses||{},stats.MesesProveedor||g.Meses,monthsAll,target);
+          const rawMoney=moneyShareRaw(r.ImporteMeses||{},g.ImporteMeses||{},monthsAll,target);
+          r._ParticipacionProveedorRaw=raw;
+          r._ParticipacionProveedorValorRaw=rawMoney;
+          totalRaw+=raw;
+          totalMoneyRaw+=rawMoney;
+          totalCalc+=Number(r.DemandaCalculada)||0;
+          totalImporte+=Number(r.ImporteNeto)||0;
+        });
+        if(totalRaw<=0 && totalCalc>0){
+          g.Rows.forEach(r=>{r._ParticipacionProveedorRaw=(Number(r.DemandaCalculada)||0)/totalCalc;});
+          totalRaw=1;
+        }
+        if(totalMoneyRaw<=0 && totalImporte>0){
+          g.Rows.forEach(r=>{r._ParticipacionProveedorValorRaw=(Number(r.ImporteNeto)||0)/totalImporte;});
+          totalMoneyRaw=1;
+        }
+        g.Rows.forEach(r=>{
+          const calc=Number(r.DemandaCalculada)||0;
+          const share=totalRaw>0?(Number(r._ParticipacionProveedorRaw)||0)/totalRaw:0;
+          const shareMoney=totalMoneyRaw>0?(Number(r._ParticipacionProveedorValorRaw)||0)/totalMoneyRaw:0;
+          const porParticipacion=round2((Number(stats.ProyeccionProveedor)||0)*share);
+          const w=supplierBlendWeight(r,stats);
+          let sugeridaUnidades=calc;
+          if(w>0 && share>0){
+            sugeridaUnidades=(calc*(1-w))+(porParticipacion*w);
+            if(calc>0){
+              sugeridaUnidades=clamp(sugeridaUnidades,calc*.35,calc*1.90);
+            }else{
+              const maxRef=Math.max(Number(r.Promedio3M)||0,Number(r.Promedio6M)||0,Number(r.Promedio12M)||0,Number(r.PromHistoricoMismoMes)||0,porParticipacion,0);
+              if(maxRef>0)sugeridaUnidades=Math.min(sugeridaUnidades,maxRef*1.50);
+            }
+          }
+          const price=priceUsedForMoneyAnalysis(r,g.Meses,g.ImporteMeses,monthsAll,target);
+          const ventaProductoProyectada=round2((Number(statsMoney.VentaProveedorProyectada)||0)*shareMoney);
+          let demandaPorValor=0;
+          if(price.PrecioPromedioUsado>0 && ventaProductoProyectada>0)demandaPorValor=ventaProductoProyectada/price.PrecioPromedioUsado;
+          demandaPorValor=round2(Math.max(0,demandaPorValor));
+          const wMoney=(demandaPorValor>0 && price.PrecioPromedioUsado>0)?moneyBlendWeight(r,statsMoney):0;
+          let sugerida=sugeridaUnidades;
+          if(wMoney>0){
+            sugerida=(sugeridaUnidades*(1-wMoney))+(demandaPorValor*wMoney);
+            const ref=calc>0?calc:Math.max(porParticipacion,demandaPorValor,0);
+            if(ref>0)sugerida=clamp(sugerida,ref*.30,ref*2.10);
+          }
+          if(r.TipoDemanda==='Sin movimiento')sugerida=0;
+          r.DemandaSugerida=round2(Math.max(0,sugerida));
+          r.DemandaSugeridaUnidades=round2(Math.max(0,sugeridaUnidades));
+          r.DemandaProveedorProyectada=stats.ProyeccionProveedor;
+          r.ParticipacionProveedor=round6(share);
+          r.DemandaParticipacionProveedor=porParticipacion;
+          r.CrecimientoProveedor=stats.CrecimientoProveedor;
+          r.TendenciaProveedor=stats.TendenciaProveedor;
+          r.AjusteProveedorAplicado=calc>0?round2((r.DemandaSugerida/calc)-1):(r.DemandaSugerida>0?1:0);
+          r.ConfianzaProveedor=stats.ConfianzaProveedor;
+          r.VentaProveedorProyectada=statsMoney.VentaProveedorProyectada;
+          r.ParticipacionProveedorValor=round6(shareMoney);
+          r.VentaProductoProyectada=ventaProductoProyectada;
+          r.PrecioPromedioUsado=price.PrecioPromedioUsado;
+          r.MetodoPrecio=price.MetodoPrecio;
+          r.DemandaPorAnalisisValor=demandaPorValor;
+          r.CrecimientoProveedorValor=statsMoney.CrecimientoProveedorValor;
+          r.TendenciaProveedorValor=statsMoney.TendenciaProveedorValor;
+          r.ConfianzaAnalisisValor=statsMoney.ConfianzaProveedorValor;
+          r.MetodoAnalisisValor=wMoney>0?'Análisis en $ convertido a unidades':'Sin ajuste por $';
+          r.MetodoSugerida=wMoney>0?'Mezcla: demanda calculada + proveedor unidades + análisis $':(w>0?'Análisis por proveedor: participación y crecimiento':'Sin ajuste proveedor: igual a demanda calculada');
+          appendComentarioProveedor(r,stats,share);
+          if(wMoney>0){
+            r.Comentario=(String(r.Comentario||'').trim()+' Análisis $: venta producto proyectada '+moneyTxt(ventaProductoProyectada)+', precio usado '+moneyTxt(price.PrecioPromedioUsado)+', demanda por $ '+round2(demandaPorValor)+'.').trim();
+          }
+          delete r._ParticipacionProveedorRaw;
+          delete r._ParticipacionProveedorValorRaw;
+        });
+      });
+      return rows;
+    }
+
     function buildDemandForZone(rows,rep,target){
       const monthsAll=Array.from(new Set(rows.map(r=>r.Periodo).filter(Boolean).filter(p=>p<target))).sort();
+      const globalMeta=buildGlobalArticuloMeta(rows);
       const m=new Map();
       for(const r of rows){
         const cia=ciaNum(r.Cia); if(!rep.cias.includes(cia))continue;
         const art=articuloReporte(r.Articulo); if(!art)continue;
-        const key=art+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
-        if(!m.has(key))m.set(key,{Articulo:art,Proveedor:r.Proveedor||'',Grupo:r.Grupo||'',Zona:rep.nombre,Meses:{},ImporteNeto:0});
-        const g=m.get(key); const p=r.Periodo||''; const neto=toNumber(r.Neto);
-        g.Meses[p]=(g.Meses[p]||0)+neto; g.ImporteNeto+=toNumber(r['Importe Neto']);
+        const key=art;
+        if(!m.has(key))m.set(key,{Articulo:art,Proveedor:'',Grupo:'',Zona:rep.nombre,Meses:{},ImporteMeses:{},ImporteNeto:0,_ProveedorPeriodo:'',_GrupoPeriodo:''});
+        const g=m.get(key); updateLatestArticuloMeta(g,r); const p=r.Periodo||''; const neto=toNumber(r.Neto); const importe=toNumber(r['Importe Neto']);
+        if(p){g.Meses[p]=(g.Meses[p]||0)+neto; g.ImporteMeses[p]=(g.ImporteMeses[p]||0)+importe;} g.ImporteNeto+=importe;
       }
       const out=[];
       for(const g of m.values()){
         const metrics=computeSmartDemandMetrics(g,monthsAll,target);
-        out.push({Articulo:g.Articulo,Proveedor:g.Proveedor,Grupo:g.Grupo,Zona:g.Zona,...metrics,ImporteNeto:g.ImporteNeto});
+        const meta=globalMeta.get(g.Articulo)||{};
+        const provClave=proveedorClaveArticulo(g.Articulo);
+        out.push({Articulo:g.Articulo,Proveedor:g.Proveedor||meta.Proveedor||provClave||'',ProveedorClave:provClave,Grupo:g.Grupo||meta.Grupo||'',Zona:g.Zona,...metrics,ImporteMeses:g.ImporteMeses,ImporteNeto:g.ImporteNeto});
       }
+      applySupplierGrowthSuggestions(out,monthsAll,target);
       out.sort((a,b)=>a.Articulo.localeCompare(b.Articulo,'es'));
       return out;
     }
 
     function buildDemandForReportsFast(rows,reports,target){
       const monthsAll=Array.from(new Set(rows.map(r=>r.Periodo).filter(Boolean).filter(p=>p<target))).sort();
+      const globalMeta=buildGlobalArticuloMeta(rows);
       const reportByCia=new Map();
       reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
       const m=new Map();
       for(const r of rows){
         const cia=ciaNum(r.Cia); const rep=reportByCia.get(cia); if(!rep)continue;
         const art=articuloReporte(r.Articulo); if(!art)continue;
-        const key=rep.nombre+'|'+art+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
-        if(!m.has(key))m.set(key,{Articulo:art,Proveedor:r.Proveedor||'',Grupo:r.Grupo||'',Zona:rep.nombre,Meses:{},ImporteNeto:0});
-        const g=m.get(key); const p=r.Periodo||''; const neto=toNumber(r.Neto);
-        if(p)g.Meses[p]=(g.Meses[p]||0)+neto;
-        g.ImporteNeto+=toNumber(r['Importe Neto']);
+        const key=rep.nombre+'|'+art;
+        if(!m.has(key))m.set(key,{Articulo:art,Proveedor:'',Grupo:'',Zona:rep.nombre,Meses:{},ImporteMeses:{},ImporteNeto:0,_ProveedorPeriodo:'',_GrupoPeriodo:''});
+        const g=m.get(key); updateLatestArticuloMeta(g,r); const p=r.Periodo||''; const neto=toNumber(r.Neto); const importe=toNumber(r['Importe Neto']);
+        if(p){g.Meses[p]=(g.Meses[p]||0)+neto; g.ImporteMeses[p]=(g.ImporteMeses[p]||0)+importe;}
+        g.ImporteNeto+=importe;
       }
       const out=[];
       for(const g of m.values()){
         const metrics=computeSmartDemandMetrics(g,monthsAll,target);
-        out.push({Articulo:g.Articulo,Proveedor:g.Proveedor,Grupo:g.Grupo,Zona:g.Zona,...metrics,ImporteNeto:g.ImporteNeto});
+        const meta=globalMeta.get(g.Articulo)||{};
+        const provClave=proveedorClaveArticulo(g.Articulo);
+        out.push({Articulo:g.Articulo,Proveedor:g.Proveedor||meta.Proveedor||provClave||'',ProveedorClave:provClave,Grupo:g.Grupo||meta.Grupo||'',Zona:g.Zona,...metrics,ImporteMeses:g.ImporteMeses,ImporteNeto:g.ImporteNeto});
       }
+      applySupplierGrowthSuggestions(out,monthsAll,target);
       out.sort((a,b)=>String(a.Zona).localeCompare(String(b.Zona),'es') || a.Articulo.localeCompare(b.Articulo,'es'));
       return out;
     }
@@ -684,19 +952,19 @@
         }
         let maxIdx=0,minIdx=0;
         for(let i=1;i<12;i++){if(avgs[i]>avgs[maxIdx])maxIdx=i; if(avgs[i]<avgs[minIdx])minIdx=i;}
-        return [r.Articulo,r.Proveedor,r.Grupo,r.Zona,...avgs,monthNames[maxIdx],monthNames[minIdx],...months];
+        return [r.Articulo,r.Proveedor,r.ProveedorClave,r.Grupo,r.Zona,...avgs,monthNames[maxIdx],monthNames[minIdx],...months];
       });
     }
     function demandHeaders(includeInventory=false){
-      const hs=['Articulo','Proveedor','Grupo','Zona / Cia','Tipo SKU','Meses con venta 12M','Ultima venta','Neto 3M','Promedio 3M','Neto 6M','Promedio 6M','Neto 12M','Promedio 12M','Mismo mes año anterior','Mismo mes hace 2 años','Mismo mes hace 3 años','Promedio histórico mismo mes','Años disponibles mismo mes','Años con venta mismo mes','Tendencia reciente %','Estado tendencia reciente','Tendencia anual %','Estado tendencia anual','Nivel variación','Picos ajustados','Método aplicado','Demanda calculada','Demanda sugerida'];
-      if(includeInventory) hs.push('Inventario disponible','Diferencia inventario-demanda','Necesidad','Cobertura demanda','Inventario resurtido 25','Resurtido posible 25','Necesidad final');
+      const hs=['Articulo','Proveedor','Proveedor demanda','Grupo','Zona / Cia','Tipo SKU','Meses con venta 12M','Ultima venta','Neto 3M','Promedio 3M','Neto 6M','Promedio 6M','Neto 12M','Promedio 12M','Mismo mes año anterior','Mismo mes hace 2 años','Mismo mes hace 3 años','Promedio histórico mismo mes','Años disponibles mismo mes','Años con venta mismo mes','Tendencia reciente %','Estado tendencia reciente','Tendencia anual %','Estado tendencia anual','Nivel variación','Picos ajustados','Método aplicado','Demanda calculada','Demanda sugerida','Demanda proveedor proyectada','Participación producto proveedor %','Demanda por participación proveedor','Venta proveedor proyectada $','Participación producto proveedor $ %','Venta producto proyectada $','Precio promedio usado','Demanda por análisis $','Crecimiento proveedor %','Tendencia proveedor %','Crecimiento proveedor $ %','Tendencia proveedor $ %','Ajuste proveedor aplicado %','Confianza proveedor','Confianza análisis $','Método análisis $','Método sugerida'];
+      if(includeInventory) hs.push('Inventario disponible','Diferencia inventario-demanda sugerida','Necesidad sugerida','Cobertura demanda sugerida','Inventario resurtido 25','Resurtido posible 25','Necesidad final');
       hs.push('Tipo demanda','Confianza','Acción recomendada','Comentario','Importe Neto histórico');
       return hs;
     }
     function inventoryColsForDemand(r,ctx){
       if(!ctx||!ctx.map)return [];
       const inv=round2(ctx.map.get(r.Zona+'|'+r.Articulo)||0);
-      const dem=Number(r.DemandaCalculada)||0;
+      const dem=Number(r.DemandaSugerida)||Number(r.DemandaCalculada)||0;
       const dif=round2(inv-dem);
       const nec=round2(Math.max(0,dem-inv));
       const cob=dem>0?round2(inv/dem):'';
@@ -713,11 +981,11 @@
       ws.addRow(hs);
       rows.forEach(r=>{
         const tipo=tipoSkuForArt(r.Articulo,inventoryContext);
-        ws.addRow([r.Articulo,r.Proveedor,r.Grupo,r.Zona,tipo,r.MesesConVenta,r.UltimaVenta,r.Neto3M,r.Promedio3M,r.Neto6M,r.Promedio6M,r.Neto12M,r.Promedio12M,r.MismoMesAnioAnterior,r.MismoMesHace2,r.MismoMesHace3,r.PromHistoricoMismoMes,r.AniosMismoMes,r.AniosConVentaMismoMes,r.Tendencia,r.EstadoTendencia,r.TendenciaAnual,r.EstadoTendenciaAnual,r.NivelVariacion,r.PicosAjustados,r.MetodoAplicado,r.DemandaCalculada,r.DemandaSugerida,...inventoryColsForDemand(r,inventoryContext),r.TipoDemanda,r.Confianza,r.Accion,r.Comentario,r.ImporteNeto]);
+        ws.addRow([r.Articulo,r.Proveedor,r.ProveedorClave,r.Grupo,r.Zona,tipo,r.MesesConVenta,r.UltimaVenta,r.Neto3M,r.Promedio3M,r.Neto6M,r.Promedio6M,r.Neto12M,r.Promedio12M,r.MismoMesAnioAnterior,r.MismoMesHace2,r.MismoMesHace3,r.PromHistoricoMismoMes,r.AniosMismoMes,r.AniosConVentaMismoMes,r.Tendencia,r.EstadoTendencia,r.TendenciaAnual,r.EstadoTendenciaAnual,r.NivelVariacion,r.PicosAjustados,r.MetodoAplicado,r.DemandaCalculada,r.DemandaSugerida,r.DemandaProveedorProyectada,r.ParticipacionProveedor,r.DemandaParticipacionProveedor,r.VentaProveedorProyectada,r.ParticipacionProveedorValor,r.VentaProductoProyectada,r.PrecioPromedioUsado,r.DemandaPorAnalisisValor,r.CrecimientoProveedor,r.TendenciaProveedor,r.CrecimientoProveedorValor,r.TendenciaProveedorValor,r.AjusteProveedorAplicado,r.ConfianzaProveedor,r.ConfianzaAnalisisValor,r.MetodoAnalisisValor,r.MetodoSugerida,...inventoryColsForDemand(r,inventoryContext),r.TipoDemanda,r.Confianza,r.Accion,r.Comentario,r.ImporteNeto]);
       });
       styleDemandSheet(ws,hs.length);
       if(includeInventory){
-        const invCol=hs.indexOf('Inventario disponible')+1, difCol=hs.indexOf('Diferencia inventario-demanda')+1, necCol=hs.indexOf('Necesidad')+1, cobCol=hs.indexOf('Cobertura demanda')+1, inv25Col=hs.indexOf('Inventario resurtido 25')+1, resCol=hs.indexOf('Resurtido posible 25')+1, nfCol=hs.indexOf('Necesidad final')+1;
+        const invCol=hs.indexOf('Inventario disponible')+1, difCol=hs.indexOf('Diferencia inventario-demanda sugerida')+1, necCol=hs.indexOf('Necesidad sugerida')+1, cobCol=hs.indexOf('Cobertura demanda sugerida')+1, inv25Col=hs.indexOf('Inventario resurtido 25')+1, resCol=hs.indexOf('Resurtido posible 25')+1, nfCol=hs.indexOf('Necesidad final')+1;
         [invCol,difCol,necCol,inv25Col,resCol,nfCol].forEach(c=>{if(c>0)ws.getColumn(c).numFmt='#,##0.00';});
         if(cobCol>0)ws.getColumn(cobCol).numFmt='0.00';
       }
@@ -728,9 +996,11 @@
       const unidades=selectedReports.map(r=>r.nombre);
       const m=new Map();
       for(const r of rows){
-        const key=r.Articulo+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
+        const key=r.Articulo;
         if(!m.has(key))m.set(key,{Articulo:r.Articulo,Proveedor:r.Proveedor||'',Grupo:r.Grupo||'',Valores:{},Total:0});
         const g=m.get(key);
+        if(!g.Proveedor && r.Proveedor)g.Proveedor=r.Proveedor;
+        if(!g.Grupo && r.Grupo)g.Grupo=r.Grupo;
         const val=Number(r.DemandaCalculada)||0;
         g.Valores[r.Zona]=(g.Valores[r.Zona]||0)+val;
         g.Total+=val;
@@ -750,17 +1020,43 @@
 
     function addDemandDiagnosticsSheet(wb,rows){
       const ws=wb.addWorksheet('Diagnostico Demanda');
-      ws.addRow(['Sección','Valor','Conteo','Demanda calculada']);
+      ws.addRow(['Sección','Valor','Conteo','Demanda calculada','Demanda sugerida']);
       const addCounts=(section,field)=>{
         const m=new Map();
-        rows.forEach(r=>{const k=r[field]||'Sin dato'; if(!m.has(k))m.set(k,{count:0,total:0}); const x=m.get(k); x.count++; x.total+=Number(r.DemandaCalculada)||0;});
-        Array.from(m.entries()).sort((a,b)=>b[1].count-a[1].count).forEach(([k,v])=>ws.addRow([section,k,v.count,round2(v.total)]));
+        rows.forEach(r=>{const k=r[field]||'Sin dato'; if(!m.has(k))m.set(k,{count:0,totalCalc:0,totalSug:0}); const x=m.get(k); x.count++; x.totalCalc+=Number(r.DemandaCalculada)||0; x.totalSug+=Number(r.DemandaSugerida)||0;});
+        Array.from(m.entries()).sort((a,b)=>b[1].count-a[1].count).forEach(([k,v])=>ws.addRow([section,k,v.count,round2(v.totalCalc),round2(v.totalSug)]));
       };
       addCounts('Tipo demanda','TipoDemanda');
       addCounts('Confianza','Confianza');
+      addCounts('Confianza proveedor','ConfianzaProveedor');
       addCounts('Acción recomendada','Accion');
       addCounts('Método aplicado','MetodoAplicado');
-      styleSheet(ws,4,true);
+      addCounts('Método sugerida','MetodoSugerida');
+      styleSheet(ws,5,true);
+    }
+    function addSupplierDiagnosticsSheet(wb,rows){
+      const ws=wb.addWorksheet('Análisis por proveedor');
+      const hs=['Unidad','Proveedor demanda','Artículos','Crecimiento proveedor %','Tendencia proveedor %','Demanda proveedor proyectada','Venta proveedor proyectada $','Crecimiento proveedor $ %','Tendencia proveedor $ %','Demanda calculada suma','Demanda sugerida suma','Demanda por análisis $ suma','Venta producto proyectada $ suma','Ajuste sugerida vs calculada %','Participación acumulada unidades','Participación acumulada $','Confianza proveedor','Confianza análisis $'];
+      ws.addRow(hs);
+      const m=new Map();
+      rows.forEach(r=>{
+        const key=String(r.Zona||'')+'|'+String(r.ProveedorClave||'SIN');
+        if(!m.has(key))m.set(key,{Unidad:r.Zona,ProveedorClave:r.ProveedorClave||'SIN',Articulos:0,CrecimientoProveedor:r.CrecimientoProveedor,TendenciaProveedor:r.TendenciaProveedor,DemandaProveedorProyectada:r.DemandaProveedorProyectada,VentaProveedorProyectada:r.VentaProveedorProyectada,CrecimientoProveedorValor:r.CrecimientoProveedorValor,TendenciaProveedorValor:r.TendenciaProveedorValor,DemandaCalculada:0,DemandaSugerida:0,DemandaPorAnalisisValor:0,VentaProductoProyectada:0,Participacion:0,ParticipacionValor:0,ConfianzaProveedor:r.ConfianzaProveedor||'',ConfianzaAnalisisValor:r.ConfianzaAnalisisValor||''});
+        const x=m.get(key);
+        x.Articulos++;
+        x.DemandaCalculada+=Number(r.DemandaCalculada)||0;
+        x.DemandaSugerida+=Number(r.DemandaSugerida)||0;
+        x.DemandaPorAnalisisValor+=Number(r.DemandaPorAnalisisValor)||0;
+        x.VentaProductoProyectada+=Number(r.VentaProductoProyectada)||0;
+        x.Participacion+=Number(r.ParticipacionProveedor)||0;
+        x.ParticipacionValor+=Number(r.ParticipacionProveedorValor)||0;
+      });
+      Array.from(m.values()).sort((a,b)=>String(a.Unidad).localeCompare(String(b.Unidad),'es')||String(a.ProveedorClave).localeCompare(String(b.ProveedorClave),'es')).forEach(x=>{
+        ws.addRow([x.Unidad,x.ProveedorClave,x.Articulos,x.CrecimientoProveedor,x.TendenciaProveedor,x.DemandaProveedorProyectada,x.VentaProveedorProyectada,x.CrecimientoProveedorValor,x.TendenciaProveedorValor,round2(x.DemandaCalculada),round2(x.DemandaSugerida),round2(x.DemandaPorAnalisisValor),round2(x.VentaProductoProyectada),x.DemandaCalculada>0?round2((x.DemandaSugerida/x.DemandaCalculada)-1):'',round6(x.Participacion),round6(x.ParticipacionValor),x.ConfianzaProveedor,x.ConfianzaAnalisisValor]);
+      });
+      styleSheet(ws,hs.length,true);
+      [4,5,8,9,14,15,16].forEach(c=>ws.getColumn(c).numFmt='0.0000%');
+      [6,7,10,11,12,13].forEach(c=>ws.getColumn(c).numFmt='#,##0.00');
     }
     function actualDemandMap(rows,reports,period){
       const reportByCia=new Map(); reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
@@ -769,12 +1065,12 @@
         if(r.Periodo!==period)continue;
         const rep=reportByCia.get(ciaNum(r.Cia)); if(!rep)continue;
         const art=articuloReporte(r.Articulo); if(!art)continue;
-        const key=rep.nombre+'|'+art+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');
+        const key=rep.nombre+'|'+art;
         m.set(key,(m.get(key)||0)+Math.max(0,toNumber(r.Neto)));
       }
       return m;
     }
-    function forecastKey(r){return r.Zona+'|'+r.Articulo+'|'+String(r.Proveedor||'')+'|'+String(r.Grupo||'');}
+    function forecastKey(r){return r.Zona+'|'+r.Articulo;}
     function computeBacktestRows(rows,reports,target,monthsToTest=6){
       const monthsAll=Array.from(new Set(rows.map(r=>r.Periodo).filter(Boolean).filter(p=>p<target))).sort();
       const testMonths=monthsAll.filter(p=>monthsAll.filter(x=>x<p).length>=12).slice(-monthsToTest);
@@ -895,8 +1191,12 @@
         const params=wb.addWorksheet('Parametros');
         params.addRow(['Concepto','Valor']);
         params.addRow(['Mes objetivo',target]);
-        params.addRow(['Motor de cálculo','Demanda inteligente por perfiles: constante, tendencia alta/baja, estacional, estacional dormido, intermitente y sin movimiento.']);
+        params.addRow(['Motor Demanda calculada','Demanda inteligente por perfiles: constante, tendencia alta/baja, estacional, estacional dormido, intermitente y sin movimiento.']);
+        params.addRow(['Motor Demanda sugerida','Ajusta la demanda calculada con análisis por proveedor: proveedor = primeras 3 letras del artículo después de quitar prefijo 30; usa crecimiento anual del proveedor, tendencia reciente, participación de cada producto en unidades y análisis en pesos convertido a unidades con precio promedio ponderado.']);
         params.addRow(['Historial usado','Todos los meses anteriores al mes objetivo cargados en la base local.']);
+        params.addRow(['Unicidad de códigos','Cada código se consolida una sola vez por zona o por Cia. Si cambió de grupo/proveedor, se muestra el último dato disponible y el histórico anterior se acumula en el mismo código.']);
+        params.addRow(['Proveedor demanda','Se toma de las primeras 3 letras del código de artículo mostrado. Ejemplo: 30ALA... y ALA... se agrupan como ALA.']);
+        params.addRow(['Versión','2026-06-01.5']);
         params.addRow([mode==='cia'?'Cias':'Zonas',selectedZones.join(', ')]);
         params.addRow(['Notas', mode==='cia' ? 'Demanda inteligente por perfiles calculada por Cia exacta. Protege artículos de temporada dormidos: si no vendieron en los últimos 6 meses pero sí vendieron el mismo mes en años anteriores, no se fuerzan a cero. Los picos repetidos por temporada se conservan; solo se ajustan picos aislados.' : 'Demanda inteligente por perfiles calculada por zona/localización. Los artículos se muestran sin el prefijo inicial 30. Cia 33 y 73 se calculan como ventas de calle separadas. La demanda es pronóstico de venta observada; la compra debe cruzarse después con inventario, pendientes y lead time.']);
         params.addRow(['Inventario integrado', inventoryEnabled ? 'Sí: se agregó inventario disponible, diferencia, necesidad, cobertura, tipo SKU y resurtido desde Cia 25 dentro de las pestañas de Demanda Sugerida.' : 'No: no se cargó archivo de inventario antes de generar la demanda.']);
@@ -918,7 +1218,7 @@
             const totalCalc=round2(part.reduce((s,x)=>s+(Number(x.DemandaCalculada)||0),0));
             const totalSug=round2(part.reduce((s,x)=>s+(Number(x.DemandaSugerida)||0),0));
             const totalInv=inventoryMap?round2(part.reduce((s,x)=>s+(inventoryMap.get(x.Zona+'|'+x.Articulo)||0),0)):'';
-            const totalNec=inventoryMap?round2(part.reduce((s,x)=>s+Math.max(0,(Number(x.DemandaCalculada)||0)-(inventoryMap.get(x.Zona+'|'+x.Articulo)||0)),0)):'';
+            const totalNec=inventoryMap?round2(part.reduce((s,x)=>s+Math.max(0,(Number(x.DemandaSugerida)||Number(x.DemandaCalculada)||0)-(inventoryMap.get(x.Zona+'|'+x.Articulo)||0)),0)):'';
             const sinMov=part.filter(x=>x.TipoDemanda==='Sin movimiento').length;
             resumen.push([rep.nombre,rep.cias.join(', '),rep.localizacion||'',part.length,totalCalc,totalSug,totalInv,totalNec,sinMov]);
             part.forEach(x=>delete x.Meses);
@@ -926,10 +1226,11 @@
           }
           await progress(82,'Agregando resumen por Cia...');
           const res=wb.addWorksheet('Resumen Cia');
-          const hs=['Cia','Cia num','Localizacion','Articulos','Total demanda calculada','Total demanda sugerida','Total inventario disponible','Total necesidad','Articulos sin movimiento'];
+          const hs=['Cia','Cia num','Localizacion','Articulos','Total demanda calculada','Total demanda sugerida','Total inventario disponible','Total necesidad sugerida','Articulos sin movimiento'];
           res.addRow(hs); resumen.forEach(r=>res.addRow(r)); styleSheet(res,hs.length,true);
           await progress(84,'Agregando diagnóstico de perfiles...');
           addDemandDiagnosticsSheet(wb,allCia);
+          addSupplierDiagnosticsSheet(wb,allCia);
           if(includeBacktest){
             await progress(86,'Calculando backtesting rápido de los últimos 6 meses...');
             addBacktestSheet(wb,rows,selectedReports,target,mode);
@@ -960,13 +1261,14 @@
           await waitUI();
         }
         await progress(68,'Agregando estacionalidad histórica...');
-        const est=wb.addWorksheet('Estacionalidad Historica'); const monthNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; const estHs=['Articulo','Proveedor','Grupo','Zona',...monthNames.map(m=>'Prom '+m),'Mes fuerte','Mes bajo',...monthNames.map(m=>'Años venta '+m)]; est.addRow(estHs); buildSeasonalityRows(all,target).forEach(row=>est.addRow(row)); styleSheet(est,estHs.length,true);
+        const est=wb.addWorksheet('Estacionalidad Historica'); const monthNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; const estHs=['Articulo','Proveedor','Proveedor demanda','Grupo','Zona',...monthNames.map(m=>'Prom '+m),'Mes fuerte','Mes bajo',...monthNames.map(m=>'Años venta '+m)]; est.addRow(estHs); buildSeasonalityRows(all,target).forEach(row=>est.addRow(row)); styleSheet(est,estHs.length,true);
         await progress(76,'Agregando Sin Movimiento, Estacional Dormido y Top Impacto...');
         const sin=all.filter(r=>r.TipoDemanda==='Sin movimiento'); addDemandSheet(wb,'Sin Movimiento',sin,inventoryContext);
         const dormidos=all.filter(r=>r.TipoDemanda==='Estacional dormido'); addDemandSheet(wb,'Estacional Dormido',dormidos,inventoryContext);
         const top=all.slice().sort((a,b)=>b.ImporteNeto-a.ImporteNeto).slice(0,5000); addDemandSheet(wb,'Top Impacto',top,inventoryContext);
         await progress(78,'Agregando diagnóstico de perfiles...');
         addDemandDiagnosticsSheet(wb,all);
+        addSupplierDiagnosticsSheet(wb,all);
         if(includeBacktest){
           await progress(80,'Calculando backtesting rápido de los últimos 6 meses...');
           addBacktestSheet(wb,rows,selectedReports,target,mode);
@@ -1062,14 +1364,14 @@
     }
     function addDemandInventorySheet(wb,demandRows,invMap,reports,mode){
       const ws=wb.addWorksheet('Demanda vs Inventario');
-      const hs=['Articulo','Proveedor','Grupo','Unidad','Tipo SKU','Demanda calculada','Demanda sugerida','Inventario disponible','Diferencia inventario-demanda','Necesidad','Cobertura demanda','Inventario resurtido 25','Resurtido posible 25','Necesidad final','Tipo demanda','Confianza','Acción recomendada','Comentario'];
+      const hs=['Articulo','Proveedor','Proveedor demanda','Grupo','Unidad','Tipo SKU','Demanda calculada','Demanda sugerida','Inventario disponible','Diferencia inventario-demanda sugerida','Necesidad sugerida','Cobertura demanda sugerida','Inventario resurtido 25','Resurtido posible 25','Necesidad final','Crecimiento proveedor %','Tendencia proveedor %','Participación producto proveedor %','Venta producto proyectada $','Precio promedio usado','Demanda por análisis $','Participación producto proveedor $ %','Tipo demanda','Confianza','Acción recomendada','Comentario'];
       ws.addRow(hs);
       const ctx=makeInventoryContext(invMap);
       demandRows.forEach(r=>{
-        const tipo=tipoSkuForArt(r.Articulo,ctx); const inv=round2(invMap.get(r.Zona+'|'+r.Articulo)||0); const dem=Number(r.DemandaCalculada)||0; const dif=round2(inv-dem); const nec=round2(Math.max(0,dem-inv)); const cob=dem>0?round2(inv/dem):''; const inv25=inventarioResurtido25(r.Articulo,tipo,ctx); const res=usarResurtido25(r.Zona)?round2(Math.min(nec,inv25)):0; const nf=round2(Math.max(0,nec-res));
-        ws.addRow([r.Articulo,r.Proveedor,r.Grupo,r.Zona,tipo,r.DemandaCalculada,r.DemandaSugerida,inv,dif,nec,cob,inv25,res,nf,r.TipoDemanda,r.Confianza,r.Accion,r.Comentario]);
+        const tipo=tipoSkuForArt(r.Articulo,ctx); const inv=round2(invMap.get(r.Zona+'|'+r.Articulo)||0); const dem=Number(r.DemandaSugerida)||Number(r.DemandaCalculada)||0; const dif=round2(inv-dem); const nec=round2(Math.max(0,dem-inv)); const cob=dem>0?round2(inv/dem):''; const inv25=inventarioResurtido25(r.Articulo,tipo,ctx); const res=usarResurtido25(r.Zona)?round2(Math.min(nec,inv25)):0; const nf=round2(Math.max(0,nec-res));
+        ws.addRow([r.Articulo,r.Proveedor,r.ProveedorClave,r.Grupo,r.Zona,tipo,r.DemandaCalculada,r.DemandaSugerida,inv,dif,nec,cob,inv25,res,nf,r.CrecimientoProveedor,r.TendenciaProveedor,r.ParticipacionProveedor,r.VentaProductoProyectada,r.PrecioPromedioUsado,r.DemandaPorAnalisisValor,r.ParticipacionProveedorValor,r.TipoDemanda,r.Confianza,r.Accion,r.Comentario]);
       });
-      styleSheet(ws,hs.length,true); ws.views=[{state:'frozen',ySplit:1,xSplit:4}]; return ws;
+      styleSheet(ws,hs.length,true); ws.views=[{state:'frozen',ySplit:1,xSplit:5}]; [16,17,18,22].forEach(c=>ws.getColumn(c).numFmt='0.0000%'); [19,20,21].forEach(c=>ws.getColumn(c).numFmt='#,##0.00'); return ws;
     }
 
     function csvValue(v){
@@ -1124,12 +1426,8 @@
           invByCiaArt.get(key).push(r);
         });
         const ctx=makeInventoryContext(inventoryMapForReports(inventoryRows,selectedInventoryReports));
-        const metaByArticulo=new Map();
-        for(const r of rows||[]){
-          const art=articuloReporte(r.Articulo); if(!art||metaByArticulo.has(art))continue;
-          metaByArticulo.set(art,{Proveedor:r.Proveedor||'',Grupo:r.Grupo||''});
-        }
-        const out=[['Articulo','Proveedor','Grupo','Cia','Bodega','Tipo SKU','Demanda calculada','Inventario']];
+        const metaByArticulo=buildGlobalArticuloMeta(rows);
+        const out=[['Articulo','Proveedor','Proveedor demanda','Grupo','Cia','Bodega','Tipo SKU','Demanda calculada','Demanda sugerida','Inventario']];
         const usedInventoryKeys=new Set();
         await progress(65,'Construyendo CSV...');
         for(const r of demandRows){
@@ -1141,12 +1439,12 @@
               const tipo=inv.TipoSKU||tipoSkuForCiaBodega(cia,inv.Bodega)||tipoSkuForArt(r.Articulo,ctx);
               const bodega=bodegaPorTipoYCia(tipo,cia)||inv.Bodega;
               usedInventoryKeys.add(cia+'|'+r.Articulo+'|'+bodega);
-              out.push([r.Articulo,r.Proveedor,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,inv.Inventario]);
+              out.push([r.Articulo,r.Proveedor,r.ProveedorClave,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,r.DemandaSugerida,inv.Inventario]);
             });
           }else{
             const tipo=tipoSkuForArt(r.Articulo,ctx);
             const bodega=bodegaPorTipoYCia(tipo,cia);
-            out.push([r.Articulo,r.Proveedor,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,0]);
+            out.push([r.Articulo,r.Proveedor,r.ProveedorClave,r.Grupo,unidad,bodega,tipo,r.DemandaCalculada,r.DemandaSugerida,0]);
           }
         }
         for(const inv of invRows){
@@ -1156,7 +1454,7 @@
           const key=cia+'|'+inv.Articulo+'|'+bodega;
           if(usedInventoryKeys.has(key))continue;
           const meta=metaByArticulo.get(inv.Articulo)||{};
-          out.push([inv.Articulo,meta.Proveedor||'',meta.Grupo||'',cia,bodega,tipo,0,inv.Inventario]);
+          out.push([inv.Articulo,meta.Proveedor||'',proveedorClaveArticulo(inv.Articulo),meta.Grupo||'',cia,bodega,tipo,0,0,inv.Inventario]);
         }
         await progress(92,'Descargando CSV...');
         downloadCsv(out,fileName);
@@ -1177,10 +1475,10 @@
         await progress(35,'Calculando inventario disponible autorizado...');
         const invMap=inventoryMapForReports(inventoryRows,selectedInventoryReports);
         const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
-        const params=wb.addWorksheet('Parametros'); params.addRow(['Concepto','Valor']); params.addRow(['Reporte','Demanda vs Inventario']); params.addRow(['Mes objetivo',target]); params.addRow(['Tipo',mode==='cia'?'Por Cia exacta':'Por zona/localización']); params.addRow([mode==='cia'?'Cias':'Zonas',selectedUnits.join(', ')]); params.addRow(['Inventario','Solo existencia en bodegas autorizadas por Cia.']); params.addRow(['Nota','Necesidad = Demanda calculada - Inventario disponible, limitada a cero. Si hay necesidad, se muestra resurtido posible desde Cia 25 según Tipo SKU: Cerámicos desde 25ci+25cr y Accesorios desde 25ai. Esto aún no considera pendiente, ordenado, lead time ni inventario de seguridad.']); styleSheet(params,2,true);
+        const params=wb.addWorksheet('Parametros'); params.addRow(['Concepto','Valor']); params.addRow(['Reporte','Demanda vs Inventario']); params.addRow(['Mes objetivo',target]); params.addRow(['Tipo',mode==='cia'?'Por Cia exacta':'Por zona/localización']); params.addRow([mode==='cia'?'Cias':'Zonas',selectedUnits.join(', ')]); params.addRow(['Inventario','Solo existencia en bodegas autorizadas por Cia.']); params.addRow(['Nota','Necesidad = Demanda sugerida - Inventario disponible, limitada a cero. Si hay necesidad, se muestra resurtido posible desde Cia 25 según Tipo SKU: Cerámicos desde 25ci+25cr y Accesorios desde 25ai. Esto aún no considera pendiente, ordenado, lead time ni inventario de seguridad.']); styleSheet(params,2,true);
         await progress(55,'Agregando Demanda vs Inventario...'); addDemandInventorySheet(wb,demandRows,invMap,selectedDemandReports,mode);
         await progress(70,'Agregando matriz de inventario disponible...'); addInventoryMatrixSheet(wb,buildInventoryForReports(inventoryRows,selectedInventoryReports),selectedInventoryReports);
-        await progress(78,'Agregando diagnóstico de perfiles...'); addDemandDiagnosticsSheet(wb,demandRows);
+        await progress(78,'Agregando diagnóstico de perfiles...'); addDemandDiagnosticsSheet(wb,demandRows); addSupplierDiagnosticsSheet(wb,demandRows);
         await progress(90,'Preparando archivo Excel Demanda vs Inventario...'); const buffer=await wb.xlsx.writeBuffer(); await progress(96,'Descargando archivo...'); downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName); finishProgress(`Demanda vs Inventario generado: <strong>${fileName}</strong> | ${demandRows.length.toLocaleString('es-MX')} artículos/${unitName}.`, 'oktxt');
       }catch(err){failProgress('Error: '+err.message); throw err;}
     }
@@ -1198,12 +1496,17 @@
 
     function styleDemandSheet(ws,cols){
       styleSheet(ws,cols,true);
-      ws.getColumn(1).width=34; ws.getColumn(2).width=16; ws.getColumn(3).width=16; ws.getColumn(4).width=18;
-      for(let c=7;c<=18;c++){ws.getColumn(c).numFmt='#,##0.00';}
-      ws.getColumn(19).numFmt='0.00%'; ws.getColumn(21).numFmt='0.00%';
-      ws.getColumn(23).width=16; ws.getColumn(24).numFmt='#,##0'; ws.getColumn(25).width=34;
-      ws.getColumn(26).numFmt='#,##0.00'; ws.getColumn(27).numFmt='#,##0.00';
-      ws.getColumn(30).width=24; ws.getColumn(31).width=70; ws.getColumn(32).numFmt='$#,##0.00';
+      const headers=[];
+      ws.getRow(1).eachCell((cell,col)=>{headers[col]=String(cell.value||'');});
+      const col=name=>headers.findIndex(h=>h===name);
+      const setWidth=(name,width)=>{const c=col(name); if(c>0)ws.getColumn(c).width=width;};
+      const setFmt=(name,fmt)=>{const c=col(name); if(c>0)ws.getColumn(c).numFmt=fmt;};
+      setWidth('Articulo',34); setWidth('Proveedor',16); setWidth('Proveedor demanda',16); setWidth('Grupo',16); setWidth('Zona / Cia',18); setWidth('Método aplicado',34); setWidth('Método sugerida',34); setWidth('Comentario',72); setWidth('Acción recomendada',24);
+      ['Neto 3M','Promedio 3M','Neto 6M','Promedio 6M','Neto 12M','Promedio 12M','Mismo mes año anterior','Mismo mes hace 2 años','Mismo mes hace 3 años','Promedio histórico mismo mes','Demanda calculada','Demanda sugerida','Demanda proveedor proyectada','Demanda por participación proveedor','Venta proveedor proyectada $','Venta producto proyectada $','Precio promedio usado','Demanda por análisis $','Inventario disponible','Diferencia inventario-demanda sugerida','Necesidad sugerida','Inventario resurtido 25','Resurtido posible 25','Necesidad final'].forEach(name=>setFmt(name,'#,##0.00'));
+      ['Tendencia reciente %','Tendencia anual %','Crecimiento proveedor %','Tendencia proveedor %','Crecimiento proveedor $ %','Tendencia proveedor $ %','Ajuste proveedor aplicado %','Cobertura demanda sugerida'].forEach(name=>setFmt(name,'0.00%'));
+      setFmt('Participación producto proveedor %','0.0000%');
+      setFmt('Participación producto proveedor $ %','0.0000%');
+      setFmt('Picos ajustados','#,##0'); setFmt('Importe Neto histórico','$#,##0.00');
     }
 
     function groupByArticulo(rows,cias){const m=new Map(); for(const r of rows){const cia=ciaNum(r.Cia); if(!cias.includes(cia))continue; const artOriginal=String(r.Articulo??'').trim(); const art=articuloReporte(artOriginal); if(!art)continue; if(!m.has(art)){m.set(art,{Articulo:art,Total:0,Meses:{}});} const g=m.get(art); const neto=toNumber(r.Neto); g.Total+=neto; const p=r.Periodo||''; g.Meses[p]=(g.Meses[p]||0)+neto;} let arr=Array.from(m.values()); if($('sortArticles').checked)arr.sort((a,b)=>a.Articulo.localeCompare(b.Articulo,'es')); return arr;}
