@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador Reportes Demanda LIMSA v2026-06-01.15-SERVICIO-INVENTARIO</title>
+  <title>Generador Reportes Demanda LIMSA v2026-06-01.19-RESUMEN-DESV-PREFIJO</title>
   <style>
     :root{--bg:#f6f8fb;--card:#fff;--text:#1f2937;--muted:#64748b;--primary:#2563eb;--primary2:#1d4ed8;--border:#dbe3ef;--ok:#16a34a;--err:#dc2626;--warn:#92400e;--soft:#eff6ff;--dark:#0f172a}
     *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -32,9 +32,9 @@
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-06-01.15-SERVICIO-INVENTARIO</span></h1>
+      <h1>Generador de Reportes de Demanda LIMSA <span class="tag">v2026-06-01.19-RESUMEN-DESV-PREFIJO</span></h1>
       <div class="note" style="border:2px solid #2563eb;background:#eff6ff;color:#1e3a8a"><strong>Versión activa:</strong> Demanda sugerida con separación profesional entre <strong>Demanda esperada</strong>, <strong>Stock de seguridad</strong>, <strong>Inventario objetivo</strong> y <strong>Necesidad recomendada</strong>. Incluye análisis por proveedor, análisis en $, ABC, variabilidad, error histórico de pronóstico y nivel de servicio objetivo.</div>
-      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada en tres bloques claros: reporte histórico normal, demanda sugerida/CSV y resumen comparativo con pestañas de calculada y sugerida. La versión v15 separa pronóstico de inventario: Demanda sugerida queda como demanda esperada y el colchón se muestra aparte como Stock de seguridad e Inventario objetivo. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61 y también existe el reporte combinado Ags-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda calculada usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. La demanda sugerida ahora agrega análisis por proveedor usando las primeras 3 letras del artículo después de quitar el prefijo 30, crecimiento anual del proveedor, tendencia reciente y participación de cada producto dentro del proveedor. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
+      <p>Carga archivos mensuales, guarda la demanda localmente en este navegador y genera reportes por mes o acumulados. En los reportes, los artículos se muestran sin el prefijo inicial 30. Las ventas de calle se separan en pestañas propias. Incluye cálculo sugerido de demanda por zona o por Cia exacta con estacionalidad histórica, tendencia reciente y tendencia anual. El reporte normal conserva el botón original. La demanda sugerida por Cia mantiene el detalle, y existe un reporte separado tipo matriz. Ahora la sección de generación desde meses guardados queda ordenada en tres bloques claros: reporte histórico normal, demanda sugerida/CSV y resumen comparativo con pestañas de calculada y sugerida. La versión v17 mejora el resumen ejecutivo por proveedor con Total LIMSA, meses 2025, YTD 2026, crecimiento, proyección 3M y detalle por zona; la versión v15 separa pronóstico de inventario: Demanda sugerida queda como demanda esperada y el colchón se muestra aparte como Stock de seguridad e Inventario objetivo. La sección de meses guardados ahora es compacta con resumen, chips y selección rápida. En zona/localización, SnJuan queda separado como Cia 61 y también existe el reporte combinado Ags-SnJuan. Ahora los procesos de generación muestran avance con porcentaje para confirmar que el navegador sigue trabajando. Se optimizó la demanda sugerida por Cia con cálculo en una sola pasada para que sí genere el detalle por Cia aun con bases históricas grandes. La demanda calculada usa un motor inteligente por perfiles con protección para artículos de temporada dormidos, picos estacionales conservados y backtesting rápido opcional. La demanda sugerida ahora agrega análisis por proveedor usando las primeras 3 letras del artículo después de quitar el prefijo 30, crecimiento anual del proveedor, tendencia reciente y participación de cada producto dentro del proveedor. Ahora integra lectura de inventarios LIMSA con bodegas autorizadas por Cia. En los reportes de Demanda Sugerida agrega clasificación de SKU como Cerámicos / Accesorios usando el inventario autorizado, e identifica inventario de resurtido desde Cia 25: Cerámicos desde 25ci+25cr y Accesorios desde 25ai.</p>
     </div>
 
     <div class="grid">
@@ -106,11 +106,12 @@
         </div>
 
         <div class="flowBlock summaryFlow">
-          <div class="flowTitle">C) Resumen comparativo de demanda</div>
-          <p class="flowHelp">Este bloque genera un Excel resumido con dos pestañas: una de Demanda calculada y otra de Demanda sugerida.</p>
+          <div class="flowTitle">C) Resúmenes ejecutivos</div>
+          <p class="flowHelp">Este bloque genera reportes resumidos. Usa el selector de abajo para definir si el resumen será por zona/localización o por Cia exacta.</p>
           <div class="field"><label for="demandMode">Resumen de demanda por</label><select id="demandMode"><option value="zona">Por zona / localización</option><option value="cia">Por Cia exacta</option></select><div class="hint">Afecta solo al botón Generar Resumen demanda.</div></div>
           <div class="actions">
             <button id="btnGenerateDemandCiaMatrix" class="btn ok" disabled>Generar Resumen demanda<small>Genera un solo Excel con dos pestañas: Demanda calculada y Demanda sugerida.</small></button>
+            <button id="btnGenerateSupplier3M" class="btn ok" disabled>Generar Proyección proveedor 3M<small>Excel ejecutivo con Total LIMSA y detalle por zona: meses 2025, YTD 2026, crecimiento y proyección de los siguientes 3 meses.</small></button>
           </div>
         </div>
         <h3>Respaldos</h3>
@@ -425,7 +426,7 @@
       }
       renderSavedSummary(); renderMonthChips(); renderYearButtons(); toggleCiaDemandDetail();
       const has=savedMonths.length>0;
-      $('btnGenerateSaved').disabled=!has; $('btnGenerateDemand').disabled=!has; if($('btnGenerateDemandCsv')) $('btnGenerateDemandCsv').disabled=!has; $('btnGenerateDemandCiaMatrix').disabled=!has; $('btnExportBackup').disabled=!has; $('btnClearAll').disabled=!has;
+      $('btnGenerateSaved').disabled=!has; $('btnGenerateDemand').disabled=!has; if($('btnGenerateDemandCsv')) $('btnGenerateDemandCsv').disabled=!has; $('btnGenerateDemandCiaMatrix').disabled=!has; if($('btnGenerateSupplier3M')) $('btnGenerateSupplier3M').disabled=!has; $('btnExportBackup').disabled=!has; $('btnClearAll').disabled=!has;
     }
     window.removeSavedMonth=async function(periodo){if(!confirm('¿Eliminar el mes '+periodo+' de la base local?'))return; await deleteMonth(periodo); await refreshSaved(); setStatus('Mes eliminado: '+periodo,'oktxt');}
     btnSave.addEventListener('click',async()=>{try{if(!parsedRows.length)throw new Error('Primero carga un archivo.'); const periodo=$('periodoInput').value; if(!periodo)throw new Error('Indica el mes del archivo.'); const exists=await getMonth(periodo); if(exists&&!$('replaceMonth').checked)throw new Error('Ese mes ya existe. Marca reemplazar o elimina el mes guardado.'); const rows=parsedRows.map(r=>({...r,Periodo:periodo})); await putMonth({periodo,sourceName,createdAt:new Date().toISOString(),rows}); await refreshSaved(); setStatus(`Mes ${periodo} guardado correctamente con ${rows.length.toLocaleString('es-MX')} registros.`,'oktxt');}catch(err){setStatus('Error: '+err.message,'errtxt');}});
@@ -443,6 +444,8 @@
     $('btnClearMonthSelection').addEventListener('click',()=>setMonthSelection([]));
     $('btnGenerateDemand').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('reportTypeSaved').value; const selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value); if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia_':'por_zona_'; await buildDemandWorkbook(rows,target,selectedUnits,`demanda_sugerida_servicio_inventario_${suffix}${target}.xlsx`,$('includeBaseDemand').checked,mode,$('includeBacktestDemand').checked);}catch(err){failProgress('Error: '+err.message);}});
     $('btnGenerateDemandCiaMatrix').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const mode=$('demandMode').value; let selectedUnits; if(mode===$('reportTypeSaved').value){selectedUnits=Array.from($('demandZones').selectedOptions).map(o=>o.value);}else{selectedUnits=(mode==='cia'?CIA_REPORTES:REPORTES).map(r=>r.nombre);} if(!selectedUnits.length)throw new Error(mode==='cia'?'Selecciona al menos una Cia.':'Selecciona al menos una zona.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay meses históricos anteriores al mes objetivo.'); const suffix=mode==='cia'?'por_cia':'por_zona'; await buildDemandMatrixCombinedWorkbook(rows,target,selectedUnits,`resumen_demanda_${suffix}_${target}.xlsx`,mode);}catch(err){failProgress('Error: '+err.message);}});
+    if($('btnGenerateSupplier3M')) $('btnGenerateSupplier3M').addEventListener('click',async()=>{try{if(!savedMonths.length)throw new Error('Primero importa o guarda meses en la base local.'); const target=$('targetPeriod').value; if(!target)throw new Error('Indica el mes objetivo.'); const months=await getAllMonths(); let rows=[]; const eligible=months.filter(m=>m.periodo<target); for(let i=0;i<eligible.length;i++){const m=eligible[i]; await progress(Math.round((i/Math.max(eligible.length,1))*18),`Cargando historial ${m.periodo} (${i+1}/${eligible.length})...`); rows=rows.concat(m.rows.map(r=>({...r,Periodo:m.periodo})));} if(!rows.length)throw new Error('No hay historial suficiente para generar la proyección por proveedor.'); await buildSupplier3MWorkbook(rows,target,`resumen_proveedor_3m_total_limsa_y_zonas_${target}.xlsx`);}catch(err){failProgress('Error: '+err.message);}});
+
     $('btnExportBackup').addEventListener('click',async()=>{const data=await getAllMonths(); downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'respaldo_demanda_local.json');});
     $('btnImportBackup').addEventListener('click',()=>{$('backupInput').value=''; $('backupInput').click();});
     $('backupInput').addEventListener('change',async()=>{
@@ -1204,28 +1207,65 @@
       const unidades=selectedReports.map(r=>r.nombre);
       const useSuggested=metric==='sugerida';
       const field=useSuggested?'DemandaSugerida':'DemandaCalculada';
+      const metricLabel=useSuggested?'Demanda sugerida':'Demanda calculada';
       const m=new Map();
       for(const r of rows){
         const key=r.Articulo;
-        if(!m.has(key))m.set(key,{Articulo:r.Articulo,Proveedor:r.Proveedor||'',ProveedorClave:r.ProveedorClave||'',Grupo:r.Grupo||'',Valores:{},Total:0});
+        if(!m.has(key))m.set(key,{Articulo:r.Articulo,Proveedor:r.Proveedor||'',ProveedorClave:r.ProveedorClave||'',Grupo:r.Grupo||'',Valores:{},StdSum:{},StdCount:{},Total:0});
         const g=m.get(key);
         if(!g.Proveedor && r.Proveedor)g.Proveedor=r.Proveedor;
         if(!g.ProveedorClave && r.ProveedorClave)g.ProveedorClave=r.ProveedorClave;
         if(!g.Grupo && r.Grupo)g.Grupo=r.Grupo;
+        const unidad=r.Zona;
         const val=Number(r[field])||0;
-        g.Valores[r.Zona]=(g.Valores[r.Zona]||0)+val;
+        g.Valores[unidad]=(g.Valores[unidad]||0)+val;
         g.Total+=val;
+        const std=Number(r.DesviacionEstandar12M);
+        if(Number.isFinite(std)){
+          g.StdSum[unidad]=(g.StdSum[unidad]||0)+std;
+          g.StdCount[unidad]=(g.StdCount[unidad]||0)+1;
+        }
       }
       const arr=Array.from(m.values()).sort((a,b)=>a.Articulo.localeCompare(b.Articulo,'es'));
       const ws=wb.addWorksheet(useSuggested?(mode==='cia'?'Resumen Sug Cia':'Resumen Sug Zona'):(mode==='cia'?'Resumen Demanda Cia':'Resumen Demanda Zona'));
-      const hs=['Articulo','Proveedor','Proveedor demanda','Grupo',...unidades,'Total general'];
+      const baseCols=['Articulo','Proveedor','Proveedor demanda','Grupo'];
+      const demandHeaders=[...unidades,'Total general'];
+      const stdHeaders=[...unidades.map(u=>'d '+u),'Prom. desv. estándar'];
+      const hs=[...baseCols,...demandHeaders,'',...stdHeaders];
+      const demandStart=baseCols.length+1;
+      const demandEnd=demandStart+demandHeaders.length-1;
+      const gapCol=demandEnd+1;
+      const stdStart=gapCol+1;
+      const stdEnd=stdStart+stdHeaders.length-1;
+      const topRow=new Array(hs.length).fill('');
+      topRow[demandStart-1]=metricLabel;
+      topRow[stdStart-1]='Desviación estándar 12M';
+      ws.addRow(topRow);
+      ws.mergeCells(1,demandStart,1,demandEnd);
+      ws.mergeCells(1,stdStart,1,stdEnd);
       ws.addRow(hs);
-      arr.forEach(x=>ws.addRow([x.Articulo,x.Proveedor,x.ProveedorClave,x.Grupo,...unidades.map(u=>x.Valores[u]||0),x.Total]));
+      arr.forEach(x=>{
+        const stdVals=unidades.map(u=>{
+          const cnt=x.StdCount[u]||0;
+          return cnt?((x.StdSum[u]||0)/cnt):0;
+        });
+        const avgStd=stdVals.filter(v=>v>0).length?stdVals.filter(v=>v>0).reduce((s,v)=>s+v,0)/stdVals.filter(v=>v>0).length:0;
+        ws.addRow([x.Articulo,x.Proveedor,x.ProveedorClave,x.Grupo,...unidades.map(u=>x.Valores[u]||0),x.Total,'',...stdVals,avgStd]);
+      });
       const totalRow=['Total general','','',''];
       unidades.forEach(u=>totalRow.push(arr.reduce((s,x)=>s+(x.Valores[u]||0),0)));
       totalRow.push(arr.reduce((s,x)=>s+x.Total,0));
+      totalRow.push('');
+      unidades.forEach(u=>{
+        let sum=0,count=0;
+        arr.forEach(x=>{const cnt=x.StdCount[u]||0; if(cnt){sum+=(x.StdSum[u]||0)/cnt; count++;}});
+        totalRow.push(count?sum/count:0);
+      });
+      const allStd=[];
+      arr.forEach(x=>unidades.forEach(u=>{const cnt=x.StdCount[u]||0; if(cnt)allStd.push((x.StdSum[u]||0)/cnt);}));
+      totalRow.push(allStd.length?allStd.reduce((s,v)=>s+v,0)/allStd.length:0);
       ws.addRow(totalRow);
-      styleDemandMatrixSheet(ws,hs.length);
+      styleDemandMatrixSheet(ws,hs.length,demandStart,demandEnd,gapCol,stdStart,stdEnd);
       return ws;
     }
 
@@ -1495,7 +1535,7 @@
         params.addRow(['Historial usado','Todos los meses anteriores al mes objetivo cargados en la base local.']);
         params.addRow(['Unicidad de códigos','Cada código se consolida una sola vez por zona o por Cia. Si cambió de grupo/proveedor, se muestra el último dato disponible y el histórico anterior se acumula en el mismo código.']);
         params.addRow(['Proveedor demanda','Se toma de las primeras 3 letras del código de artículo mostrado. Ejemplo: 30ALA... y ALA... se agrupan como ALA.']);
-        params.addRow(['Versión','2026-06-01.15-SERVICIO-INVENTARIO']);
+        params.addRow(['Versión','2026-06-01.19-RESUMEN-DESV-PREFIJO']);
         params.addRow([mode==='cia'?'Cias':'Zonas',selectedZones.join(', ')]);
         params.addRow(['Notas', mode==='cia' ? 'Demanda inteligente por perfiles calculada por Cia exacta. Protege artículos de temporada dormidos: si no vendieron en los últimos 6 meses pero sí vendieron el mismo mes en años anteriores, no se fuerzan a cero. Los picos repetidos por temporada se conservan; solo se ajustan picos aislados.' : 'Demanda inteligente por perfiles calculada por zona/localización. Los artículos se muestran sin el prefijo inicial 30. Cia 33 y 73 se calculan como ventas de calle separadas. La demanda es pronóstico de venta observada; la compra debe cruzarse después con inventario, pendientes y lead time.']);
         params.addRow(['Demanda esperada','Pronóstico final de venta esperada: mezcla Demanda calculada + proveedor + análisis en pesos. No incluye colchón de seguridad.']);
@@ -1590,6 +1630,149 @@
       }catch(err){failProgress('Error: '+err.message); throw err;}
     }
 
+
+    function periodRangeInclusive(start,end){
+      const si=periodToIndex(start), ei=periodToIndex(end);
+      if(si===null||ei===null||ei<si)return [];
+      const arr=[]; for(let i=si;i<=ei;i++)arr.push(indexToPeriod(i)); return arr;
+    }
+    function sumAmountPeriods(amountMap,periods){return periods.reduce((s,p)=>s+(amountMap[p]||0),0);}
+    function executiveSupplierZones(){
+      return REPORTES.filter(r=>r.nombre!=='Ags-SnJuan');
+    }
+    function buildSupplierExecutiveRows(rows,reports,target,scopeName){
+      const reportByCia=new Map(); reports.forEach(rep=>rep.cias.forEach(c=>reportByCia.set(Number(c),rep)));
+      const m=new Map();
+      for(const r of rows){
+        const cia=ciaNum(r.Cia); const rep=reportByCia.get(cia); if(!rep)continue;
+        const art=articuloReporte(r.Articulo); if(!art)continue;
+        const prov=proveedorClaveArticulo(art)||'SIN';
+        const key=(scopeName||rep.nombre)+'|'+prov;
+        if(!m.has(key))m.set(key,{Unidad:scopeName||rep.nombre,ProveedorClave:prov,Articulos:new Set(),NetoPorMes:{},ImportePorMes:{}});
+        const g=m.get(key); g.Articulos.add(art);
+        const per=r.Periodo; if(!per)continue;
+        g.NetoPorMes[per]=(g.NetoPorMes[per]||0)+toNumber(r.Neto);
+        g.ImportePorMes[per]=(g.ImportePorMes[per]||0)+toNumber(r['Importe Neto']);
+      }
+      const targetYear=Number(String(target).slice(0,4));
+      const prevYear=targetYear-1;
+      const lastActual=addMonths(target,-1);
+      const lastActualYear=Number(String(lastActual).slice(0,4));
+      const lastActualMonth=Number(String(lastActual).slice(5,7));
+      const prevYearMonths=Array.from({length:12},(_,i)=>`${prevYear}-${String(i+1).padStart(2,'0')}`);
+      const currentYearMonths=lastActualYear===targetYear?Array.from({length:lastActualMonth},(_,i)=>`${targetYear}-${String(i+1).padStart(2,'0')}`):[];
+      const samePeriodPrev=currentYearMonths.map(p=>addMonths(p,-12));
+      const projMonths=[target,addMonths(target,1),addMonths(target,2)];
+      const p3=lastNPeriods(target,3), prev3=lastNPeriods(target,3,3), p12=lastNPeriods(target,12), prev12=lastNPeriods(target,12,12);
+      const out=[];
+      for(const g of m.values()){
+        const net=g.NetoPorMes;
+        const mesesPrev=prevYearMonths.map(p=>round2(net[p]||0));
+        const mesesCur=currentYearMonths.map(p=>round2(net[p]||0));
+        const totalPrevYear=round2(mesesPrev.reduce((a,b)=>a+b,0));
+        const totalCurYtd=round2(mesesCur.reduce((a,b)=>a+b,0));
+        const totalSamePrevYtd=round2(samePeriodPrev.reduce((s,p)=>s+(net[p]||0),0));
+        const neto12=sumPeriods(net,p12), neto12Ant=sumPeriods(net,prev12);
+        const neto3=sumPeriods(net,p3), neto3Ant=sumPeriods(net,prev3);
+        const crecimiento12=neto12Ant>0?(neto12/neto12Ant)-1:(neto12>0?0.15:0);
+        const crecimientoYtd=totalSamePrevYtd>0?(totalCurYtd/totalSamePrevYtd)-1:(totalCurYtd>0?0.15:0);
+        const tendencia3=neto3Ant>0?(neto3/neto3Ant)-1:(neto3>0?0.15:0);
+        const ajuste=clamp((crecimiento12*.50)+(crecimientoYtd*.30)+(tendencia3*.20),-0.35,0.45);
+        const proj=[]; let totalBase=0,totalProj=0;
+        projMonths.forEach(pm=>{
+          const basePeriod=addMonths(pm,-12);
+          let base=Math.max(0,net[basePeriod]||0);
+          let metodo='Mismo mes año anterior ajustado';
+          if(base<=0){base=Math.max(0,neto12/12); metodo='Sin mismo mes año anterior: promedio 12M ajustado';}
+          const val=round2(Math.max(0,base*(1+ajuste)));
+          totalBase+=base; totalProj+=val;
+          proj.push({Mes:pm,BasePeriodo:basePeriod,Base:round2(base),Proyeccion:val,Metodo:metodo});
+        });
+        const comentario=`2025 completo + ${targetYear} YTD hasta ${lastActual}. Crecimiento YTD contra mismos meses ${prevYear}: ${(crecimientoYtd*100).toFixed(1)}%. Ajuste proyección: ${(ajuste*100).toFixed(1)}%.`;
+        out.push({Unidad:g.Unidad,ProveedorClave:g.ProveedorClave,Articulos:g.Articulos.size,MesesPrev:mesesPrev,TotalPrevYear:totalPrevYear,MesesCur:mesesCur,TotalCurYtd:totalCurYtd,TotalSamePrevYtd:totalSamePrevYtd,CrecimientoYTD:round6(crecimientoYtd),Neto12M:round2(neto12),Neto12MAnterior:round2(neto12Ant),Crecimiento12M:round6(crecimiento12),Neto3M:round2(neto3),Neto3MAnterior:round2(neto3Ant),Tendencia3M:round6(tendencia3),AjusteAplicado:round6(ajuste),Proyecciones:proj,TotalBase3M:round2(totalBase),TotalProyeccion3M:round2(totalProj),Comentario:comentario});
+      }
+      return out.sort((a,b)=>b.TotalCurYtd-a.TotalCurYtd || b.TotalProyeccion3M-a.TotalProyeccion3M || String(a.ProveedorClave).localeCompare(String(b.ProveedorClave),'es'));
+    }
+    function addSupplierExecutiveSheet(wb,sheetName,rows,target){
+      const targetYear=Number(String(target).slice(0,4));
+      const prevYear=targetYear-1;
+      const lastActual=addMonths(target,-1);
+      const lastActualYear=Number(String(lastActual).slice(0,4));
+      const lastActualMonth=Number(String(lastActual).slice(5,7));
+      const prevYearMonths=Array.from({length:12},(_,i)=>`${prevYear}-${String(i+1).padStart(2,'0')}`);
+      const currentYearMonths=lastActualYear===targetYear?Array.from({length:lastActualMonth},(_,i)=>`${targetYear}-${String(i+1).padStart(2,'0')}`):[];
+      const projMonths=[target,addMonths(target,1),addMonths(target,2)];
+      const ws=wb.addWorksheet(sheetName);
+      const hs=['Alcance','Proveedor demanda','Artículos'];
+      prevYearMonths.forEach(p=>hs.push(`Neto ${p}`));
+      hs.push(`Total neto ${prevYear}`);
+      currentYearMonths.forEach(p=>hs.push(`Neto ${p}`));
+      hs.push(`Total neto ${targetYear} YTD`,`Mismo periodo ${prevYear}`,`Crecimiento YTD %`,'Neto 12M','Neto 12M anterior','Crecimiento 12M %','Neto últimos 3M','Neto 3M anterior','Tendencia 3M %','Ajuste aplicado %');
+      projMonths.forEach(pm=>hs.push(`${pm} neto año anterior`,`${pm} proyección neto`));
+      hs.push('Total base 3M año anterior','Total proyección 3M','Comentario');
+      ws.addRow(hs);
+      rows.forEach(r=>{
+        const vals=[r.Unidad,r.ProveedorClave,r.Articulos,...r.MesesPrev,r.TotalPrevYear,...r.MesesCur,r.TotalCurYtd,r.TotalSamePrevYtd,r.CrecimientoYTD,r.Neto12M,r.Neto12MAnterior,r.Crecimiento12M,r.Neto3M,r.Neto3MAnterior,r.Tendencia3M,r.AjusteAplicado];
+        r.Proyecciones.forEach(p=>vals.push(p.Base,p.Proyeccion));
+        vals.push(r.TotalBase3M,r.TotalProyeccion3M,r.Comentario);
+        ws.addRow(vals);
+      });
+      const totalRow=['Total general','',rows.reduce((s,r)=>s+r.Articulos,0)];
+      prevYearMonths.forEach((p,idx)=>totalRow.push(round2(rows.reduce((s,r)=>s+(r.MesesPrev[idx]||0),0))));
+      totalRow.push(round2(rows.reduce((s,r)=>s+r.TotalPrevYear,0)));
+      currentYearMonths.forEach((p,idx)=>totalRow.push(round2(rows.reduce((s,r)=>s+(r.MesesCur[idx]||0),0))));
+      const totalCur=round2(rows.reduce((s,r)=>s+r.TotalCurYtd,0));
+      const totalPrevSame=round2(rows.reduce((s,r)=>s+r.TotalSamePrevYtd,0));
+      const totalNeto12=round2(rows.reduce((s,r)=>s+r.Neto12M,0));
+      const totalNeto12Ant=round2(rows.reduce((s,r)=>s+r.Neto12MAnterior,0));
+      const totalNeto3=round2(rows.reduce((s,r)=>s+r.Neto3M,0));
+      const totalNeto3Ant=round2(rows.reduce((s,r)=>s+r.Neto3MAnterior,0));
+      totalRow.push(totalCur,totalPrevSame,totalPrevSame>0?round6((totalCur/totalPrevSame)-1):'',totalNeto12,totalNeto12Ant,totalNeto12Ant>0?round6((totalNeto12/totalNeto12Ant)-1):'',totalNeto3,totalNeto3Ant,totalNeto3Ant>0?round6((totalNeto3/totalNeto3Ant)-1):'','');
+      projMonths.forEach((pm,idx)=>totalRow.push(round2(rows.reduce((s,r)=>s+(r.Proyecciones[idx]?.Base||0),0)),round2(rows.reduce((s,r)=>s+(r.Proyecciones[idx]?.Proyeccion||0),0))));
+      totalRow.push(round2(rows.reduce((s,r)=>s+r.TotalBase3M,0)),round2(rows.reduce((s,r)=>s+r.TotalProyeccion3M,0)),'');
+      ws.addRow(totalRow);
+      styleSheet(ws,hs.length,true);
+      const pctNames=['Crecimiento YTD %','Crecimiento 12M %','Tendencia 3M %','Ajuste aplicado %'];
+      pctNames.forEach(name=>{const idx=hs.indexOf(name)+1;if(idx>0)ws.getColumn(idx).numFmt='0.00%';});
+      for(let c=4;c<=hs.length-1;c++){ if(!pctNames.includes(hs[c-1])) ws.getColumn(c).numFmt='#,##0.00'; }
+      ws.views=[{state:'frozen',ySplit:1,xSplit:2}];
+      return ws;
+    }
+    async function buildSupplier3MWorkbook(rows,target,fileName){
+      try{
+        await progress(5,'Calculando reporte ejecutivo por proveedor...');
+        const wb=new ExcelJS.Workbook(); wb.creator='LIMSA'; wb.created=new Date();
+        const baseZones=executiveSupplierZones();
+        const allCias=[...new Set(baseZones.flatMap(r=>r.cias))];
+        const totalRows=buildSupplierExecutiveRows(rows,[{nombre:'Total LIMSA',cias:allCias}],target,'Total LIMSA');
+        await progress(30,'Calculando detalle por zona...');
+        const zoneRows=buildSupplierExecutiveRows(rows,baseZones,target,null);
+        await progress(45,'Creando pestaña Parámetros...');
+        const params=wb.addWorksheet('Parametros');
+        params.addRow(['Concepto','Valor']);
+        params.addRow(['Tipo de reporte','Proyección proveedor 3M ejecutiva']);
+        params.addRow(['Alcance','Pestaña Total LIMSA consolidada y pestaña Por zona sin duplicar Ags-SnJuan.']);
+        params.addRow(['Mes inicial proyectado',target]);
+        params.addRow(['Meses proyectados',[target,addMonths(target,1),addMonths(target,2)].join(', ')]);
+        params.addRow(['Proveedor demanda','Se identifica con las primeras 3 letras del artículo después de quitar el prefijo 30. Ejemplo: 30POR... y POR... se agrupan como POR.']);
+        params.addRow(['Histórico mostrado','Meses de enero a diciembre del año anterior y meses del año objetivo hasta el último mes real antes del mes proyectado.']);
+        params.addRow(['Crecimiento YTD','Compara el acumulado real del año objetivo contra los mismos meses del año anterior.']);
+        params.addRow(['Proyección 3M','Para cada uno de los siguientes 3 meses se toma el neto del mismo mes del año anterior y se ajusta con crecimiento YTD, crecimiento 12M y tendencia 3M del proveedor.']);
+        params.addRow(['Ajuste aplicado','Ajuste = 50% crecimiento 12M + 30% crecimiento YTD + 20% tendencia 3M, limitado de -35% a +45% para evitar extremos.']);
+        params.addRow(['Versión','2026-06-01.19-RESUMEN-DESV-PREFIJO']);
+        styleSheet(params,2,true);
+        await progress(62,'Agregando Total LIMSA...');
+        addSupplierExecutiveSheet(wb,'Total LIMSA',totalRows,target);
+        await progress(78,'Agregando detalle por zona...');
+        addSupplierExecutiveSheet(wb,'Por zona',zoneRows,target);
+        await progress(90,'Preparando archivo Excel...');
+        const buffer=await wb.xlsx.writeBuffer();
+        await progress(96,'Descargando archivo...');
+        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
+        finishProgress(`Proyección proveedor 3M generada: <strong>${fileName}</strong> | ${totalRows.length.toLocaleString('es-MX')} proveedores LIMSA y ${zoneRows.length.toLocaleString('es-MX')} proveedores/zona.`, 'oktxt');
+      }catch(err){failProgress('Error: '+err.message); throw err;}
+    }
+
     async function buildDemandMatrixWorkbook(rows,target,selectedUnits,fileName,mode='cia',metric='calculada'){
       try{
         const unitName=mode==='cia'?'Cia':'zona/localización';
@@ -1647,6 +1830,7 @@
         params.addRow(['Mes objetivo',target]);
         params.addRow([mode==='cia'?'Cias':'Zonas',selectedUnits.join(', ')]);
         params.addRow(['Pestañas incluidas','Demanda calculada y Demanda sugerida']);
+        params.addRow(['Desviación estándar en resumen','A la derecha de cada matriz se repiten las zonas/Cias con la desviación estándar 12M por artículo, separada por una columna en blanco.']);
         params.addRow(['Demanda calculada','Pronóstico base por unidades, sin redondear a entero.']);
         params.addRow(['Demanda sugerida','Demanda esperada final con análisis por proveedor y valor $, sin stock de seguridad. El stock de seguridad e inventario objetivo se muestran en el reporte detallado.']);
         params.addRow(['Notas','Este reporte resume en un solo archivo las dos matrices para facilitar comparación sin llenar la pantalla de botones.']);
@@ -1897,15 +2081,32 @@
       }catch(err){failProgress('Error: '+err.message); throw err;}
     }
 
-    function styleDemandMatrixSheet(ws,cols){
-      ws.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};
-      ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}};
-      ws.views=[{state:'frozen',ySplit:1,xSplit:3}];
-      ws.autoFilter={from:{row:1,column:1},to:{row:1,column:cols}};
-      ws.getColumn(1).width=36; ws.getColumn(2).width=16; ws.getColumn(3).width=16;
-      for(let c=4;c<=cols;c++){ws.getColumn(c).width=14; ws.getColumn(c).numFmt='#,##0.00';}
+    function styleDemandMatrixSheet(ws,cols,demandStart=5,demandEnd=5,gapCol=0,stdStart=0,stdEnd=0){
+      // Dos bloques en la misma hoja: matriz de demanda y, a la derecha, desviación estándar 12M por producto/unidad.
+      [1,2].forEach(rn=>{
+        ws.getRow(rn).font={bold:true,color:{argb:'FFFFFFFF'}};
+        ws.getRow(rn).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1D4ED8'}};
+        ws.getRow(rn).alignment={vertical:'middle',horizontal:'center'};
+      });
+      if(stdStart>0){
+        for(let c=stdStart;c<=stdEnd;c++){
+          ws.getCell(1,c).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFB45309'}};
+          ws.getCell(2,c).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFB45309'}};
+        }
+      }
+      if(gapCol>0){
+        ws.getColumn(gapCol).width=4;
+        ws.getCell(1,gapCol).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+        ws.getCell(2,gapCol).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+      }
+      ws.views=[{state:'frozen',ySplit:2,xSplit:3}];
+      ws.autoFilter={from:{row:2,column:1},to:{row:2,column:cols}};
+      ws.getColumn(1).width=36; ws.getColumn(2).width=16; ws.getColumn(3).width=18; ws.getColumn(4).width=16;
+      for(let c=demandStart;c<=demandEnd;c++){ws.getColumn(c).width=14; ws.getColumn(c).numFmt='#,##0.00';}
+      if(stdStart>0){for(let c=stdStart;c<=stdEnd;c++){ws.getColumn(c).width=14; ws.getColumn(c).numFmt='#,##0.00';}}
       const last=ws.lastRow.number;
       ws.getRow(last).font={bold:true}; ws.getRow(last).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE0F2FE'}};
+      ws.eachRow(row=>row.eachCell(cell=>{cell.border={top:{style:'thin',color:{argb:'FFE2E8F0'}},left:{style:'thin',color:{argb:'FFE2E8F0'}},bottom:{style:'thin',color:{argb:'FFE2E8F0'}},right:{style:'thin',color:{argb:'FFE2E8F0'}}};}));
     }
 
     function styleDemandSheet(ws,cols){
