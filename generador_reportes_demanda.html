@@ -1544,7 +1544,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
   }
 
   function catalogStatusIsActive(value) {
-    return catalogStatusKey(value) === 'activo';
+    const k = catalogStatusKey(value);
+    // Variantes frecuentes en catálogos LIMSA / exportaciones.
+    return k === 'activo' || k === 'a' || k === 'active' || k === 'act' || k === '1' || k === 'si' || k === 'sí';
   }
 
   function buildCatalogLineProfile(chosen, tipo, sk) {
@@ -1585,7 +1587,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
   function buildCatalogProfiles(catalogRows) {
     const bySk = new Map();
     for (const row of catalogRows || []) {
-      const sk = skuKey(row.Articulo);
+      // Acepta Articulo (con/sin 30) o ArticuloReporte ya normalizado.
+      const sk = skuKey(row.Articulo) || skuKey(row.ArticuloReporte);
       if (!sk) continue;
       if (!bySk.has(sk)) bySk.set(sk, []);
       bySk.get(sk).push(row);
@@ -1644,8 +1647,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     const acc = new Map();
     const cer = new Map();
     for (const row of inventoryRows || []) {
-      const sk = skuKey(row.Articulo || row.ArticuloReporte);
-      const bod = String(row.Bodega ?? '').trim().toLowerCase();
+      const sk = skuKey(row.Articulo) || skuKey(row.ArticuloReporte);
+      // Bodega puede venir como "ai", "AI", o con sufijos raros; solo 2 letras de almacén.
+      let bod = String(row.Bodega ?? row.BodegaOrigen ?? '').trim().toLowerCase();
+      if (/^\d{2}[a-z]{2}$/.test(bod)) bod = bod.slice(2); // p.ej. 25ai → ai
+      if (bod.length > 2 && /^[a-z]{2}/.test(bod)) bod = bod.slice(0, 2);
       const exist = Number(row.Existencia ?? 0);
       const ordered = Number(row.Ordenado ?? 0);
       if (!sk || !((Number.isFinite(exist) && exist > 0) || (Number.isFinite(ordered) && ordered > 0))) continue;
@@ -2918,6 +2924,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       nuevos_por_ordenado: 0,
       nuevos_mixtos: 0,
       omitidos_no_activos: 0,
+      omitidos_sin_catalogo_inv: 0,
+      omitidos_ya_en_hoja: 0,
+      inv_skus_acc: 0,
+      inv_skus_cer: 0,
       cer_bodega_intel: cerBodegaIntel.total,
       duplicados_identicos_eliminados: duplicateValidation.summary.exact_duplicate_rows,
       duplicados_conflictivos: duplicateValidation.summary.conflict_keys,
@@ -3085,6 +3095,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const newCer = [];
       const addedLinesBySk = new Map();
       const skippedInactive = new Set();
+      const skippedNoProfile = new Set();
+      const skippedAlready = new Set();
       let scanN = 0;
       async function yieldScan() {
         scanN += 1;
@@ -3095,10 +3107,20 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         else if (movement?.por_ordenado) stats.nuevos_por_ordenado++;
         addedLinesBySk.set(sk, (addedLinesBySk.get(sk) || 0) + 1);
       }
+      stats.inv_skus_acc = invSkus.acc.size;
+      stats.inv_skus_cer = invSkus.cer.size;
       for (const [sk, movement] of invSkus.acc) {
         await yieldScan();
+        if (EXCLUDE_SK.has(sk) || sk.startsWith('x')) continue;
+        if (existingAcc.has(sk)) {
+          skippedAlready.add(sk);
+          continue;
+        }
         const baseProfile = profiles[sk];
-        if (existingAcc.has(sk) || EXCLUDE_SK.has(sk) || sk.startsWith('x') || !baseProfile) continue;
+        if (!baseProfile) {
+          skippedNoProfile.add(sk);
+          continue;
+        }
         if (!baseProfile.activo) {
           skippedInactive.add(sk);
           continue;
@@ -3120,8 +3142,16 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       }
       for (const [sk, movement] of invSkus.cer) {
         await yieldScan();
+        if (EXCLUDE_SK.has(sk) || sk.startsWith('x')) continue;
+        if (existingCer.has(sk)) {
+          skippedAlready.add(sk);
+          continue;
+        }
         const baseProfile = profiles[sk];
-        if (existingCer.has(sk) || EXCLUDE_SK.has(sk) || sk.startsWith('x') || !baseProfile) continue;
+        if (!baseProfile) {
+          skippedNoProfile.add(sk);
+          continue;
+        }
         if (!baseProfile.activo) {
           skippedInactive.add(sk);
           continue;
@@ -3140,9 +3170,19 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         registerNewMovement(sk, movement);
       }
       stats.omitidos_no_activos = skippedInactive.size;
+      stats.omitidos_sin_catalogo_inv = skippedNoProfile.size;
+      stats.omitidos_ya_en_hoja = skippedAlready.size;
       stats.nuevos_mixtos = [...addedLinesBySk.values()].filter((n) => n > 1).length;
       if (newAcc.length) {
         const insertAt = sections.accEnd + 1;
+        const n = newAcc.length;
+        // Las filas ya marcadas debajo del punto de inserción se corren en la matriz.
+        if (updatedRows.size) {
+          const shifted = new Set();
+          for (const r of updatedRows) shifted.add(r >= insertAt ? r + n : r);
+          updatedRows.clear();
+          for (const r of shifted) updatedRows.add(r);
+        }
         insertions.accInsertExcelRow = insertAt + 1;
         const rows = newAcc.map((d) => fillBodegaCols(rowToArray(d), d, matrix, 1));
         matrix.splice(insertAt, 0, ...rows);
@@ -3151,9 +3191,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           insertions.accRows.push(r);
           updatedRows.add(r);
         }
-        sections.cerHeader += newAcc.length;
-        sections.cerStart += newAcc.length;
-        sections.cerEnd += newAcc.length;
+        // BUGFIX: antes no se actualizaba accEnd → el editor no indexaba los nuevos SKUs.
+        sections.accEnd += n;
+        sections.cerHeader += n;
+        sections.cerStart += n;
+        sections.cerEnd += n;
       }
       if (newCer.length) {
         const startIdx = matrix.length;
@@ -3165,6 +3207,17 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           updatedRows.add(r);
         }
         sections.cerEnd = matrix.length - 1;
+      }
+      // Reconciliar secciones con la matriz final (evita desfaces de filas).
+      if (newAcc.length || newCer.length) {
+        try {
+          const det = detectSections(matrix);
+          sections.accStart = det.accStart;
+          sections.accEnd = det.accEnd;
+          sections.cerHeader = det.cerHeader;
+          sections.cerStart = det.cerStart;
+          sections.cerEnd = det.cerEnd;
+        } catch (e) { /* conservar offsets calculados */ }
       }
     }
 
@@ -11302,6 +11355,9 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
           stats.duplicados_conflictivos?`${stats.duplicados_conflictivos} conflictos conservados`:'',
           stats.articulos_mixtos_existentes?`${stats.articulos_mixtos_existentes} mixtos existentes conservados`:'',
           stats.omitidos_no_activos?`${stats.omitidos_no_activos} no activos omitidos`:'',
+          stats.omitidos_sin_catalogo_inv?`${stats.omitidos_sin_catalogo_inv} con inv. sin catálogo`:'',
+          stats.omitidos_ya_en_hoja?`${stats.omitidos_ya_en_hoja} ya estaban en hoja`:'',
+          (stats.inv_skus_acc||stats.inv_skus_cer)?`inv SKUs ${stats.inv_skus_acc||0} acc / ${stats.inv_skus_cer||0} cer`:'',
           stats.sin_catalogo?`${stats.sin_catalogo} sin catálogo`:'',
           stats.sin_mapeo_bodega?`${stats.sin_mapeo_bodega} cer sin bodega`:'',
           stats.bodega_sugerida?`${stats.bodega_sugerida} bodega sugerida`:'',
@@ -13173,7 +13229,13 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         tipoCeramicoLabel:tcLabel||multEditorNormKey(row.tipo_ceramico),
         noSurtir:multEditorNoSurtirMarked(row.no_surtir),
       };
-      meta.searchHay=[meta.sk,meta.codigo,meta.descripcion,meta.proveedor,meta.grupo,meta.status,meta.statusLabel,meta.statusLinea,meta.tipoGrupo,meta.tipoCeramico].join(' ').toLowerCase();
+      // Incluye forma con y sin prefijo 30: en múltiplos el código suele ir sin 30,
+      // pero en SIGA/inventario se busca como 30....
+      const codRaw=String(meta.codigo||'').trim().toLowerCase();
+      const skRaw=String(meta.sk||'').trim().toLowerCase();
+      const cod30=codRaw?(codRaw.startsWith('30')?codRaw:('30'+codRaw)):'';
+      const sk30=skRaw?(skRaw.startsWith('30')?skRaw:('30'+skRaw)):'';
+      meta.searchHay=[meta.sk,meta.codigo,cod30,sk30,meta.descripcion,meta.proveedor,meta.grupo,meta.status,meta.statusLabel,meta.statusLinea,meta.tipoGrupo,meta.tipoCeramico].join(' ').toLowerCase();
       return meta;
     }
     async function multEditorBuildRowCache(){
@@ -13343,7 +13405,11 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         meta.status=st.key;
         meta.statusLabel=st.label;
         meta.statusLinea=st.linea;
-        meta.searchHay=[meta.sk,meta.codigo,meta.descripcion,meta.proveedor,meta.grupo,meta.status,meta.statusLabel,meta.statusLinea,meta.tipoGrupo,meta.tipoCeramico].join(' ').toLowerCase();
+        const codRaw=String(meta.codigo||'').trim().toLowerCase();
+        const skRaw=String(meta.sk||'').trim().toLowerCase();
+        const cod30=codRaw?(codRaw.startsWith('30')?codRaw:('30'+codRaw)):'';
+        const sk30=skRaw?(skRaw.startsWith('30')?skRaw:('30'+skRaw)):'';
+        meta.searchHay=[meta.sk,meta.codigo,cod30,sk30,meta.descripcion,meta.proveedor,meta.grupo,meta.status,meta.statusLabel,meta.statusLinea,meta.tipoGrupo,meta.tipoCeramico].join(' ').toLowerCase();
       }
       multEditorInvalidateFilteredCache();
     }
@@ -13500,7 +13566,15 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         const qParts=q?q.split(/\s+/).filter(Boolean):[];
         if(qParts.length){
           const hay=meta.searchHay||'';
-          if(!qParts.every(p=>hay.includes(p)))return false;
+          // Normaliza prefijo 30 en cada término (busca 30abc o abc por igual).
+          const partMatches=p=>{
+            if(hay.includes(p))return true;
+            const bare=p.startsWith('30')&&p.length>2?p.slice(2):p;
+            if(bare&&hay.includes(bare))return true;
+            if(bare&&hay.includes('30'+bare))return true;
+            return false;
+          };
+          if(!qParts.every(partMatches))return false;
         }
       }
       if(skipKey!=='prov'&&filterProv&&meta.proveedor!==filterProv)return false;
@@ -14495,10 +14569,15 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       if(sync.actualizados)parts.push(`${Number(sync.actualizados).toLocaleString('es-MX')} filas status/no surtir`);
       if(sync.nuevos_acc)parts.push(`${sync.nuevos_acc} acc nuevos`);
       if(sync.nuevos_cer)parts.push(`${sync.nuevos_cer} cer nuevos`);
+      if(sync.nuevos_por_existencia)parts.push(`${sync.nuevos_por_existencia} por existencia`);
       if(sync.nuevos_por_ordenado)parts.push(`${sync.nuevos_por_ordenado} solo por ordenado`);
       if(sync.nuevos_mixtos)parts.push(`${sync.nuevos_mixtos} mixtos`);
       if(sync.bodega_sugerida_nuevos)parts.push(`${sync.bodega_sugerida_nuevos} bodega sugerida`);
       if(sync.sin_mapeo_bodega)parts.push(`${sync.sin_mapeo_bodega} cer sin bodega`);
+      if(sync.omitidos_no_activos)parts.push(`${sync.omitidos_no_activos} no activos omitidos`);
+      if(sync.omitidos_sin_catalogo_inv)parts.push(`${sync.omitidos_sin_catalogo_inv} con inv. sin catálogo`);
+      if(sync.omitidos_ya_en_hoja)parts.push(`${sync.omitidos_ya_en_hoja} ya estaban en hoja`);
+      if(sync.inv_skus_acc||sync.inv_skus_cer)parts.push(`inv: ${sync.inv_skus_acc||0} acc / ${sync.inv_skus_cer||0} cer`);
       return parts;
     }
     async function multEditorRunFullSync(opts={}){
@@ -14519,6 +14598,10 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         nuevos_por_ordenado:skuStats?.nuevos_por_ordenado||0,
         nuevos_mixtos:skuStats?.nuevos_mixtos||0,
         omitidos_no_activos:skuStats?.omitidos_no_activos||0,
+        omitidos_sin_catalogo_inv:skuStats?.omitidos_sin_catalogo_inv||0,
+        omitidos_ya_en_hoja:skuStats?.omitidos_ya_en_hoja||0,
+        inv_skus_acc:skuStats?.inv_skus_acc||0,
+        inv_skus_cer:skuStats?.inv_skus_cer||0,
         bodega_sugerida_nuevos:skuStats?.bodega_sugerida_nuevos||0,
         sin_mapeo_bodega:skuStats?.sin_mapeo_bodega||0,
         sin_catalogo:(statusStats?.sin_catalogo||0)+(skuStats?.sin_catalogo||0),
@@ -14550,11 +14633,14 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         ...opts
       });
       multEditorState.fileBuffer=multEditorBufferCopy(buffer instanceof ArrayBuffer?buffer:buffer.buffer);
+      // La matriz/secciones se mutan en memoria (accEnd ya se corrige al insertar).
+      // No rehidratar desde buffer aquí: si el patch XML fallara, se perderían altas.
+      const addedNow=(stats?.nuevos_acc||0)+(stats?.nuevos_cer||0);
       if(!statusOnly){
         multEditorState.cerBodegaIntel=window.multApi.buildCerBodegaIntelIndex(multEditorState.matrix,multEditorState.sections);
         multCerIntelMeta={total:multEditorState.cerBodegaIntel?.total||0};
       }
-      if(statusOnly&&multEditorState.rowCache&&updatedRows?.length){
+      if(statusOnly&&multEditorState.rowCache&&updatedRows?.length&&!addedNow){
         multEditorPatchRowCacheStatus(updatedRows);
       }else{
         await multEditorBuildRowCache();
