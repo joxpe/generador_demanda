@@ -1114,7 +1114,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           <div class="field"><label for="multEditorTipoCer">T.cer</label><select id="multEditorTipoCer" title="Tipo cerámico"><option value="">Todos</option></select></div>
           <div class="field"><label for="multEditorNoSurtir">No surt.</label><select id="multEditorNoSurtir" title="No surtir"><option value="">Todos</option><option value="1">Sí</option><option value="0">No</option></select></div>
           <div class="field multEditorTipoField"><label for="multEditorTipo">Ver</label><select id="multEditorTipo" title="Vista accesorios / cerámica"><option value="todos">A+C</option><option value="accesorios">Acc</option><option value="ceramica">Cer</option></select></div>
-          <div class="field multEditorPgField"><label for="multEditorPageSize">Mostrar</label><select id="multEditorPageSize" title="Todos muestra la tabla completa con celdas ligeras; también puedes usar páginas de 150, 300 o 500."><option value="all" selected>Todos</option><option value="150">150</option><option value="300">300</option><option value="500">500</option></select></div>
+          <div class="field multEditorPgField"><label for="multEditorPageSize">Mostrar</label><select id="multEditorPageSize" title="Por defecto 150 filas (rápido). 300/500 paginan. Todos usa scroll virtual: solo pinta filas visibles."><option value="150" selected>150</option><option value="300">300</option><option value="500">500</option><option value="all">Todos (virtual)</option></select></div>
           <button id="btnMultEditorClearFilters" class="smallbtn" type="button" title="Limpiar filtros">✕</button>
           <button id="btnMultEditorColumns" class="smallbtn" type="button" title="Columnas visibles">Cols</button>
           <span class="multEditorCovInline">
@@ -1231,11 +1231,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
 
         <div class="flowBlock primaryFlow">
           <div class="flowTitle"><span class="flowTitle-letter">B</span>Exportar / importar todo</div>
-          <p class="flowHelp">Meses + catálogo + múltiplos de surtido + prov_grupo (lo que tengas cargado).</p>
+          <p class="flowHelp">Respalda las entradas que reproducen el cálculo: meses, catálogo, categorías, múltiplos, metas, reglas y parámetros. La caché y los renglones calculados se regeneran.</p>
           <div class="actions">
-            <button id="btnExportFullBackup" class="btn" disabled>Exportar todo<small>JSON completo (respaldo_limsa_completo.json).</small></button>
-            <button id="btnImportFullBackup" class="btn">Importar todo<small>Restaura meses y, si vienen en el archivo, catálogo, múltiplos y prov_grupo.</small></button>
-            <input id="fullBackupInput" type="file" accept=".json,application/json" style="display:none" />
+            <button id="btnExportFullBackup" class="btn" disabled>Exportar todo<small>Datos base, múltiplos, metas, categorías, reglas y parámetros de cálculo.</small></button>
+            <button id="btnImportFullBackup" class="btn">Importar todo<small>Restaura las entradas necesarias para reproducir el cálculo.</small></button>
+            <input id="fullBackupInput" type="file" accept=".zip,.json,application/zip,application/json" style="display:none" />
           </div>
         </div>
 
@@ -1297,9 +1297,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
  * Requiere: XLSX, catalogRows, opcional inventoryRows, MULT_PROV_GRUPO_MAP.
  *
  * Factores en navegador:
- * - G (factor original): Catálogo de Artículos, columna Factor.
- * - F (factor general): se conserva del Excel cargado (balanceo solo vía actualizar_multiplos.py).
- * Si se pasan buffers de balanceo en opts, F sigue la misma prioridad que el script Python.
+ * - G (factor original): siempre desde Catálogo de Artículos, columna Factor.
+ * - F (factor general): balanceo (si hay) → F guardado → si F es placeholder 1 y catálogo >1, usa catálogo → 1.
+ * - SKUs nuevos: F y Múlt·bodega salen del Factor del catálogo (salvo balanceo).
  */
 (function (global) {
   'use strict';
@@ -1559,8 +1559,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     let categoria = '';
     if (grupo2) categoria = grupo2[0].toLowerCase();
     else if (statusRaw && statusRaw !== 'nan') categoria = statusRaw[0].toLowerCase();
-    let factorOriginal = Number(chosen?.Factor);
-    if (!Number.isFinite(factorOriginal) || factorOriginal <= 0) factorOriginal = 1;
+    let factorOriginal = catalogFactorNum(chosen?.Factor);
+    if (factorOriginal == null) factorOriginal = 1;
 
     let tipoGrupo = '';
     let tipoCer = '';
@@ -1648,15 +1648,28 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     const cer = new Map();
     for (const row of inventoryRows || []) {
       const sk = skuKey(row.Articulo) || skuKey(row.ArticuloReporte);
-      // Bodega puede venir como "ai", "AI", o con sufijos raros; solo 2 letras de almacén.
+      // Bodega: "ai", "AI", "25ai", a veces con basura alrededor.
       let bod = String(row.Bodega ?? row.BodegaOrigen ?? '').trim().toLowerCase();
-      if (/^\d{2}[a-z]{2}$/.test(bod)) bod = bod.slice(2); // p.ej. 25ai → ai
-      if (bod.length > 2 && /^[a-z]{2}/.test(bod)) bod = bod.slice(0, 2);
+      bod = bod.replace(/[^a-z0-9]/g, '');
+      if (/^\d{2}[a-z]{2}$/.test(bod)) bod = bod.slice(2);
+      const mBod = bod.match(/[ac][a-z]/);
+      if (mBod) bod = mBod[0];
+      else if (bod.length > 2) bod = bod.slice(0, 2);
       const exist = Number(row.Existencia ?? 0);
       const ordered = Number(row.Ordenado ?? 0);
-      if (!sk || !((Number.isFinite(exist) && exist > 0) || (Number.isFinite(ordered) && ordered > 0))) continue;
-      if (INV_ACC_BODS.has(bod)) addInventorySkuMovement(acc, sk, exist, ordered);
-      if (INV_CER_BODS.has(bod)) addInventorySkuMovement(cer, sk, exist, ordered);
+      const pend = Number(row.Pendiente ?? 0);
+      const total = Number(row.Total ?? 0);
+      // Cualquier movimiento operativo cuenta para alta en múltiplos.
+      const hasMove = (Number.isFinite(exist) && exist > 0)
+        || (Number.isFinite(ordered) && ordered > 0)
+        || (Number.isFinite(pend) && pend > 0)
+        || (Number.isFinite(total) && total > 0);
+      if (!sk || !hasMove) continue;
+      const existForFlag = (Number.isFinite(exist) && exist > 0)
+        ? exist
+        : ((Number.isFinite(total) && total > 0) ? total : ((Number.isFinite(pend) && pend > 0) ? pend : 0));
+      if (INV_ACC_BODS.has(bod)) addInventorySkuMovement(acc, sk, existForFlag, ordered);
+      if (INV_CER_BODS.has(bod)) addInventorySkuMovement(cer, sk, existForFlag, ordered);
     }
     return { acc, cer };
   }
@@ -2187,12 +2200,29 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     return out;
   }
 
-  function resolveFactorGeneral(sk, tipo, balanceoAcc, balanceoCer, balanceoCr, existing) {
+  function catalogFactorNum(value) {
+    let n = coerceNum(value);
+    if (typeof n === 'number' && n > 0) return n;
+    const raw = String(value ?? '').trim().replace(/\s/g, '').replace(',', '.');
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  function resolveFactorGeneral(sk, tipo, balanceoAcc, balanceoCer, balanceoCr, existing, catalogFactor) {
+    // Prioridad: balanceo → F guardado (si no es placeholder) → Factor catálogo → 1.
+    // F=1 se trata como placeholder cuando el catálogo trae un factor real (>1), p.ej. pianos en caja de 10.
     if (balanceoCr && Object.prototype.hasOwnProperty.call(balanceoCr, sk)) return balanceoCr[sk];
     const balMap = tipo === 'accesorios' ? balanceoAcc : balanceoCer;
     if (balMap && Object.prototype.hasOwnProperty.call(balMap, sk)) return balMap[sk];
+    const cat = catalogFactorNum(catalogFactor);
     const existingFactor = coerceNum(existing?.factor);
-    if (typeof existingFactor === 'number' && existingFactor > 0) return existingFactor;
+    const existOk = typeof existingFactor === 'number' && existingFactor > 0;
+    if (existOk) {
+      if (existingFactor === 1 && cat != null && cat > 1) return cat;
+      return existingFactor;
+    }
+    if (cat != null) return cat;
     return 1;
   }
 
@@ -2206,9 +2236,37 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     return out;
   }
 
+  function alignBodegasFactor(existingBodegas, oldFactor, newFactor, matrix, hdrRow) {
+    if (!existingBodegas || !Object.keys(existingBodegas).length) {
+      return defaultBodegas(newFactor, matrix, hdrRow);
+    }
+    const out = { ...existingBodegas };
+    const oldF = coerceNum(oldFactor);
+    const neu = coerceNum(newFactor);
+    if (!(typeof neu === 'number' && neu > 0)) return out;
+    // Si F era placeholder 1 y el catálogo corrige a >1, y ningún Múlt·bodega era >1 → alinear a F nuevo.
+    if (oldF === 1 && neu > 1) {
+      let allPlaceholder = true;
+      for (const k of Object.keys(out)) {
+        const v = coerceNum(out[k]);
+        if (typeof v === 'number' && v > 1) {
+          allPlaceholder = false;
+          break;
+        }
+      }
+      if (allPlaceholder) {
+        for (const k of Object.keys(out)) out[k] = neu;
+      }
+    }
+    return out;
+  }
+
   function buildUpdatedRow(existing, sk, codigo, profile, matrix, hdrRow, opts) {
     const desc = profile.descripcion || existing?.descripcion || '';
     const tipo = profile.tipo;
+    let factorOriginal = catalogFactorNum(profile.factor_original ?? profile.factor);
+    if (factorOriginal == null) factorOriginal = 1;
+    const oldFactor = existing ? coerceNum(existing.factor) : null;
     const factor = resolveFactorGeneral(
       sk,
       tipo,
@@ -2216,6 +2274,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       opts.balanceoCerMap,
       opts.balanceoCrMap,
       existing,
+      factorOriginal,
     );
     let fechaNvo = existing?.fecha_nvo ?? null;
     let fecha90 = existing?.fecha_90 ?? null;
@@ -2234,16 +2293,13 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       }
     }
     const bodegas = existing?.bodegas && Object.keys(existing.bodegas).length
-      ? { ...existing.bodegas }
+      ? alignBodegasFactor(existing.bodegas, oldFactor, factor, matrix, hdrRow)
       : defaultBodegas(factor, matrix, hdrRow);
 
     const noSurtir = resolveNoSurtirValue(existing, sk, codigo, profile, !!opts.recalcStatus);
 
     let status = existing?.status ?? null;
     if (opts.recalcStatus) status = calcStatus(codigo, desc, fechaNvo, profile.categoria);
-
-    let factorOriginal = coerceNum(profile.factor_original ?? profile.factor);
-    if (typeof factorOriginal !== 'number' || factorOriginal <= 0) factorOriginal = 1;
 
     const meta = {
       codigo,
@@ -2822,6 +2878,19 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     return { wb, ws };
   }
 
+  /** Export completo de la matriz → xlsx. Garantiza que F, G y filas nuevas persistan en IndexedDB. */
+  function exportMatrixFullXlsx(matrix, sheetName) {
+    if (typeof XLSX === 'undefined') throw new Error('XLSX no está disponible');
+    const { wb } = workbookFromMatrix(matrix, sheetName || 'Hoja1');
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellDates: true });
+    if (out instanceof ArrayBuffer) return out.slice(0);
+    if (ArrayBuffer.isView(out)) {
+      const u = new Uint8Array(out.buffer, out.byteOffset, out.byteLength);
+      return u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength);
+    }
+    return new Uint8Array(out).buffer;
+  }
+
   function rowToArray(data) {
     const arr = new Array(MATRIX_COL_COUNT).fill(null);
     arr[COL.codigo] = data.codigo;
@@ -2926,6 +2995,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       omitidos_no_activos: 0,
       omitidos_sin_catalogo_inv: 0,
       omitidos_ya_en_hoja: 0,
+      factores_desde_catalogo: 0,
       inv_skus_acc: 0,
       inv_skus_cer: 0,
       cer_bodega_intel: cerBodegaIntel.total,
@@ -3042,6 +3112,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           continue;
         }
         if (opts.soloInventario) continue;
+        const oldFactor = coerceNum(existing.factor);
         const newData = buildUpdatedRow(existing, sk, existing.codigo, profile, matrix, hdrRow, runOpts);
         if (hasBalanceoBuffers) {
           const hasBalanceo = tipoEsperado === 'accesorios'
@@ -3070,6 +3141,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           );
         }
         if (rowNeedsUpdate(existing, newData)) {
+          const neuF = coerceNum(newData.factor);
+          const catG = coerceNum(newData.factor_original);
+          if (oldFactor === 1 && typeof neuF === 'number' && neuF > 1) stats.factores_desde_catalogo++;
+          else if ((oldFactor == null || oldFactor === '' || oldFactor === 0) && typeof catG === 'number' && catG > 0) stats.factores_desde_catalogo++;
           writeRow(matrix, r, newData, sections);
           updatedRows.add(r);
           stats.actualizados++;
@@ -3135,6 +3210,16 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         data.tipo_grupo = '';
         data.tipo_ceramico = '';
         data.bodega = '';
+        // Garantiza F/G desde catálogo en altas nuevas (p.ej. pianos factor 10, no 1).
+        {
+          const catF = catalogFactorNum(lineProfile.factor_original ?? lineProfile.factor) || 1;
+          data.factor_original = catF;
+          const fNow = coerceNum(data.factor);
+          if (!(typeof fNow === 'number' && fNow > 0) || (fNow === 1 && catF > 1)) {
+            data.factor = catF;
+            data.bodegas = defaultBodegas(catF, matrix, 1);
+          }
+        }
         newAcc.push(data);
         existingAcc.add(sk);
         stats.nuevos_acc++;
@@ -3164,6 +3249,15 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         });
         data.tipo = 'ceramica';
         data.bodega = resolveCerBodega('', sk, lineProfile, provMap, cerBodegaIntel, stats, { isNew: true });
+        {
+          const catF = catalogFactorNum(lineProfile.factor_original ?? lineProfile.factor) || 1;
+          data.factor_original = catF;
+          const fNow = coerceNum(data.factor);
+          if (!(typeof fNow === 'number' && fNow > 0) || (fNow === 1 && catF > 1)) {
+            data.factor = catF;
+            data.bodegas = defaultBodegas(catF, matrix, sections.cerHeader);
+          }
+        }
         newCer.push(data);
         existingCer.add(sk);
         stats.nuevos_cer++;
@@ -3222,8 +3316,14 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     }
 
     const patchCols = statusOnly ? [COL.status, COL.no_surtir] : null;
-    const buffer = await exportOriginalXlsxPatched(fileBuffer, matrix, sections, updatedRows, insertions, patchCols, deletedExcelRows);
-    return { buffer, stats, sheetName: name, updatedRows: [...updatedRows] };
+    let buffer = await exportOriginalXlsxPatched(fileBuffer, matrix, sections, updatedRows, insertions, patchCols, deletedExcelRows);
+    // Si hubo altas o muchos cambios, priorizar export completo al devolver (más fiable al guardar).
+    const heavy = (stats.nuevos_acc || 0) + (stats.nuevos_cer || 0) + (stats.factores_desde_catalogo || 0) > 0
+      || (stats.actualizados || 0) > 200;
+    if (heavy) {
+      try { buffer = exportMatrixFullXlsx(matrix, name); } catch (e) { console.warn('exportMatrixFullXlsx', e); }
+    }
+    return { buffer, stats, sheetName: name, updatedRows: [...updatedRows], matrix, sections };
   }
 
   function parseProvGrupoCsv(text) {
@@ -3242,10 +3342,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     return map;
   }
 
-  function buildMultiplosReabIndex(fileBuffer, tipoEsperado = 'accesorios') {
-    const buf = fileBuffer instanceof ArrayBuffer ? fileBuffer.slice(0) : new Uint8Array(fileBuffer).buffer.slice(0);
-    const { matrix, sections } = prepareMatrixFromBuffer(buf);
+  function buildMultiplosReabIndexFromMatrix(matrix, sections, tipoEsperado = 'accesorios') {
     const map = new Map();
+    if (!matrix || !sections) return map;
     const blocks = tipoEsperado === 'ceramica'
       ? [{ start: sections.cerStart, end: sections.cerEnd }]
       : [{ start: sections.accStart, end: sections.accEnd }];
@@ -3261,6 +3360,13 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           const n = coerceNum(val);
           if (typeof n === 'number' && n > 0) inv_meta_bodegas[bod] = Math.round(n);
         }
+        // F = factor general (columna F del Excel/editor). Es la fuente del semáforo.
+        // G = factor original catálogo (solo respaldo si F vacío/0).
+        const fRaw = coerceNum(row.factor);
+        const gRaw = coerceNum(row.factor_original);
+        let factorVal = 1;
+        if (typeof fRaw === 'number' && fRaw > 0) factorVal = fRaw;
+        else if (typeof gRaw === 'number' && gRaw > 0) factorVal = gRaw;
         map.set(row.sk, {
           ...nsMeta,
           status: normalizeLegacyMultiplosStatus(row.status == null ? '' : String(row.status).trim()),
@@ -3272,11 +3378,18 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           inv_meta_bodegas,
           bodegas: row.bodegas || {},
           demandas: row.demandas || {},
-          factor: coerceNum(row.factor) || 1,
+          factor: factorVal,
+          factor_original: typeof gRaw === 'number' && gRaw > 0 ? gRaw : null,
         });
       }
     }
     return map;
+  }
+
+  function buildMultiplosReabIndex(fileBuffer, tipoEsperado = 'accesorios') {
+    const buf = fileBuffer instanceof ArrayBuffer ? fileBuffer.slice(0) : new Uint8Array(fileBuffer).buffer.slice(0);
+    const { matrix, sections } = prepareMatrixFromBuffer(buf);
+    return buildMultiplosReabIndexFromMatrix(matrix, sections, tipoEsperado);
   }
 
   function prepareMatrixFromBuffer(fileBuffer) {
@@ -3310,7 +3423,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
   global.multApi = {
     COL, BOD_COL_START, BOD_COL_COUNT, DEM_COL_OFFSET, META_COL_OFFSET, MATRIX_COL_COUNT,
     prepareMatrixFromBuffer, allDataRowIndexes, matrixPatchColumns, cellValueKind,
-    coerceNum, readRow, exportMatrix: exportOriginalXlsxPatched, skuKey, ensureRow, headerRowFor,
+    coerceNum, readRow, exportMatrix: exportOriginalXlsxPatched, exportMatrixFull: exportMatrixFullXlsx, skuKey, ensureRow, headerRowFor,
     normGrupo, normCerBodega, proveedorDeCodigo, bodegaPorProvGrupo,
     catalogStatusIsActive, buildCatalogProfiles, loadInventorySkus, profileForInventoryType,
     analyzeMultiplosDuplicates, validateMultiplosBuffer,
@@ -3320,6 +3433,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
   global.actualizarMultiplosSurtido = actualizarMultiplos;
   global.parseProvGrupoCsv = parseProvGrupoCsv;
   global.buildMultiplosReabIndex = buildMultiplosReabIndex;
+  global.buildMultiplosReabIndexFromMatrix = buildMultiplosReabIndexFromMatrix;
   global.validateMultiplosBuffer = validateMultiplosBuffer;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3381,9 +3495,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
   </script>
 
   <script>
-    const DB_NAME='limsa_demanda_db_v1', STORE='meses', CATALOG_STORE='catalogo_articulos', CATEGORIA_STORE='categorias_articulo', MULTIPLOS_STORE='multiplos_surtido', PROV_GRUPO_STORE='prov_grupo_map', INVENTORY_STORE='inventario_diario', REAB_DEMAND_STORE='reab_demanda_cache';
+    const DB_NAME='limsa_demanda_db_v1', STORE='meses', CATALOG_STORE='catalogo_articulos', CATEGORIA_STORE='categorias_articulo', MULTIPLOS_STORE='multiplos_surtido', PROV_GRUPO_STORE='prov_grupo_map', INVENTORY_STORE='inventario_diario', REAB_DEMAND_STORE='reab_demanda_cache', REAB_CENTRAL_LINES_STORE='reab_lineas_centrales', REAB_STATE_STORE='reab_estado_sesion';
     const INVENTORY_EXPIRE_HOUR=23, INVENTORY_EXPIRE_MINUTE=25;
-    const BACKUP_FORMAT='limsa_demanda_backup', BACKUP_VERSION=3;
+    const BACKUP_FORMAT='limsa_demanda_backup', BACKUP_ZIP_FORMAT='limsa_demanda_backup_zip', BACKUP_VERSION=6;
     const BACKUP_DEMAND_FORMAT='limsa_demanda_meses', BACKUP_DEMAND_VERSION=1;
     const CIA_LOCALIZACION={25:'Ags',27:'Ags',30:'Ags',33:'Ags-Vtas Calle',35:'Ags',37:'Ags',40:'Ags',45:'Ags',50:'Ags',61:'SnJuan',71:'Leon',72:'Leon',73:'Leon-Vtas Calle',74:'Leon'};
     const REPORTES=[
@@ -3583,7 +3697,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         sharedCoverage:true,
         routes:[
           {central:'ag',centralCia:70,filePrefix:'ag',priority:['aa','ad','ah']},
-          {central:'ai',centralCia:25,filePrefix:'a',priority:['ab','al','ac','at','ah','aj','aa','as','am','ad','ag']}
+          {central:'ai',centralCia:25,filePrefix:'a',priority:['ab','al','ac','at','ah','aj','aa','as','am','ad']}
         ]
       },
       ceramicos:{
@@ -3697,6 +3811,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         reabInvalidateFilterCache();
         reabRender({keepPage:true,invalidateFilters:false,skipCeramicRefresh:true,skipFamiliaRefresh:true});
       }else reabUpdateProgramScopeUi();
+      reabScheduleStatePersist();
     }
     function reabScheduleProgramScopeApply(){
       clearTimeout(reabProgramScopeTimer);
@@ -3795,6 +3910,14 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       if(mode==='cr')return bod==='CR';
       if(mode==='ci')return bod!=='CR';
       return true;
+    }
+    function reabAllocationRouteAllowsArticle(meta,row){
+      if(!meta||!row)return false;
+      if(row.CentralSeedOnly){
+        const seeds=new Set((row.CentralSeeds||[]).map(x=>String(x||'').trim().toLowerCase()));
+        return seeds.has(String(meta.route?.central||'').trim().toLowerCase());
+      }
+      return reabRouteAllowsArticle(meta,row);
     }
     function reabExportPrefixForRow(row){
       const c=String(row?.Central||'').toLowerCase();
@@ -4255,7 +4378,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(f)handleFile(f);});
     }
     async function handleFile(file){try{setStatus('Leyendo archivo...'); const {rows,periodo}=await parseFile(file); parsedRows=rows; if(periodo)$('periodoInput').value=periodo; fileInfo.innerHTML=`<strong>${file.name}</strong><br>${rows.length.toLocaleString('es-MX')} registros detectados${periodo?` | Mes detectado: <strong>${periodo}</strong>`:''}`; btnSave.disabled=false; btnCurrent.disabled=false; setStatus('Archivo listo para guardar o generar reporte.','oktxt');}catch(err){parsedRows=[];btnSave.disabled=true;btnCurrent.disabled=true;fileInfo.textContent='No se pudo leer el archivo.';setStatus('Error: '+err.message,'errtxt');}}
-    const DB_SCHEMA_VERSION=6;
+    const DB_SCHEMA_VERSION=8;
     function openDB(){
       return new Promise((resolve,reject)=>{
         const req=indexedDB.open(DB_NAME,DB_SCHEMA_VERSION);
@@ -4269,6 +4392,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           if(!d.objectStoreNames.contains(PROV_GRUPO_STORE))d.createObjectStore(PROV_GRUPO_STORE,{keyPath:'id'});
           if(!d.objectStoreNames.contains(INVENTORY_STORE))d.createObjectStore(INVENTORY_STORE,{keyPath:'id'});
           if(!d.objectStoreNames.contains(REAB_DEMAND_STORE))d.createObjectStore(REAB_DEMAND_STORE,{keyPath:'id'});
+          if(!d.objectStoreNames.contains(REAB_CENTRAL_LINES_STORE))d.createObjectStore(REAB_CENTRAL_LINES_STORE,{keyPath:'id'});
+          if(!d.objectStoreNames.contains(REAB_STATE_STORE))d.createObjectStore(REAB_STATE_STORE,{keyPath:'id'});
         };
         req.onsuccess=e=>resolve(e.target.result);
         req.onerror=()=>reject(req.error||new Error('No se pudo abrir IndexedDB'));
@@ -4289,6 +4414,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     function getOne(storeName,id){return new Promise((resolve,reject)=>{const req=dbStore(storeName).get(id);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
     function putOne(storeName,obj){return new Promise((resolve,reject)=>{const req=dbStore(storeName,'readwrite').put(obj);req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);});}
     function deleteOne(storeName,id){return new Promise((resolve,reject)=>{const req=dbStore(storeName,'readwrite').delete(id);req.onsuccess=()=>resolve();req.onerror=()=>reject(req.error);});}
+    function getAllFromStore(storeName){return new Promise((resolve,reject)=>{const req=dbStore(storeName).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});}
+    function getAllKeysFromStore(storeName){return new Promise((resolve,reject)=>{const req=dbStore(storeName).getAllKeys();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);});}
     function readTextFile(file){return new Promise((resolve,reject)=>{const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result||'')); reader.onerror=()=>reject(reader.error||new Error('No se pudo leer el archivo.')); reader.readAsText(file);});}
 
     function reabRowsFingerprint(rows){
@@ -4310,8 +4437,17 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const rows=Array.isArray(m?.rows)?m.rows:[];
       return [m.periodo,rows.length,m.fingerprint||reabRowsFingerprint(rows)].join(':');
     }
+    const REAB_DEMAND_CACHE_VERSION='reab_calc_20260722_v1';
     function reabDemandCacheId(target,eligible){
-      return ['acc',target,eligible.map(reabMonthCacheToken).join('~')].join('|');
+      return [REAB_DEMAND_CACHE_VERSION,target,eligible.map(reabMonthCacheToken).join('~')].join('|');
+    }
+    function reabCompactDemandCacheRows(rows){
+      const fields=['Articulo','Zona','DemandaSugerida','DemandaEsperada','DemandaCalculada','Proveedor','Grupo','CompraAutomatica','PoliticaInventario','TipoDemanda','MesesConVenta','SegmentoABC','SegmentoServicio'];
+      return(Array.isArray(rows)?rows:[]).map(row=>{
+        const out={};
+        for(const field of fields)if(row?.[field]!==undefined)out[field]=row[field];
+        return out;
+      });
     }
     async function getReabDemandCache(id){
       if(reabDemandMemoryCache.has(id))return {hit:'memoria',rows:reabDemandMemoryCache.get(id)};
@@ -4320,8 +4456,147 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       return null;
     }
     async function putReabDemandCache(id,rows,target,eligible){
-      reabDemandMemoryCache.set(id,rows);
-      try{await putOne(REAB_DEMAND_STORE,{id,target,createdAt:new Date().toISOString(),monthCount:eligible.length,rowCount:rows.length,months:eligible.map(m=>m.periodo),rows});}catch(err){console.warn('No se pudo guardar cache de demanda reabastecimiento',err);}
+      const compactRows=reabCompactDemandCacheRows(rows);
+      reabDemandMemoryCache.set(id,compactRows);
+      try{await putOne(REAB_DEMAND_STORE,{id,cacheVersion:REAB_DEMAND_CACHE_VERSION,target,createdAt:new Date().toISOString(),monthCount:eligible.length,rowCount:compactRows.length,months:eligible.map(m=>m.periodo),rows:compactRows});}catch(err){console.warn('No se pudo guardar cache de demanda reabastecimiento',err);}
+    }
+    function reabCentralLineType(){return reabCurrentTipo()==='ceramicos'?'ceramicos':'accesorios';}
+    function reabNormalizeCentralLines(raw){
+      const src=Array.isArray(raw)?raw:(Array.isArray(raw?.lines)?raw.lines:[]);
+      const out=[];
+      const seen=new Set();
+      for(const item of src){
+        const tipo=String(item?.tipo||'').trim().toLowerCase()==='ceramicos'?'ceramicos':'accesorios';
+        const articulo=reabArtKey(item?.articulo||item?.Articulo||'');
+        const central=String(item?.central||item?.Central||'').trim().toLowerCase();
+        if(!articulo||!['ai','ag','ci','cr','cg'].includes(central))continue;
+        const key=[tipo,articulo,central].join('|');
+        if(seen.has(key))continue;
+        seen.add(key);
+        out.push({
+          tipo,articulo,central,
+          firstSeenAt:item?.firstSeenAt||item?.createdAt||'',
+          lastSeenAt:item?.lastSeenAt||item?.updatedAt||'',
+          lastExistence:round2(toNumber(item?.lastExistence))
+        });
+      }
+      return out;
+    }
+    async function reabGetCentralLinesRecord(){
+      try{
+        const rec=await getOne(REAB_CENTRAL_LINES_STORE,'actual');
+        return{id:'actual',version:1,updatedAt:rec?.updatedAt||'',lines:reabNormalizeCentralLines(rec)};
+      }catch(err){
+        console.warn('No se pudieron leer lineas persistentes de inventario central',err);
+        return{id:'actual',version:1,updatedAt:'',lines:[]};
+      }
+    }
+    async function reabPutCentralLinesRecord(lines){
+      const clean=reabNormalizeCentralLines(lines);
+      const rec={id:'actual',version:1,updatedAt:new Date().toISOString(),lineCount:clean.length,lines:clean};
+      await putOne(REAB_CENTRAL_LINES_STORE,rec);
+      return rec;
+    }
+    /**
+     * Conserva los pares articulo-central detectados alguna vez con existencia.
+     * Al recalcular agrega los pares nuevos y mantiene los anteriores aunque la
+     * existencia central del dia llegue despues a cero.
+     */
+    async function reabSyncCentralLinesFromInventory(invMap,isTypeOk){
+      const rec=await reabGetCentralLinesRecord();
+      const tipo=reabCentralLineType();
+      const routeCentrals=new Set(reabCentrales());
+      const byKey=new Map(rec.lines.map(x=>[[x.tipo,x.articulo,x.central].join('|'),x]));
+      const now=new Date().toISOString();
+      let added=0,seenNow=0;
+      invMap.forEach((inv,key)=>{
+        const central=String(inv?.Bodega||String(key).split('|')[1]||'').trim().toLowerCase();
+        if(!routeCentrals.has(central)||!(toNumber(inv?.Total)>0))return;
+        const articulo=reabArtKey(inv?.Articulo||String(key).split('|')[0]||'');
+        if(!articulo||!isTypeOk(articulo))return;
+        const lineKey=[tipo,articulo,central].join('|');
+        const prev=byKey.get(lineKey);
+        if(prev){
+          prev.lastSeenAt=now;
+          prev.lastExistence=round2(toNumber(inv.Total));
+        }else{
+          byKey.set(lineKey,{tipo,articulo,central,firstSeenAt:now,lastSeenAt:now,lastExistence:round2(toNumber(inv.Total))});
+          added++;
+        }
+        seenNow++;
+      });
+      const lines=Array.from(byKey.values());
+      try{await reabPutCentralLinesRecord(lines);}catch(err){console.warn('No se pudieron guardar lineas de inventario central',err);}
+      return{lines:lines.filter(x=>x.tipo===tipo&&routeCentrals.has(x.central)),added,seenNow,total:lines.filter(x=>x.tipo===tipo).length};
+    }
+    let reabStatePersistTimer=null,reabStateRestoring=false;
+    function reabSessionType(tipo){return String(tipo||reabCurrentTipo()).toLowerCase()==='ceramicos'?'ceramicos':'accesorios';}
+    function reabSessionRowRouteAllowed(row){
+      const central=String(row?.Central||'').trim().toLowerCase();
+      const destino=String(row?.BodegaDestino||'').trim().toLowerCase();
+      if(!central||!destino)return false;
+      const meta=(row?.RouteId&&reabRouteMetaById(row.RouteId))||reabRouteMetaList().find(x=>String(x.route?.central||'').toLowerCase()===central);
+      return!!(meta&&meta.priority.includes(destino));
+    }
+    function reabBuildSessionRecord(tipo){
+      const type=reabSessionType(tipo);
+      const selected=reabProgramScopeSelected instanceof Set?[...reabProgramScopeSelected]:[];
+      return{
+        id:type,version:1,savedAt:new Date().toISOString(),tipo:type,
+        targetPeriod:String($('targetPeriod')?.value||''),
+        leadTime:toNumber($('reabLeadtimeDays')?.value)||6,
+        metaOverride:String($('reabMetaDays')?.value||''),
+        programScopeMode:reabProgramScopeMode||'full',
+        programScopeSelected:selected,
+        rowCount:reabRows.length,
+        rows:reabRows
+      };
+    }
+    async function reabPersistCurrentSession(opts={}){
+      if(!db||reabStateRestoring)return null;
+      if(opts.flushEditor&&typeof multEditorFlushActiveCell==='function')multEditorFlushActiveCell();
+      const rec=reabBuildSessionRecord(opts.tipo);
+      await putOne(REAB_STATE_STORE,rec);
+      return rec;
+    }
+    function reabScheduleStatePersist(delay=350){
+      if(!db||reabStateRestoring)return;
+      clearTimeout(reabStatePersistTimer);
+      reabStatePersistTimer=setTimeout(()=>{
+        reabStatePersistTimer=null;
+        reabPersistCurrentSession().catch(err=>console.warn('No se pudo guardar estado del semaforo',err));
+      },delay);
+    }
+    async function reabLoadSessionState(tipo,opts={}){
+      if(!db)return false;
+      const type=reabSessionType(tipo);
+      const rec=await getOne(REAB_STATE_STORE,type);
+      if(!rec)return false;
+      reabStateRestoring=true;
+      try{
+        if($('targetPeriod')&&rec.targetPeriod)$('targetPeriod').value=rec.targetPeriod;
+        if($('reabLeadtimeDays')&&rec.leadTime!=null)$('reabLeadtimeDays').value=String(rec.leadTime);
+        if($('reabMetaDays'))$('reabMetaDays').value=String(rec.metaOverride||'');
+        const allowedModes=new Set(['full','daily_acc','daily_cr','daily_ci','selected']);
+        reabProgramScopeMode=allowedModes.has(rec.programScopeMode)?rec.programScopeMode:'full';
+        reabProgramScopeSelected=new Set(Array.isArray(rec.programScopeSelected)?rec.programScopeSelected.map(x=>String(x).toLowerCase()):[]);
+        reabEnsureProgramScopeSelection();
+        reabRenderProgramScopeOptions();
+        reabUpdateProgramScopeUi();
+        reabUpdateMetaProgramUiTitle();
+        const rows=Array.isArray(rec.rows)?rec.rows.filter(reabSessionRowRouteAllowed):[];
+        reabRows=rows;
+        reabRows.forEach((r,i)=>{r.__orden=Number.isFinite(Number(r.__orden))?Number(r.__orden):i;});
+        reabRefreshRowIndex();
+        if(reabRows.length)reabRecomputeManual();
+        reabInvalidateFilterCache();
+        reabPageState.page=0;
+        const sum=$('reabSummary');
+        if(sum)sum.innerHTML=reabRows.length?reabSummaryHtml(reabProgramScopeRows(reabGetViewRows())):'';
+        reabRender({keepPage:true,invalidateFilters:false});
+        if($('btnClearReabProgram'))$('btnClearReabProgram').disabled=!reabRows.length;
+        return true;
+      }finally{reabStateRestoring=false;}
     }
     function buildCatalogInfoHtml(fileName,rowCount,mapSize,opts={}){
       const n=Number(rowCount||0).toLocaleString('es-MX');
@@ -4497,8 +4772,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         },50);
       }else{
         try{
-          if(typeof reabLoadMultiplosReabMap==='function')n=await reabLoadMultiplosReabMap(buf);
-          else if(typeof buildMultiplosReabIndex==='function'){
+          if(typeof reabLoadMultiplosReabMap==='function'){
+            n=await reabLoadMultiplosReabMap(buf,{forceBufferIndex:!!opts.forceBufferIndex});
+          }else if(typeof buildMultiplosReabIndex==='function'){
             const tipo=(($('reabTipo')&&$('reabTipo').value)||'accesorios')==='ceramicos'?'ceramica':'accesorios';
             multiplosReabMap=buildMultiplosReabIndex(buf,tipo);
             n=multiplosReabMap.size;
@@ -4590,9 +4866,29 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       return out;
     }
     function backupPayloadIsFull(data){
-      return !!(data&&typeof data==='object'&&!Array.isArray(data)&&(data.format===BACKUP_FORMAT||data.version>=2||data.catalogo||data.categorias||data.multiplos||data.provGrupo));
+      return !!(data&&typeof data==='object'&&!Array.isArray(data)&&(data.format===BACKUP_FORMAT||data.version>=2||data.catalogo||data.categorias||data.multiplos||data.provGrupo||data.centralLines||data.reabSessions||data.reabDemandCache));
+    }
+    async function flushPendingEditorForFullBackup(){
+      if(!multEditorState)return 0;
+      clearTimeout(multEditorMetaPersistTimer);
+      multEditorMetaPersistTimer=null;
+      multEditorMetaPersistRows.clear();
+      if(typeof multEditorFlushActiveCell==='function')multEditorFlushActiveCell();
+      const dirty=[...multEditorState.dirtyRows];
+      if(!dirty.length)return 0;
+      await multEditorSyncBuffer({keepDirty:true,preferFull:true,forceFull:true});
+      const savedLen=await saveMultiplosLocal(multEditorState.fileName,multEditorState.fileBuffer);
+      if(!savedLen)throw new Error('No se pudieron guardar los cambios pendientes del editor antes del respaldo.');
+      if(typeof invMetaSidecarReconcileFromBuffer==='function')await invMetaSidecarReconcileFromBuffer(multEditorState.fileBuffer);
+      await applyMultiplosFromBuffer(multEditorState.fileName,multEditorState.fileBuffer,{fromMemory:false,save:false,skipEditorReload:true,forceBufferIndex:true});
+      dirty.forEach(r=>multEditorState.dirtyRows.delete(r));
+      return dirty.length;
     }
     async function buildFullBackupPayload(){
+      const editorRowsSaved=await flushPendingEditorForFullBackup();
+      clearTimeout(reabStatePersistTimer);
+      reabStatePersistTimer=null;
+      await reabPersistCurrentSession({flushEditor:false});
       const meses=await getAllMonths();
       let catalogo=null;
       try{
@@ -4637,7 +4933,413 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         }catch(e){}
         provGrupo={sourceName,map:pmap};
       }
-      return{format:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),meses,catalogo,categorias,multiplos,provGrupo,semaforoRules:reabGetSemaforoRulesConfig()};
+      let centralLines=null;
+      try{
+        const rec=await reabGetCentralLinesRecord();
+        if(rec.lines.length)centralLines={version:1,updatedAt:rec.updatedAt||'',lineCount:rec.lines.length,lines:rec.lines};
+      }catch(e){console.warn('buildFullBackupPayload centralLines',e);}
+      let reabSessions=[];
+      let reabDemandCache=[];
+      try{reabSessions=await getAllFromStore(REAB_STATE_STORE);}catch(e){console.warn('buildFullBackupPayload reabSessions',e);}
+      try{reabDemandCache=await getAllFromStore(REAB_DEMAND_STORE);}catch(e){console.warn('buildFullBackupPayload reabDemandCache',e);}
+      return{format:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),editorRowsSaved,meses,catalogo,categorias,multiplos,provGrupo,centralLines,reabSessions,reabDemandCache,semaforoRules:reabGetSemaforoRulesConfig()};
+    }
+    function backupZipSafeName(value,fallback='registro'){
+      const clean=String(value||fallback).trim().replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'');
+      return clean||fallback;
+    }
+    function backupZipAddRowsRecord(zip,basePath,record,rowKey='rows',chunkSize=2000){
+      const rows=Array.isArray(record?.[rowKey])?record[rowKey]:[];
+      const meta={...(record||{})};
+      delete meta[rowKey];
+      const metaPath=`${basePath}/meta.json`;
+      zip.file(metaPath,JSON.stringify(meta));
+      const rowPaths=[];
+      for(let start=0,part=1;start<rows.length;start+=chunkSize,part++){
+        const path=`${basePath}/rows_${String(part).padStart(4,'0')}.json`;
+        zip.file(path,JSON.stringify(rows.slice(start,start+chunkSize)));
+        rowPaths.push(path);
+      }
+      return{metaPath,rowPaths,rowCount:rows.length};
+    }
+    async function backupZipReadRowsRecord(zip,descriptor,rowKey='rows'){
+      if(!descriptor?.metaPath||!zip.file(descriptor.metaPath))throw new Error('El respaldo ZIP tiene una sección incompleta: '+(descriptor?.metaPath||'sin metadatos'));
+      const meta=JSON.parse(await zip.file(descriptor.metaPath).async('string'));
+      const rows=[];
+      for(const path of descriptor.rowPaths||[]){
+        const entry=zip.file(path);
+        if(!entry)throw new Error('Falta el bloque '+path+' en el respaldo ZIP.');
+        const part=JSON.parse(await entry.async('string'));
+        if(!Array.isArray(part))throw new Error('Bloque inválido en '+path+'.');
+        for(const row of part)rows.push(row);
+      }
+      return{...meta,[rowKey]:rows};
+    }
+    let backupCrcTable=null;
+    function backupGetCrcTable(){
+      if(backupCrcTable)return backupCrcTable;
+      backupCrcTable=new Uint32Array(256);
+      for(let n=0;n<256;n++){
+        let c=n;
+        for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);
+        backupCrcTable[n]=c>>>0;
+      }
+      return backupCrcTable;
+    }
+    function backupCrc32(bytes){
+      const table=backupGetCrcTable();
+      let c=0xffffffff;
+      for(let i=0;i<bytes.length;i++)c=table[(c^bytes[i])&255]^(c>>>8);
+      return(c^0xffffffff)>>>0;
+    }
+    function backupDosDateTime(date=new Date()){
+      const year=Math.max(1980,date.getFullYear());
+      return{
+        time:((date.getHours()&31)<<11)|((date.getMinutes()&63)<<5)|((Math.floor(date.getSeconds()/2))&31),
+        date:(((year-1980)&127)<<9)|(((date.getMonth()+1)&15)<<5)|(date.getDate()&31)
+      };
+    }
+    function backupZipHeader(size,fill){
+      const bytes=new Uint8Array(size),view=new DataView(bytes.buffer);
+      fill(view);
+      return bytes;
+    }
+    class BackupZipStreamWriter{
+      constructor(writable){this.writable=writable;this.offset=0;this.entries=[];this.encoder=new TextEncoder();this.closed=false;}
+      async writeBytes(bytes){
+        const data=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+        await this.writable.write(data);
+        this.offset+=data.byteLength;
+        if(this.offset>0xffffffff)throw new Error('El respaldo supera 4 GB; se requiere dividir la base antes de exportar.');
+      }
+      async deflate(bytes){
+        if(typeof CompressionStream!=='function'||bytes.byteLength<1024)return null;
+        try{
+          const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+          const compressed=new Uint8Array(await new Response(stream).arrayBuffer());
+          return compressed.byteLength<bytes.byteLength?compressed:null;
+        }catch(e){return null;}
+      }
+      async add(name,data,opts={}){
+        const nameBytes=this.encoder.encode(String(name));
+        const bytes=typeof data==='string'?this.encoder.encode(data):(data instanceof Uint8Array?data:new Uint8Array(data));
+        if(bytes.byteLength>0xffffffff)throw new Error('Una sección individual del respaldo supera 4 GB.');
+        const compressed=opts.compress===false?null:await this.deflate(bytes);
+        const payload=compressed||bytes,method=compressed?8:0;
+        const crc=backupCrc32(bytes),size=bytes.byteLength,compressedSize=payload.byteLength,offset=this.offset,{time,date}=backupDosDateTime();
+        const local=backupZipHeader(30+nameBytes.length,v=>{
+          v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0x0800,true);v.setUint16(8,method,true);
+          v.setUint16(10,time,true);v.setUint16(12,date,true);v.setUint32(14,crc,true);v.setUint32(18,compressedSize,true);v.setUint32(22,size,true);
+          v.setUint16(26,nameBytes.length,true);v.setUint16(28,0,true);new Uint8Array(v.buffer,30).set(nameBytes);
+        });
+        await this.writeBytes(local);
+        await this.writeBytes(payload);
+        this.entries.push({nameBytes,crc,size,compressedSize,method,offset,time,date});
+      }
+      async close(){
+        const centralOffset=this.offset;
+        for(const e of this.entries){
+          const central=backupZipHeader(46+e.nameBytes.length,v=>{
+            v.setUint32(0,0x02014b50,true);v.setUint16(4,20,true);v.setUint16(6,20,true);v.setUint16(8,0x0800,true);v.setUint16(10,e.method,true);
+            v.setUint16(12,e.time,true);v.setUint16(14,e.date,true);v.setUint32(16,e.crc,true);v.setUint32(20,e.compressedSize,true);v.setUint32(24,e.size,true);
+            v.setUint16(28,e.nameBytes.length,true);v.setUint16(30,0,true);v.setUint16(32,0,true);v.setUint16(34,0,true);v.setUint16(36,0,true);
+            v.setUint32(38,0,true);v.setUint32(42,e.offset,true);new Uint8Array(v.buffer,46).set(e.nameBytes);
+          });
+          await this.writeBytes(central);
+        }
+        const centralSize=this.offset-centralOffset;
+        if(this.entries.length>65535)throw new Error('El respaldo contiene demasiados bloques ZIP.');
+        const end=backupZipHeader(22,v=>{
+          v.setUint32(0,0x06054b50,true);v.setUint16(4,0,true);v.setUint16(6,0,true);v.setUint16(8,this.entries.length,true);v.setUint16(10,this.entries.length,true);
+          v.setUint32(12,centralSize,true);v.setUint32(16,centralOffset,true);v.setUint16(20,0,true);
+        });
+        await this.writeBytes(end);
+        await this.writable.close();
+        this.closed=true;
+      }
+      async abort(reason){if(!this.closed&&this.writable?.abort)try{await this.writable.abort(reason);}catch(e){}}
+    }
+    class BackupZipFileReader{
+      constructor(file,entries){this.sourceFile=file;this.entries=entries;this.decoder=new TextDecoder();}
+      static async open(file){
+        const tailSize=Math.min(file.size,65557);
+        const tail=new Uint8Array(await file.slice(file.size-tailSize).arrayBuffer());
+        const tailView=new DataView(tail.buffer,tail.byteOffset,tail.byteLength);
+        let eocd=-1;
+        for(let i=tail.length-22;i>=0;i--){if(tailView.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+        if(eocd<0)throw new Error('No se encontró el directorio del ZIP.');
+        const entryCount=tailView.getUint16(eocd+10,true),centralSize=tailView.getUint32(eocd+12,true),centralOffset=tailView.getUint32(eocd+16,true);
+        const central=new Uint8Array(await file.slice(centralOffset,centralOffset+centralSize).arrayBuffer());
+        const view=new DataView(central.buffer,central.byteOffset,central.byteLength),decoder=new TextDecoder(),entries=new Map();
+        let pos=0;
+        for(let i=0;i<entryCount;i++){
+          if(pos+46>central.length||view.getUint32(pos,true)!==0x02014b50)throw new Error('Directorio central ZIP inválido.');
+          const method=view.getUint16(pos+10,true),compressedSize=view.getUint32(pos+20,true),uncompressedSize=view.getUint32(pos+24,true);
+          const nameLen=view.getUint16(pos+28,true),extraLen=view.getUint16(pos+30,true),commentLen=view.getUint16(pos+32,true),localOffset=view.getUint32(pos+42,true);
+          const name=decoder.decode(central.subarray(pos+46,pos+46+nameLen));
+          entries.set(name,{name,method,compressedSize,uncompressedSize,localOffset});
+          pos+=46+nameLen+extraLen+commentLen;
+        }
+        return new BackupZipFileReader(file,entries);
+      }
+      file(name){
+        const entry=this.entries.get(String(name));if(!entry)return null;
+        return{async:async type=>{
+          const head=new Uint8Array(await this.sourceFile.slice(entry.localOffset,entry.localOffset+30).arrayBuffer());
+          const view=new DataView(head.buffer,head.byteOffset,head.byteLength);
+          if(head.length<30||view.getUint32(0,true)!==0x04034b50)throw new Error('Entrada ZIP inválida: '+entry.name);
+          const nameLen=view.getUint16(26,true),extraLen=view.getUint16(28,true),start=entry.localOffset+30+nameLen+extraLen;
+          let bytes=new Uint8Array(await this.sourceFile.slice(start,start+entry.compressedSize).arrayBuffer());
+          if(entry.method===8){
+            if(typeof DecompressionStream!=='function')throw new Error('Este navegador no puede descomprimir el respaldo. Usa Edge o Chrome actualizado.');
+            const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+            bytes=new Uint8Array(await new Response(stream).arrayBuffer());
+          }else if(entry.method!==0)throw new Error('Método de compresión ZIP no compatible en '+entry.name+'.');
+          if(type==='string')return this.decoder.decode(bytes);
+          if(type==='uint8array')return bytes;
+          if(type==='blob')return new Blob([bytes]);
+          return bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+        }};
+      }
+    }
+    async function backupStreamAddRowsRecord(writer,basePath,record,rowKey='rows',chunkSize=2000){
+      const rows=Array.isArray(record?.[rowKey])?record[rowKey]:[];
+      const meta={...(record||{})};delete meta[rowKey];
+      const metaPath=`${basePath}/meta.json`;
+      await writer.add(metaPath,JSON.stringify(meta));
+      const rowPaths=[];
+      for(let start=0,part=1;start<rows.length;start+=chunkSize,part++){
+        const path=`${basePath}/rows_${String(part).padStart(4,'0')}.json`;
+        await writer.add(path,JSON.stringify(rows.slice(start,start+chunkSize)));
+        rowPaths.push(path);
+      }
+      return{metaPath,rowPaths,rowCount:rows.length};
+    }
+    async function writeFullBackupStream(writable){
+      const writer=new BackupZipStreamWriter(writable);
+      try{
+        const editorRowsSaved=await flushPendingEditorForFullBackup();
+        clearTimeout(reabStatePersistTimer);reabStatePersistTimer=null;
+        await reabPersistCurrentSession({flushEditor:false});
+        const manifest={format:BACKUP_ZIP_FORMAT,payloadFormat:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),editorRowsSaved,storage:'zip-stream-deflate',purpose:'calculation-inputs',meses:[],catalogo:null,categorias:null,multiplos:null,invMetaSidecar:null,provGrupo:null,centralLines:null,reabSessions:[],reabDemandCache:[],semaforoRules:null};
+        const monthKeys=(await getAllKeysFromStore(STORE)).sort((a,b)=>String(a).localeCompare(String(b)));
+        for(let i=0;i<monthKeys.length;i++){
+          setBackupStatus(`Escribiendo mes ${i+1}/${monthKeys.length} directamente al archivo...`);
+          const mes=await getMonth(monthKeys[i]);if(!mes)continue;
+          const desc=await backupStreamAddRowsRecord(writer,`meses/${backupZipSafeName(mes.periodo,'mes_'+(i+1))}`,mes);
+          manifest.meses.push({periodo:mes.periodo,...desc});
+        }
+        let rec=null;
+        try{rec=await getOne(CATALOG_STORE,'actual');}catch(e){}
+        if(rec?.rows?.length)manifest.catalogo=await backupStreamAddRowsRecord(writer,'catalogo',rec);
+        else if(catalogRows?.length)manifest.catalogo=await backupStreamAddRowsRecord(writer,'catalogo',{id:'actual',fileName:catalogSourceName||'',createdAt:new Date().toISOString(),rows:catalogRows});
+        try{rec=await getOne(CATEGORIA_STORE,'actual');}catch(e){rec=null;}
+        if(rec?.rows?.length)manifest.categorias=await backupStreamAddRowsRecord(writer,'categorias',rec);
+        else if(categoriaRows?.length)manifest.categorias=await backupStreamAddRowsRecord(writer,'categorias',{id:'actual',fileName:categoriaSourceName||'',createdAt:new Date().toISOString(),stats:categoriaStats,rows:categoriaRows});
+        try{
+          rec=await getOne(MULTIPLOS_STORE,'actual');let buf=multiplosBufferFromRecord(rec);if(!buf&&multiplosFile)buf=await multiplosFile.arrayBuffer();
+          if(buf){const path='multiplos/multiplos_surtido.xlsx';await writer.add(path,buf,{compress:false});manifest.multiplos={path,fileName:rec?.fileName||multiplosFileName||'multiplos de surtido.xlsx',createdAt:rec?.createdAt||new Date().toISOString(),byteLength:buf.byteLength};}
+        }catch(e){console.warn('writeFullBackupStream multiplos',e);}
+        const invMeta=invMetaSidecarLoad();
+        if(invMeta&&Object.keys(invMeta).length){const path='metas_inventario_por_articulo.json';await writer.add(path,JSON.stringify(invMeta));manifest.invMetaSidecar={path,count:Object.keys(invMeta).length};}
+        const pmap=(multProvGrupoMap&&Object.keys(multProvGrupoMap).length)?multProvGrupoMap:(window.MULT_PROV_GRUPO_MAP||null);
+        if(pmap&&Object.keys(pmap).length){let sourceName='embebido en generador';try{const p=await getOne(PROV_GRUPO_STORE,'actual');if(p?.sourceName)sourceName=p.sourceName;}catch(e){}const path='prov_grupo.json';await writer.add(path,JSON.stringify({sourceName,map:pmap}));manifest.provGrupo={path,count:Object.keys(pmap).length};}
+        try{const central=await reabGetCentralLinesRecord();if(central.lines.length){const path='lineas_centrales.json';await writer.add(path,JSON.stringify({version:1,updatedAt:central.updatedAt||'',lineCount:central.lines.length,lines:central.lines}));manifest.centralLines={path,count:central.lines.length};}}catch(e){console.warn('writeFullBackupStream centralLines',e);}
+        const sessionKeys=await getAllKeysFromStore(REAB_STATE_STORE);
+        for(let i=0;i<sessionKeys.length;i++){
+          const s=await getOne(REAB_STATE_STORE,sessionKeys[i]);if(!s)continue;
+          const settings={...s,rows:[],rowCount:0,calculatedRowsOmitted:true};
+          const desc=await backupStreamAddRowsRecord(writer,`parametros/${String(i+1).padStart(3,'0')}_${backupZipSafeName(s.tipo||s.id)}`,settings);
+          manifest.reabSessions.push({id:s.id,tipo:s.tipo,settingsOnly:true,...desc});
+        }
+        const rulesPath='reglas_semaforo.json';await writer.add(rulesPath,JSON.stringify(reabGetSemaforoRulesConfig()));manifest.semaforoRules={path:rulesPath};
+        await writer.add('manifest.json',JSON.stringify(manifest));
+        setBackupStatus('Finalizando respaldo en disco...');
+        await writer.close();
+        return manifest;
+      }catch(err){await writer.abort(err);throw err;}
+    }
+    async function buildFullBackupZip(){
+      if(typeof JSZip==='undefined')throw new Error('JSZip no está disponible. Recarga la página con conexión y vuelve a intentar.');
+      const editorRowsSaved=await flushPendingEditorForFullBackup();
+      clearTimeout(reabStatePersistTimer);
+      reabStatePersistTimer=null;
+      await reabPersistCurrentSession({flushEditor:false});
+      const zip=new JSZip();
+      const manifest={
+        format:BACKUP_ZIP_FORMAT,payloadFormat:BACKUP_FORMAT,version:BACKUP_VERSION,
+        exportedAt:new Date().toISOString(),editorRowsSaved,
+        meses:[],catalogo:null,categorias:null,multiplos:null,provGrupo:null,
+        centralLines:null,reabSessions:[],reabDemandCache:[],semaforoRules:null
+      };
+      const meses=await getAllMonths();
+      for(let i=0;i<meses.length;i++){
+        setBackupStatus(`Preparando respaldo: mes ${i+1}/${meses.length}...`);
+        const mes=meses[i];
+        const desc=backupZipAddRowsRecord(zip,`meses/${backupZipSafeName(mes.periodo,'mes_'+(i+1))}`,mes);
+        manifest.meses.push({periodo:mes.periodo,...desc});
+      }
+      let rec=null;
+      try{rec=await getOne(CATALOG_STORE,'actual');}catch(e){}
+      if(rec?.rows?.length)manifest.catalogo=backupZipAddRowsRecord(zip,'catalogo',rec);
+      else if(catalogRows?.length)manifest.catalogo=backupZipAddRowsRecord(zip,'catalogo',{id:'actual',fileName:catalogSourceName||'',createdAt:new Date().toISOString(),rows:catalogRows});
+      try{rec=await getOne(CATEGORIA_STORE,'actual');}catch(e){rec=null;}
+      if(rec?.rows?.length)manifest.categorias=backupZipAddRowsRecord(zip,'categorias',rec);
+      else if(categoriaRows?.length)manifest.categorias=backupZipAddRowsRecord(zip,'categorias',{id:'actual',fileName:categoriaSourceName||'',createdAt:new Date().toISOString(),stats:categoriaStats,rows:categoriaRows});
+      try{
+        rec=await getOne(MULTIPLOS_STORE,'actual');
+        let buf=multiplosBufferFromRecord(rec);
+        if(!buf&&multiplosFile)buf=await multiplosFile.arrayBuffer();
+        if(buf){
+          const path='multiplos/multiplos_surtido.xlsx';
+          zip.file(path,buf);
+          manifest.multiplos={path,fileName:rec?.fileName||multiplosFileName||'multiplos de surtido.xlsx',createdAt:rec?.createdAt||new Date().toISOString(),byteLength:buf.byteLength};
+        }
+      }catch(e){console.warn('buildFullBackupZip multiplos',e);}
+      const pmap=(multProvGrupoMap&&Object.keys(multProvGrupoMap).length)?multProvGrupoMap:(window.MULT_PROV_GRUPO_MAP||null);
+      if(pmap&&Object.keys(pmap).length){
+        let sourceName='embebido en generador';
+        try{const p=await getOne(PROV_GRUPO_STORE,'actual');if(p?.sourceName)sourceName=p.sourceName;}catch(e){}
+        const path='prov_grupo.json';
+        zip.file(path,JSON.stringify({sourceName,map:pmap}));
+        manifest.provGrupo={path,count:Object.keys(pmap).length};
+      }
+      try{
+        const central=await reabGetCentralLinesRecord();
+        if(central.lines.length){
+          const path='lineas_centrales.json';
+          zip.file(path,JSON.stringify({version:1,updatedAt:central.updatedAt||'',lineCount:central.lines.length,lines:central.lines}));
+          manifest.centralLines={path,count:central.lines.length};
+        }
+      }catch(e){console.warn('buildFullBackupZip centralLines',e);}
+      const sessions=await getAllFromStore(REAB_STATE_STORE);
+      for(let i=0;i<sessions.length;i++){
+        const s=sessions[i];
+        const desc=backupZipAddRowsRecord(zip,`sesiones/${String(i+1).padStart(3,'0')}_${backupZipSafeName(s.tipo||s.id)}`,s);
+        manifest.reabSessions.push({id:s.id,tipo:s.tipo,...desc});
+      }
+      const cache=await getAllFromStore(REAB_DEMAND_STORE);
+      for(let i=0;i<cache.length;i++){
+        setBackupStatus(`Preparando caché ${i+1}/${cache.length}...`);
+        const c=cache[i];
+        const desc=backupZipAddRowsRecord(zip,`cache/${String(i+1).padStart(4,'0')}`,c);
+        manifest.reabDemandCache.push({id:c.id,...desc});
+      }
+      const rulesPath='reglas_semaforo.json';
+      zip.file(rulesPath,JSON.stringify(reabGetSemaforoRulesConfig()));
+      manifest.semaforoRules={path:rulesPath};
+      zip.file('manifest.json',JSON.stringify(manifest));
+      setBackupStatus('Comprimiendo respaldo completo...');
+      let lastZipPct=-1;
+      const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:3},streamFiles:true},meta=>{
+        const pct=Math.min(100,Math.floor(meta.percent/10)*10);
+        if(pct!==lastZipPct){lastZipPct=pct;setBackupStatus(`Comprimiendo respaldo: ${pct}%...`);}
+      });
+      return{blob,manifest};
+    }
+    async function readFullBackupZip(file){
+      let directZip=null;
+      try{directZip=await BackupZipFileReader.open(file);}catch(e){console.warn('Lector ZIP directo',e);}
+      const directManifest=directZip?.file('manifest.json');
+      if(directManifest){
+        const manifest=JSON.parse(await directManifest.async('string'));
+        if(manifest?.format!==BACKUP_ZIP_FORMAT)throw new Error('El manifest.json no corresponde a un respaldo completo LIMSA.');
+        return{zip:directZip,manifest,legacyRaw:null};
+      }
+      if(typeof JSZip==='undefined')throw new Error('JSZip no está disponible para leer este respaldo anterior.');
+      const zip=await JSZip.loadAsync(await file.arrayBuffer());
+      const manifestEntry=zip.file('manifest.json');
+      if(manifestEntry){
+        const manifest=JSON.parse(await manifestEntry.async('string'));
+        if(manifest?.format!==BACKUP_ZIP_FORMAT)throw new Error('El manifest.json no corresponde a un respaldo completo LIMSA.');
+        return{zip,manifest,legacyRaw:null};
+      }
+      const jsonEntries=Object.values(zip.files).filter(x=>!x.dir&&/\.json$/i.test(x.name)&&!/(^|\/)__MACOSX\//i.test(x.name)&&!/(^|\/)\._/.test(x.name));
+      if(jsonEntries.length===1)return{zip,manifest:null,legacyRaw:JSON.parse(await jsonEntries[0].async('string'))};
+      throw new Error('El ZIP no contiene manifest.json ni un único respaldo JSON anterior.');
+    }
+    async function restoreFullBackupZip(zip,manifest){
+      let importados=0,reemplazados=0,totalRegistros=0;
+      for(let i=0;i<(manifest.meses||[]).length;i++){
+        setBackupStatus(`Restaurando mes ${i+1}/${manifest.meses.length}...`);
+        const rawMes=await backupZipReadRowsRecord(zip,manifest.meses[i]);
+        const mes=normalizeBackupPayload({meses:[rawMes]})[0];
+        if(await getMonth(mes.periodo))reemplazados++;else importados++;
+        totalRegistros+=mes.rows.length;
+        await putMonth(mes);
+      }
+      const parts=[];
+      if(manifest.catalogo){
+        const cat=await backupZipReadRowsRecord(zip,manifest.catalogo);
+        await saveCatalogLocal(cat.fileName||'catálogo respaldo',cat.rows);
+        await loadCatalogLocal();
+        parts.push(`catálogo (${cat.rows.length.toLocaleString('es-MX')} artículos)`);
+      }
+      if(manifest.categorias){
+        const cats=await backupZipReadRowsRecord(zip,manifest.categorias);
+        await saveCategoriaLocal(cats.fileName||'categorías respaldo',cats.rows,cats.stats||{});
+        await loadCategoriaLocal();
+        reabRefreshCategoriasCurrentRows();
+        parts.push(`categorías (${cats.rows.length.toLocaleString('es-MX')} artículos)`);
+      }
+      if(manifest.multiplos?.path){
+        const entry=zip.file(manifest.multiplos.path);
+        if(!entry)throw new Error('Falta el archivo de múltiplos dentro del ZIP.');
+        const buf=await entry.async('arraybuffer');
+        await applyMultiplosFromBuffer(manifest.multiplos.fileName||'multiplos respaldo.xlsx',buf,{fromMemory:false,save:true});
+        parts.push('múltiplos');
+      }
+      if(manifest.invMetaSidecar?.path){
+        const entry=zip.file(manifest.invMetaSidecar.path);
+        if(!entry)throw new Error('Falta el archivo de metas por artículo dentro del ZIP.');
+        const metas=JSON.parse(await entry.async('string'));
+        invMetaSidecarSave(metas);
+        if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
+        parts.push(`metas por artículo/bodega (${Object.keys(metas||{}).length.toLocaleString('es-MX')})`);
+      }
+      if(manifest.provGrupo?.path){
+        const p=JSON.parse(await zip.file(manifest.provGrupo.path).async('string'));
+        if(p?.map){
+          multProvGrupoMap=p.map;
+          await saveProvGrupoLocal(p.sourceName||'respaldo',p.map);
+          if(typeof renderProvGrupoInfo==='function')renderProvGrupoInfo(p.sourceName||'respaldo');
+          parts.push(`prov_grupo (${Object.keys(p.map).length.toLocaleString('es-MX')} reglas)`);
+        }
+      }
+      if(manifest.centralLines?.path){
+        const central=JSON.parse(await zip.file(manifest.centralLines.path).async('string'));
+        const incoming=reabNormalizeCentralLines(central);
+        const current=await reabGetCentralLinesRecord();
+        await reabPutCentralLinesRecord(reabNormalizeCentralLines(current.lines.concat(incoming)));
+        parts.push(`líneas centrales (${incoming.length.toLocaleString('es-MX')} pares)`);
+      }
+      let cacheCount=0;
+      for(let i=0;i<(manifest.reabDemandCache||[]).length;i++){
+        setBackupStatus(`Restaurando caché ${i+1}/${manifest.reabDemandCache.length}...`);
+        const rec=await backupZipReadRowsRecord(zip,manifest.reabDemandCache[i]);
+        if(rec?.id&&Array.isArray(rec.rows)){await putOne(REAB_DEMAND_STORE,rec);cacheCount++;}
+      }
+      reabDemandMemoryCache.clear();
+      if(cacheCount)parts.push(`caché demanda (${cacheCount.toLocaleString('es-MX')} cálculos)`);
+      let sessionCount=0;
+      for(const desc of manifest.reabSessions||[]){
+        const rec=await backupZipReadRowsRecord(zip,desc);
+        if(!Array.isArray(rec.rows))continue;
+        const tipo=reabSessionType(rec.tipo||rec.id);
+        await putOne(REAB_STATE_STORE,{...rec,id:tipo,tipo,version:1,rowCount:rec.rows.length,restoredAt:new Date().toISOString()});
+        sessionCount++;
+      }
+      if(sessionCount)parts.push(`sesiones semáforo (${sessionCount.toLocaleString('es-MX')} tipos)`);
+      if(manifest.semaforoRules?.path){
+        const rules=JSON.parse(await zip.file(manifest.semaforoRules.path).async('string'));
+        reabSaveSemaforoRulesConfig(rules);
+        reabApplySemaforoRulesToUi();
+        parts.push('reglas semáforo');
+      }
+      await refreshSaved();
+      if(sessionCount)await reabLoadSessionState(reabCurrentTipo(),{fromBackup:true});
+      await updateBackupExportState();
+      return{importados,reemplazados,totalRegistros,parts};
     }
     async function buildDemandBackupPayload(){
       const meses=await getAllMonths();
@@ -4669,6 +5371,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(mult&&multiplosBufferFromRecord(mult))return true;
         const prov=await getOne(PROV_GRUPO_STORE,'actual');
         if(prov?.map&&Object.keys(prov.map).length)return true;
+        const centralLines=await getOne(REAB_CENTRAL_LINES_STORE,'actual');
+        if(centralLines?.lines?.length)return true;
+        const sessionKeys=await getAllKeysFromStore(REAB_STATE_STORE);
+        if(sessionKeys.length)return true;
       }catch(e){}
       if(multProvGrupoMap&&Object.keys(multProvGrupoMap).length)return true;
       return false;
@@ -4690,12 +5396,24 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const prov=await getOne(PROV_GRUPO_STORE,'actual');
         const provN=(prov?.map&&Object.keys(prov.map).length)||safeProvMapSize();
         items.push({ok:provN>0,label:`prov_grupo (${provN.toLocaleString('es-MX')} reglas)`});
+        const centralLines=await getOne(REAB_CENTRAL_LINES_STORE,'actual');
+        const centralLineN=reabNormalizeCentralLines(centralLines).length;
+        items.push({ok:centralLineN>0,label:`Líneas por inventario central${centralLineN?` (${centralLineN.toLocaleString('es-MX')} artículo-central)`:''}`});
+        const sessionKeys=await getAllKeysFromStore(REAB_STATE_STORE);
+        items.push({ok:sessionKeys.length>0,label:`Parámetros de cálculo${sessionKeys.length?` (${sessionKeys.length.toLocaleString('es-MX')} tipos: mes, lead time, meta y alcance)`:''}`});
+        const invMetaCount=Object.keys(invMetaSidecarLoad()).length;
+        items.push({ok:invMetaCount>0,label:`Metas por artículo/bodega${invMetaCount?` (${invMetaCount.toLocaleString('es-MX')} artículos)`:''}`});
+        items.push({ok:true,label:'Caché y renglones calculados se regeneran (no se respaldan)'});
         items.push({ok:true,label:'Reglas del semáforo y metas por bodega'});
       }catch(e){
         items.push({ok:catalogRows?.length>0,label:'Catálogo de artículos'});
         items.push({ok:categoriaRows?.length>0,label:'Categorías ARTICULO/CAT'});
         items.push({ok:!!multiplosFile,label:'Múltiplos de surtido'});
         items.push({ok:safeProvMapSize()>0,label:'prov_grupo'});
+        items.push({ok:false,label:'Líneas por inventario central'});
+        items.push({ok:false,label:'Parámetros de cálculo'});
+        items.push({ok:Object.keys(invMetaSidecarLoad()).length>0,label:'Metas por artículo/bodega'});
+        items.push({ok:true,label:'Caché y renglones calculados se regeneran (no se respaldan)'});
         items.push({ok:true,label:'Reglas del semáforo y metas por bodega'});
       }
       box.innerHTML=items.map(it=>`<div>${it.ok?'<span class="oktxt">✓</span>':'<span class="errtxt">✗</span>'} ${it.label}</div>`).join('');
@@ -4713,6 +5431,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     }
     async function restoreBackupExtras(payload){
       const parts=[];
+      let shouldRestoreSession=false;
       if(payload?.catalogo?.rows?.length){
         await saveCatalogLocal(payload.catalogo.fileName||'catalogo respaldo',payload.catalogo.rows);
         await loadCatalogLocal();
@@ -4729,6 +5448,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         await applyMultiplosFromBuffer(payload.multiplos.fileName||'multiplos respaldo',bytes.buffer,{fromMemory:false,save:true});
         parts.push(`múltiplos (${payload.multiplos.fileName||'archivo'})`);
       }
+      if(payload?.invMetaSidecar&&typeof payload.invMetaSidecar==='object'){
+        invMetaSidecarSave(payload.invMetaSidecar);
+        if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
+        parts.push(`metas por artículo/bodega (${Object.keys(payload.invMetaSidecar).length.toLocaleString('es-MX')})`);
+      }
       if(payload?.provGrupo?.map&&Object.keys(payload.provGrupo.map).length){
         multProvGrupoMap=payload.provGrupo.map;
         await saveProvGrupoLocal(payload.provGrupo.sourceName||'respaldo',multProvGrupoMap);
@@ -4736,11 +5460,42 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(typeof updateMultBtnState==='function')updateMultBtnState();
         parts.push(`prov_grupo (${Object.keys(payload.provGrupo.map).length.toLocaleString('es-MX')} reglas)`);
       }
+      if(payload?.centralLines?.lines?.length){
+        const incoming=reabNormalizeCentralLines(payload.centralLines);
+        const current=await reabGetCentralLinesRecord();
+        const merged=reabNormalizeCentralLines(current.lines.concat(incoming));
+        await reabPutCentralLinesRecord(merged);
+        parts.push(`líneas centrales (${incoming.length.toLocaleString('es-MX')} pares)`);
+      }
+      if(Array.isArray(payload?.reabDemandCache)&&payload.reabDemandCache.length){
+        let restored=0;
+        for(const rec of payload.reabDemandCache){
+          if(!rec?.id||!Array.isArray(rec.rows))continue;
+          await putOne(REAB_DEMAND_STORE,rec);
+          restored++;
+        }
+        reabDemandMemoryCache.clear();
+        if(restored)parts.push(`caché demanda (${restored.toLocaleString('es-MX')} cálculos)`);
+      }
+      if(Array.isArray(payload?.reabSessions)&&payload.reabSessions.length){
+        let restored=0;
+        for(const rec of payload.reabSessions){
+          const tipo=reabSessionType(rec?.tipo||rec?.id);
+          if(!rec||!Array.isArray(rec.rows))continue;
+          await putOne(REAB_STATE_STORE,{...rec,id:tipo,tipo,version:1,rowCount:rec.rows.length,restoredAt:new Date().toISOString()});
+          restored++;
+        }
+        if(restored){
+          parts.push(`sesiones semáforo (${restored.toLocaleString('es-MX')} tipos)`);
+          shouldRestoreSession=true;
+        }
+      }
       if(payload?.semaforoRules){
         reabSaveSemaforoRulesConfig(payload.semaforoRules);
         reabApplySemaforoRulesToUi();
         parts.push('reglas semáforo');
       }
+      if(shouldRestoreSession)await reabLoadSessionState(reabCurrentTipo(),{fromBackup:true});
       return parts;
     }
     function populateDemandOptions(mode){
@@ -4905,31 +5660,59 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     });
     if($('btnExportFullBackup')) $('btnExportFullBackup').addEventListener('click',async()=>{
       try{
-        setBackupStatus('Preparando respaldo completo...');
-        const data=await buildFullBackupPayload();
+        if(typeof window.showSaveFilePicker!=='function')throw new Error('Esta exportación grande requiere Edge o Chrome actualizado para escribir directamente al disco.');
+        const handle=await window.showSaveFilePicker({
+          suggestedName:'respaldo_limsa_completo.zip',
+          types:[{description:'Respaldo LIMSA ZIP',accept:{'application/zip':['.zip']}}]
+        });
+        const writable=await handle.createWritable();
+        setBackupStatus('Preparando respaldo completo y escribiendo directamente al disco...');
+        const data=await writeFullBackupStream(writable);
         const parts=[];
         if(data.meses?.length)parts.push(`${data.meses.length} meses`);
-        if(data.catalogo?.rows?.length)parts.push('catálogo');
-        if(data.categorias?.rows?.length)parts.push('categorías');
-        if(data.multiplos?.dataBase64)parts.push('múltiplos');
-        if(data.provGrupo?.map)parts.push('prov_grupo');
+        if(data.catalogo)parts.push('catálogo');
+        if(data.categorias)parts.push('categorías');
+        if(data.multiplos)parts.push('múltiplos');
+        if(data.provGrupo)parts.push('prov_grupo');
+        if(data.centralLines)parts.push('líneas por inventario central');
+        if(data.reabSessions?.length)parts.push('parámetros de cálculo');
+        if(data.invMetaSidecar)parts.push('metas por artículo/bodega');
+        if(data.editorRowsSaved)parts.push(`${data.editorRowsSaved} cambios pendientes del editor guardados`);
         if(data.semaforoRules)parts.push('reglas y metas por bodega');
-        downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'respaldo_limsa_completo.json');
         setBackupStatus(`Respaldo completo exportado: <strong>${parts.length?parts.join(', '):'sin datos'}</strong>.`,'oktxt');
-      }catch(err){setBackupStatus('Error al exportar respaldo: '+err.message,'errtxt');}
+      }catch(err){
+        if(err?.name==='AbortError')setBackupStatus('Exportación cancelada. No se modificó la base local.','warntxt');
+        else setBackupStatus('Error al exportar respaldo: '+err.message,'errtxt');
+      }
     });
     if($('btnImportFullBackup')) $('btnImportFullBackup').addEventListener('click',()=>{$('fullBackupInput').value=''; $('fullBackupInput').click();});
     if($('fullBackupInput')) $('fullBackupInput').addEventListener('change',async()=>{
       const file=$('fullBackupInput').files[0]; if(!file)return;
       try{
         setBackupStatus('Leyendo respaldo completo...');
-        const raw=JSON.parse(await readTextFile(file));
+        const isZip=/\.zip$/i.test(file.name)||/zip/i.test(file.type||'');
+        let raw=null,zipPackage=null;
+        if(isZip){
+          zipPackage=await readFullBackupZip(file);
+          raw=zipPackage.legacyRaw;
+          if(zipPackage.manifest){
+            const m=zipPackage.manifest;
+            const detail=`${(m.meses||[]).length} meses, ${(m.reabSessions||[]).length} juegos de parámetros y ${m.invMetaSidecar?'metas por artículo/bodega':'sin metas auxiliares'}`;
+            if(!confirm(`Se importará el respaldo completo ZIP (${detail}). Los meses existentes se reemplazan. ¿Continuar?`))return;
+            const r=await restoreFullBackupZip(zipPackage.zip,m);
+            const msg=[];
+            if((m.meses||[]).length)msg.push(`<strong>${r.importados}</strong> meses nuevos, <strong>${r.reemplazados}</strong> reemplazados, <strong>${r.totalRegistros.toLocaleString('es-MX')}</strong> registros`);
+            if(r.parts.length)msg.push(r.parts.join(', '));
+            setBackupStatus(`Respaldo completo ZIP restaurado: ${msg.join(' · ')}.`,'oktxt');
+            return;
+          }
+        }else raw=JSON.parse(await readTextFile(file));
         const isFull=backupPayloadIsFull(raw);
         const meses=normalizeBackupPayload(raw);
         const hasMeses=meses.length>0;
-        const hasExtras=isFull&&(raw.catalogo||raw.categorias||raw.multiplos||raw.provGrupo||raw.semaforoRules);
-        if(!hasMeses&&!hasExtras)throw new Error('El respaldo no contiene meses, catálogo, categorías, múltiplos, prov_grupo ni reglas del semáforo.');
-        if(!confirm('Se importará el respaldo completo'+(hasMeses?' (meses existentes se reemplazan)':'')+(hasExtras?', más catálogo/categorías/múltiplos/prov_grupo y reglas/metas si vienen en el archivo':'')+'. ¿Continuar?'))return;
+        const hasExtras=isFull&&(raw.catalogo||raw.categorias||raw.multiplos||raw.provGrupo||raw.centralLines||raw.reabSessions||raw.reabDemandCache||raw.semaforoRules);
+        if(!hasMeses&&!hasExtras)throw new Error('El respaldo no contiene meses, catálogo, categorías, múltiplos, prov_grupo, líneas centrales, sesiones, caché ni reglas del semáforo.');
+        if(!confirm('Se importará el respaldo completo'+(hasMeses?' (meses existentes se reemplazan)':'')+(hasExtras?', más catálogo/categorías/múltiplos/prov_grupo/líneas centrales/sesiones/caché y reglas/metas si vienen en el archivo':'')+'. ¿Continuar?'))return;
         let msgParts=[];
         if(hasMeses){
           const r=await restoreDemandMonths(meses);
@@ -7002,12 +7785,16 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       idx.Grupo2=optionalIndex(head,['Grupo2','Grupo 2']);
       idx.Bodega=optionalIndex(head,['Bodega']);
       idx.Proveedor=optionalIndex(head,['Proveedor']);
-      idx.Factor=optionalIndex(head,['Factor']);
+      // Catálogo LIMSA: columna "Factor" (UM compra→venta). Alias frecuentes por si exportan con otro nombre.
+      idx.Factor=optionalIndex(head,['Factor','Factor surte','Factor surtido','Fact','Fctor','Fac']);
       idx.LoteSurte=optionalIndex(head,['Lote surte','Lote','Lote de surte']);
       const rows=[];
       for(let r=headerRow+1;r<matrix.length;r++){
         const row=matrix[r]||[]; if(row.every(v=>v===null||v===undefined||String(v).trim()===''))continue;
         const articulo=String(row[idx.Articulo]??'').trim(); if(!articulo)continue;
+        // Factor a veces viene "10.0000" o con coma decimal.
+        let factorRaw=idx.Factor===undefined?0:row[idx.Factor];
+        if(typeof factorRaw==='string')factorRaw=factorRaw.trim().replace(',', '.');
         const rec={
           Articulo:articulo,ArticuloReporte:reabCatalogKey(articulo),
           Nombre:idx.Nombre===undefined?'':String(row[idx.Nombre]??'').trim(),
@@ -7016,7 +7803,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           Grupo2:idx.Grupo2===undefined?'':String(row[idx.Grupo2]??'').trim(),
           BodegaCatalogo:idx.Bodega===undefined?'':String(row[idx.Bodega]??'').trim(),
           Proveedor:idx.Proveedor===undefined?'':String(row[idx.Proveedor]??'').trim(),
-          Factor:idx.Factor===undefined?0:toNumber(row[idx.Factor]),
+          Factor:toNumber(factorRaw),
           LoteSurte:idx.LoteSurte===undefined?0:toNumber(row[idx.LoteSurte])
         };
         rows.push(rec);
@@ -7311,16 +8098,40 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const reports=cias.map(c=>({nombre:'Cia '+c,cias:[c],localizacion:CIA_LOCALIZACION[c]||''}));
       return buildDemandForReportsFast(histRows,reports,target);
     }
-    async function reabLoadMultiplosReabMap(buf){
+    function reabTipoMultiplosKey(){
+      return reabCurrentTipo()==='ceramicos'?'ceramica':'accesorios';
+    }
+    function reabPruneMultiplosMap30x(map){
+      let pruned30x=0;
+      for(const key of [...map.keys()]){
+        if(is30xOperationalArticle(key)&&!catalogMap.has(operationalArtKey(key))){map.delete(key);pruned30x++;}
+      }
+      map.pruned30x=pruned30x;
+      return map;
+    }
+    /** Índice del semáforo desde la matriz viva del editor (misma F que ves en pantalla). */
+    function reabLoadMultiplosReabMapFromEditor(){
+      if(!multEditorState?.matrix||!multEditorState?.sections)return 0;
+      if(typeof buildMultiplosReabIndexFromMatrix!=='function'&&typeof window.multApi?.buildMultiplosReabIndexFromMatrix!=='function')return 0;
+      try{
+        const build=window.multApi?.buildMultiplosReabIndexFromMatrix||buildMultiplosReabIndexFromMatrix;
+        multiplosReabMap=reabPruneMultiplosMap30x(build(multEditorState.matrix,multEditorState.sections,reabTipoMultiplosKey()));
+        if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
+        return multiplosReabMap.size;
+      }catch(err){
+        console.warn('reabLoadMultiplosReabMapFromEditor',err);
+        return 0;
+      }
+    }
+    async function reabLoadMultiplosReabMap(buf,opts={}){
+      // forceBufferIndex: leer el xlsx guardado (persistencia). Si no, preferir editor en vivo.
+      if(!opts.forceBufferIndex){
+        const fromEditor=reabLoadMultiplosReabMapFromEditor();
+        if(fromEditor>0)return fromEditor;
+      }
       if(!buf||typeof buildMultiplosReabIndex!=='function'){multiplosReabMap=new Map();return 0;}
       try{
-        const tipo=reabCurrentTipo()==='ceramicos'?'ceramica':'accesorios';
-        multiplosReabMap=buildMultiplosReabIndex(buf,tipo);
-        let pruned30x=0;
-        for(const key of [...multiplosReabMap.keys()]){
-          if(is30xOperationalArticle(key)&&!catalogMap.has(operationalArtKey(key))){multiplosReabMap.delete(key);pruned30x++;}
-        }
-        multiplosReabMap.pruned30x=pruned30x;
+        multiplosReabMap=reabPruneMultiplosMap30x(buildMultiplosReabIndex(buf,reabTipoMultiplosKey()));
         if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
         return multiplosReabMap.size;
       }catch(err){
@@ -7345,6 +8156,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       if(arts.length)reabRecalcArtsFromMap(arts);
     }
     async function reabEnsureMultiplosMap(){
+      // Si el editor está cargado, siempre re-sincroniza F/Múlt desde su matriz (fuente de verdad en UI).
+      if(multEditorState?.matrix&&multEditorState?.sections){
+        const n=reabLoadMultiplosReabMapFromEditor();
+        if(n>0)return n;
+      }
       if(multiplosReabMap.size){
         if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
         return multiplosReabMap.size;
@@ -7382,6 +8198,34 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const k=reabMultiplosMapKey(art);
       return k?multiplosReabMap.get(k)||null:null;
     }
+    /** Tras Sync/guardar múltiplos: alinea Multiplo y F en filas ya calculadas del semáforo. */
+    function reabRefreshMultiplosOnRows(arts){
+      if(!reabRows?.length)return 0;
+      const filter=arts&&arts.length?new Set([...arts].map(a=>reabArtKey(a)).filter(Boolean)):null;
+      let n=0;
+      const touchedArts=new Set();
+      for(const r of reabRows){
+        const art=reabArtKey(r.Articulo);
+        if(!art)continue;
+        if(filter&&!filter.has(art))continue;
+        const next=reabMultiploBodega(art,r.BodegaDestino);
+        if(toNumber(r.Multiplo)!==next){
+          r.Multiplo=next;
+          n++;
+        }else r.Multiplo=next;
+        reabPatchAbastecimientoFields(r,reabSkuMetaFallbackDays());
+        touchedArts.add(art);
+      }
+      if(touchedArts.size){
+        reabRefreshMultUiArts(touchedArts);
+        // Recalcula sugeridos que dependen del múltiplo.
+        for(const art of touchedArts){
+          if(reabRowsByArt.has(art))reabRecalcArticleInvMeta(art);
+        }
+      }
+      return n;
+    }
+    window.reabRefreshMultiplosOnRows=reabRefreshMultiplosOnRows;
     function reabInvMetaGeneralDays(art,fallback){
       const m=reabMultiplosMeta(art);
       const d=toNumber(m?.dias_inventario_max);
@@ -7774,6 +8618,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       reabRowsByArt.forEach(rows=>reabRecalcProgramacionForRows(rows));
       reabRecomputeManual();
       reabRefreshProgramacionOnlyUi();
+      reabScheduleStatePersist();
     }
     function reabRecalcArticleInvMeta(art){
       const allRows=reabRowsByArt.get(art)||[];
@@ -7843,8 +8688,18 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       return `<input type="number" min="1" step="1" class="reabInvMetaInput${ui.inherited?' reabInvMetaInherited':''}" data-reab-id="${reabEsc(r.Id)}" data-reab-field="InvMeta" value="${ui.v}" title="${reabEsc(ui.tip)}">`;
     }
     function reabOnPanelShow(){
-      // multEditorOnHide ya sincroniza filas sucias al salir del editor.
-      // Evitar barrer todos los SKUs del semáforo × matriz (congela la UI).
+      // Al volver al semáforo: traer F/Múlt del editor (matriz en vivo) para que FactorF no quede en 1.
+      try{
+        if(typeof multEditorFlushActiveCell==='function')multEditorFlushActiveCell();
+        if(multEditorState?.matrix){
+          const n=reabLoadMultiplosReabMapFromEditor();
+          if(n>0&&reabRows?.length){
+            reabRefreshMultiplosOnRows();
+            // FactorF se pinta como span; re-render de la página actual.
+            if(typeof reabRender==='function')reabRender();
+          }
+        }
+      }catch(e){console.warn('reabOnPanelShow multiplos sync',e);}
     }
     window.reabOnPanelShow=reabOnPanelShow;
     let reabMetaPersistTimer=null;
@@ -7871,8 +8726,13 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       reabScheduleInvMetaPersist(row.Articulo,row.BodegaDestino,days,inp);
     }
     function reabMultFactorGeneral(art){
-      const f=toNumber(reabMultiplosMeta(art)?.factor);
-      return f>0?Math.round(f):1;
+      // Columna F del editor/Excel (factor general). No confundir con D MULT (días de cobertura del múltiplo).
+      const m=reabMultiplosMeta(art);
+      if(!m)return 1;
+      const f=toNumber(m.factor);
+      if(f>0)return Math.round(f);
+      const g=toNumber(m.factor_original);
+      return g>0?Math.round(g):1;
     }
     function reabFactorGeneral(art){
       return reabMultFactorGeneral(art);
@@ -7961,9 +8821,13 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       if(!m)return 1;
       const bod=String(bodega||'').trim().toLowerCase();
       const v=toNumber(m.bodegas?.[bod]);
-      if(v>0)return v;
-      const f=toNumber(m.factor);
-      return f>0?f:1;
+      const factor=reabMultFactorGeneral(art);
+      if(v>0){
+        // Múlt·bodega = 1 con F > 1 = placeholder de alta → usar F (no D MULT).
+        if(v===1&&factor>1)return Math.round(factor);
+        return v;
+      }
+      return factor>0?Math.round(factor):1;
     }
     function reabRoundMult(qty,mult){
       qty=Math.max(0,reabInt(qty));
@@ -8438,6 +9302,17 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(toNumber(inv.Total)>0)articleSet.add(art);
       });
 
+      // Una existencia en central habilita todos sus destinos, incluso cuando
+      // el destino no tiene demanda ni inventario. Los pares articulo-central
+      // persisten para que las lineas no desaparezcan en calculos posteriores.
+      const centralLineSync=await reabSyncCentralLinesFromInventory(invMap,isTypeOk);
+      const seededCentralsByArt=new Map();
+      for(const line of centralLineSync.lines){
+        if(!seededCentralsByArt.has(line.articulo))seededCentralsByArt.set(line.articulo,new Set());
+        seededCentralsByArt.get(line.articulo).add(line.central);
+        articleSet.add(line.articulo);
+      }
+
       const destBodegas=Array.from(new Set(reabRoutes().flatMap(r=>r.priority)));
       const m=new Map();
       const costoPorArticulo=new Map();
@@ -8467,11 +9342,22 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const otrasManualBase={...otras};
         const costoArt=costoPorArticulo.get(art)||0;
         const sparse=new Set();
+        const normalSparse=new Set();
         destBodegas.forEach(bodega=>{
           const dem=round2((demandMap.get(art+'|'+bodega)||{}).DemMes||0);
           const total=round2(toNumber(reabInv(invMap,art,bodega).Total));
-          if(dem>0||total>0)sparse.add(bodega);
+          if(dem>0||total>0){sparse.add(bodega);normalSparse.add(bodega);}
         });
+        const seedDestCentrals=new Map();
+        for(const central of seededCentralsByArt.get(art)||[]){
+          const route=reabRoutes().find(r=>String(r.central||'').toLowerCase()===central);
+          if(!route)continue;
+          for(const bodega of route.priority||[]){
+            sparse.add(bodega);
+            if(!seedDestCentrals.has(bodega))seedDestCentrals.set(bodega,new Set());
+            seedDestCentrals.get(bodega).add(central);
+          }
+        }
         if(!sparse.size)continue;
         const bodegasDest=Array.from(sparse);
         for(const bodega of bodegasDest){
@@ -8500,13 +9386,16 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
             Articulo:art,ArticuloTxt:articuloTxt,Categoria:categoria,Proveedor:proveedor||d.Proveedor||'',Grupo:grupo||d.Grupo||'',Grupo2:meta.Grupo2||'',StatusCatalogo:meta.Status||'',StatusLinea:st.linea||'',StatusOperativo:st.label,Automatico:automatico,MotivoStatus:automatico?motivoAuto:motivoNoAuto,Descripcion:meta.Nombre||'',TipoGrupoCeramico:tipoGrupoCer,TipoCeramico:tipoCer,BodegaCeramica:cerBodegaOnce,Factor:meta.Factor||0,LoteSurte:meta.LoteSurte||0,
             CompraAutomatica:automatico?'Sí':'No',CompraAutomaticaDemanda:pol.CompraAutomatica||'No',PoliticaInventario:pol.PoliticaInventario||'',TipoDemanda:pol.TipoDemanda||'',MesesConVenta:pol.MesesConVenta,SegmentoABC:pol.SegmentoABC||'',SegmentoServicio:pol.SegmentoServicio||'',Multiplo:multiplo,
             CiaDestino:cia,BodegaDestino:bodega,DemMes:demMes,DemDia:demDia,ExistenciaBodega:inv.Existencia||0,Transito:inv.Pendiente||0,Ordenado:inv.Ordenado||0,TotalBodega:total,CostoP:inv.CostoP||costoArt,DiasInv:diasInv,PuntoReorden:punto,Maximo:maximo,Leadtime:leadDays,InvMetaDias:invMetaDays,Necesidad:necesidad,NecesidadBruta:necesidadBruta,Semaforo:sem,Otras:otras,OtrasManual:{...otrasManualBase},
-            Sugerido:0,Autorizado:0,Accion:'',Central:'',CentralCia:'',Origen:'',Destino:reabDestinoCode(bodega),RouteId:'',FilePrefix:'',BodegaCeramicaRuta:'',ExistenciaCentral:0,DisponibleAntes:0,DisponibleDespues:0,DisponibleManualAntes:0,DisponibleManualDespues:0,Alerta:''
+            Sugerido:0,Autorizado:0,Accion:'',Central:'',CentralCia:'',Origen:'',Destino:reabDestinoCode(bodega),RouteId:'',FilePrefix:'',BodegaCeramicaRuta:'',ExistenciaCentral:0,DisponibleAntes:0,DisponibleDespues:0,DisponibleManualAntes:0,DisponibleManualDespues:0,
+            CentralSeedOnly:!normalSparse.has(bodega)&&seedDestCentrals.has(bodega),CentralSeeds:Array.from(seedDestCentrals.get(bodega)||[]),CreatedFromCentralInventory:seedDestCentrals.has(bodega),
+            Alerta:!normalSparse.has(bodega)&&seedDestCentrals.has(bodega)?'Línea persistente creada por existencia en bodega central':''
           };
           reabPatchAbastecimientoFields(baseRow,skuMetaFallback);
           m.set(art+'|'+bodega,baseRow);
         }
         if(ai>0&&ai%CHUNK===0)await waitUI();
       }
+      m.centralLineSync=centralLineSync;
       return m;
     }
     function reabApplyAiAaCoverage(row,invMap,art){
@@ -8574,7 +9463,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         for(const b of meta.priority){
           const rowsByArt=byBodega.get(b);
           if(!rowsByArt)continue;
-          rowsByArt.forEach((row,art)=>{if(reabRouteAllowsArticle(meta,row))arts.add(art);});
+          rowsByArt.forEach((row,art)=>{if(reabAllocationRouteAllowsArticle(meta,row))arts.add(art);});
         }
         const sortedArts=Array.from(arts).sort((a,b)=>a.localeCompare(b,'es'));
         for(const art of sortedArts){
@@ -8582,7 +9471,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           const existenciaCentral=round2(disponible);
           for(const bodega of meta.priority){
             const src=(byBodega.get(bodega)||new Map()).get(art);
-            if(!src||!reabRouteAllowsArticle(meta,src))continue;
+            if(!src||!reabAllocationRouteAllowsArticle(meta,src))continue;
             const row={...src};
             row.Id='R'+(id++);
             row.RouteId=meta.id;
@@ -9186,6 +10075,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       input.value=reabProgramaDisplayVal(qty);
       reabSyncMatrixOverlayProg(input,qty);
       reabUpdateArticleFast(target.Articulo);
+      reabScheduleStatePersist();
       if(created){
         // Refresca la tabla para mostrar el renglón nuevo del destino programado.
         reabRender({keepPage:true,invalidateFilters:false,skipCeramicRefresh:true,skipFamiliaRefresh:true});
@@ -9289,6 +10179,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       row.Autorizado=qty;
       input.value=reabProgramaDisplayVal(qty);
       reabUpdateArticleFast(row.Articulo);
+      reabScheduleStatePersist();
     }
     function reabHandleProgramaInput(input){reabCommitProgramaInput(input);}
     window.reabHandleProgramaInput=reabHandleProgramaInput;
@@ -10536,7 +11427,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       await progress(55,`Cruzando demanda, politica de compra e inventario${multCount?` (${multCount.toLocaleString('es-MX')} SKUs en multiplos)`:'...'}`);
       const invMap=reabInventoryLookup();
       const baseMap=await reabDemandByArtBodega(demandRows,invMap,leadDays);
-      await progress(75,'Aplicando rutas AG e AI con cobertura especial AI→AA...');
+      const centralLineSync=baseMap.centralLineSync||{added:0,seenNow:0,total:0};
+      await progress(75,`Aplicando rutas y líneas centrales persistentes${centralLineSync.added?` (${centralLineSync.added.toLocaleString('es-MX')} nuevas)`:''}...`);
       reabRows=reabAllocate(baseMap,invMap); reabRows.forEach((r,i)=>{r.__orden=i;}); reabRefreshRowIndex();
       reabRecomputeManual();
       await progress(88,'Preparando vista optimizada...');
@@ -10545,7 +11437,9 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       const sum=$('reabSummary');
       if(sum)sum.innerHTML=reabSummaryHtml(reabProgramScopeRows(reabGetViewRows()));
       reabRender({keepPage:true,invalidateFilters:false});
-      finishProgress(cache?'Semaforo listo usando demanda guardada.':'Semaforo de reabastecimiento listo y demanda guardada para reutilizar.','oktxt');
+      reabScheduleStatePersist();
+      const centralMsg=centralLineSync.total?` · ${centralLineSync.total.toLocaleString('es-MX')} pares artículo-central persistentes${centralLineSync.added?` (${centralLineSync.added.toLocaleString('es-MX')} nuevos)`:''}`:'';
+      finishProgress((cache?'Semaforo listo usando demanda guardada.':'Semaforo de reabastecimiento listo y demanda guardada para reutilizar.')+centralMsg,'oktxt');
       if(multEditorState){
         multEditorDemandFallbackMap=null;
         multEditorAutoHydrateDem({silent:true}).then(result=>{
@@ -10567,6 +11461,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       reabRecomputeManual();
       reabInvalidateFilterCache();
       reabRender({keepPage:true,invalidateFilters:false});
+      reabScheduleStatePersist();
     }
 
     function reabExportTxt(){
@@ -10661,14 +11556,38 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     });
     if($('btnBuildReab')) $('btnBuildReab').addEventListener('click',async()=>{try{await reabBuild();}catch(err){failProgress('Error reabastecimiento: '+err.message);}});
     let reabMetaFilterTimer=null;
-    if($('reabMetaDays')) $('reabMetaDays').addEventListener('input',()=>{reabUpdateMetaProgramUiTitle(); clearTimeout(reabMetaFilterTimer); reabMetaFilterTimer=setTimeout(()=>reabRecalcProgramacionAll(),400);});
+    if($('reabMetaDays')) $('reabMetaDays').addEventListener('input',()=>{reabUpdateMetaProgramUiTitle(); reabScheduleStatePersist(); clearTimeout(reabMetaFilterTimer); reabMetaFilterTimer=setTimeout(()=>reabRecalcProgramacionAll(),400);});
+    if($('reabLeadtimeDays')) $('reabLeadtimeDays').addEventListener('change',()=>reabScheduleStatePersist());
     if($('btnReabMetaReset')) $('btnReabMetaReset').addEventListener('click',reabResetMetaProgramForView);
     if($('btnClearReabProgram')) $('btnClearReabProgram').addEventListener('click',reabClearAllProgram);
     if($('btnExportReabTxt')) $('btnExportReabTxt').addEventListener('click',reabExportTxt);
     if($('btnExportReabCsv')) $('btnExportReabCsv').addEventListener('click',reabExportCsv);
     if($('btnReabColumns')) $('btnReabColumns').addEventListener('click',()=>{const p=$('reabColumnsPanel'); if(p){reabRenderColumnChooser(); p.classList.toggle('open');}});
     reabRenderColumnChooser();
-    if($('reabTipo')) $('reabTipo').addEventListener('change',()=>{const requiredScopeTipo=reabProgramScopeRequiredTipo();if(requiredScopeTipo&&requiredScopeTipo!==reabCurrentTipo())reabProgramScopeMode='full';reabInvalidateRouteCache(); reabInvLookupCache=null; reabInvLookupStamp=''; reabRows=[]; reabRowById=new Map(); reabRowsByArt=new Map(); reabRowsByGroup=new Map(); reabTargetByKey=new Map(); multiplosReabMap=new Map(); window.multEditorInvLookupCache=null; window.multEditorCostoPCache=null; reabInvalidateFilterCache(); reabInvalidateColumnsCache(); _reabFamiliaBarTipo=''; _reabCeramicFilterSig=''; reabLoadVisibleColumnsForType(); reabLoadColumnFiltersForType(); reabRefreshTipoUi(); reabRenderProgramScopeOptions(); reabUpdateProgramScopeUi(); reabLoadViewFiltersForType(); reabUpdateDisponQuickActive(); reabEnsureMultiplosMap().finally(()=>{}); reabRender(); if(multEditorState&&typeof multEditorRender==='function')multEditorRender(); if($('reabSummary'))$('reabSummary').innerHTML=''; if($('reabXferBar'))$('reabXferBar').innerHTML=''; if($('reabPagerBar'))$('reabPagerBar').innerHTML=''; if($('btnClearReabProgram'))$('btnClearReabProgram').disabled=true; if($('reabTable'))$('reabTable').innerHTML='Calcula el semaforo para ver la propuesta.';});
+    if($('reabTipo')) $('reabTipo').addEventListener('change',async()=>{
+      const requiredScopeTipo=reabProgramScopeRequiredTipo();
+      if(requiredScopeTipo&&requiredScopeTipo!==reabCurrentTipo())reabProgramScopeMode='full';
+      reabInvalidateRouteCache();
+      reabInvLookupCache=null; reabInvLookupStamp='';
+      reabRows=[]; reabRowById=new Map(); reabRowsByArt=new Map(); reabRowsByGroup=new Map(); reabTargetByKey=new Map();
+      multiplosReabMap=new Map();
+      window.multEditorInvLookupCache=null; window.multEditorCostoPCache=null;
+      reabInvalidateFilterCache(); reabInvalidateColumnsCache();
+      _reabFamiliaBarTipo=''; _reabCeramicFilterSig='';
+      reabLoadVisibleColumnsForType(); reabLoadColumnFiltersForType(); reabRefreshTipoUi();
+      reabRenderProgramScopeOptions(); reabUpdateProgramScopeUi(); reabLoadViewFiltersForType(); reabUpdateDisponQuickActive();
+      try{await reabEnsureMultiplosMap();}catch(err){console.warn('reabEnsureMultiplosMap tipo',err);}
+      const restored=await reabLoadSessionState(reabCurrentTipo());
+      if(multEditorState&&typeof multEditorRender==='function')multEditorRender();
+      if(!restored){
+        reabRender();
+        if($('reabSummary'))$('reabSummary').innerHTML='';
+        if($('reabXferBar'))$('reabXferBar').innerHTML='';
+        if($('reabPagerBar'))$('reabPagerBar').innerHTML='';
+        if($('btnClearReabProgram'))$('btnClearReabProgram').disabled=true;
+        if($('reabTable'))$('reabTable').innerHTML='Calcula el semaforo para ver la propuesta.';
+      }
+    });
     reabInitStatusFilterUi();
     reabInitTipoCeramicoFilterUi();
     reabInitProgramScopeUi();
@@ -11319,7 +12238,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         await progress(25,'Actualizando filas con catálogo y reglas...');
         const recalcStatus=true; // Siempre recalcula status/no surtir al actualizar el Excel.
         const agregarInventario=true; // Siempre agrega SKUs activos con existencia u ordenado.
-        const {buffer,stats}=await window.actualizarMultiplosSurtido(buf,{
+        const {buffer,stats,matrix,sections}=await window.actualizarMultiplosSurtido(buf,{
           catalogRows,
           inventoryRows,
           provMap:multGetProvMap()||{},
@@ -11328,23 +12247,27 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
           soloInventario:agregarInventario&&!recalcStatus,
           onYield:async()=>{await waitUI();},
         });
-        await progress(88,'Comprimiendo Excel actualizado...');
+        await progress(88,'Exportando Excel actualizado (persistente)…');
+        // Export completo desde matriz: el patch del xlsx no siempre conservaba F/altas en IndexedDB.
+        let outBuf=buffer;
+        if(typeof window.multApi?.exportMatrixFull==='function'&&matrix){
+          try{outBuf=window.multApi.exportMatrixFull(matrix,multiplosFileName||'Hoja1');}catch(e){console.warn(e);}
+        }
         const outName=multiplosFileName.replace(/\.xlsx?$/i,'')+' actualizado.xlsx';
-        downloadBlob(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),outName);
-        await progress(95,'Guardando la versión actualizada...');
-        // Guarda el archivo sin volver a analizarlo completo en este mismo clic.
-        // El semáforo y el editor reconstruyen sus índices cuando se abren.
-        await applyMultiplosFromBuffer(outName,buffer,{
+        downloadBlob(new Blob([outBuf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),outName);
+        await progress(95,'Guardando en el navegador…');
+        await applyMultiplosFromBuffer(outName,outBuf,{
           fromMemory:false,
           save:true,
-          skipReabIndex:true,
+          skipReabIndex:false,
+          forceBufferIndex:true,
           skipCerIntel:true,
           skipInvMetaReconcile:true,
           skipValidation:true,
         });
-        multiplosReabMap=new Map();
         multDuplicateValidation=null;
         multEditorNeedsReload=true;
+        if(typeof reabRefreshMultiplosOnRows==='function')reabRefreshMultiplosOnRows();
         const parts=[
           `${stats.actualizados.toLocaleString('es-MX')} filas actualizadas`,
           stats.nuevos_acc?`${stats.nuevos_acc} acc nuevos`:'',
@@ -11357,6 +12280,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
           stats.omitidos_no_activos?`${stats.omitidos_no_activos} no activos omitidos`:'',
           stats.omitidos_sin_catalogo_inv?`${stats.omitidos_sin_catalogo_inv} con inv. sin catálogo`:'',
           stats.omitidos_ya_en_hoja?`${stats.omitidos_ya_en_hoja} ya estaban en hoja`:'',
+          stats.factores_desde_catalogo?`${stats.factores_desde_catalogo} factores F desde catálogo`:'',
           (stats.inv_skus_acc||stats.inv_skus_cer)?`inv SKUs ${stats.inv_skus_acc||0} acc / ${stats.inv_skus_cer||0} cer`:'',
           stats.sin_catalogo?`${stats.sin_catalogo} sin catálogo`:'',
           stats.sin_mapeo_bodega?`${stats.sin_mapeo_bodega} cer sin bodega`:'',
@@ -11399,10 +12323,10 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     let multEditorDemandFallbackMap=null;
     let multEditorDemandFallbackPromise=null;
     let multEditorRenderGen=0;
-    const MULT_EDITOR_PAGE_DEFAULT='all';
+    const MULT_EDITOR_PAGE_DEFAULT='150';
     const MULT_EDITOR_ROW_H=28;
-    const MULT_EDITOR_VIRTUAL_BUFFER=5;
-    // En modo Todos se conserva la tabla completa, pero se dibuja por bloques para no congelar la interfaz.
+    const MULT_EDITOR_VIRTUAL_BUFFER=8;
+    // Fallback progresivo si no hay virtual y una página trae muchas filas.
     const MULT_EDITOR_RENDER_CHUNK_ROWS=120;
     const MULT_EDITOR_COV_DAYS=61;
     const MULT_EDITOR_INV_COL_BASE=-1100;
@@ -11879,13 +12803,21 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       }
       const prev=reabMultiplosMeta(sk)||multiplosReabMap.get(sk)||{};
       const nsMeta=api.noSurtirMetaFromRaw?api.noSurtirMetaFromRaw(row.no_surtir):{no_surtir:multEditorNoSurtirMarked(row.no_surtir)};
+      // F del editor es la fuente; G solo si F vacío.
+      const fRaw=api.coerceNum(row.factor);
+      const gRaw=api.coerceNum(row.factor_original);
+      let factorVal=1;
+      if(typeof fRaw==='number'&&fRaw>0)factorVal=fRaw;
+      else if(typeof gRaw==='number'&&gRaw>0)factorVal=gRaw;
+      else factorVal=toNumber(prev.factor)||1;
       const entry={
         ...prev,
         ...nsMeta,
         dias_inventario_max:(()=>{const d=api.coerceNum(row.dias_inventario_max);if(typeof d==='number'&&d>0)return Math.round(d);const p=prev.dias_inventario_max;return typeof p==='number'&&p>0?p:null;})(),
         inv_meta_bodegas,
         bodegas:row.bodegas||prev.bodegas||{},
-        factor:api.coerceNum(row.factor)||prev.factor||1,
+        factor:factorVal,
+        factor_original:typeof gRaw==='number'&&gRaw>0?gRaw:(prev.factor_original||null),
         status:row.status==null?'':String(row.status).trim(),
         grupo:api.normGrupo(row.grupo||'')||prev.grupo||'',
       };
@@ -12053,6 +12985,12 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       if(c===result.api.COL.dias_inventario_max)multEditorRefreshRowInvMetaCells(r);
       if(multEditorIsMultBodCol(c))multEditorRefreshMultCellUi(inp);
       if(result.api.COL.bodega===c&&multEditorRowTipo(r,multEditorState.sections)==='ceramica')multEditorRefreshBodegaCellUi(inp);
+      // F o Múlt·bodega: empujar al mapa del semáforo al instante (FactorF no debe quedar en 1).
+      if(c===result.api.COL.factor||multEditorIsMultBodCol(c)){
+        multEditorPatchReabMapFromRow(r);
+        const arts=multEditorArtsForMatrixRow(r);
+        if(arts?.length&&typeof reabRefreshMultiplosOnRows==='function')reabRefreshMultiplosOnRows(arts);
+      }
       multEditorUpdateDirtyCountFooter();
       return{r,c,api:result.api};
     }
@@ -12977,8 +13915,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         {col:api.COL.proveedor,key:'proveedor',label:'Proveedor',shortLabel:'Prov',title:'Proveedor',group:'identidad',w:44},
         {col:api.COL.grupo,key:'grupo',label:'Grupo',shortLabel:'Grupo',title:'Grupo artículo',group:'identidad',w:52},
         {col:MULT_EDITOR_COSTO_COL_BASE,key:'costo_p',label:'Costo P',shortLabel:'C$',title:'Costo P (inventario diario)',costoLive:true,group:'identidad',w:54},
-        {col:api.COL.factor,key:'factor',label:'Factor general',shortLabel:'F',title:'F = Factor general (conservado del Excel de múltiplos) · clic para editar',group:'surtido',w:42,alwaysInput:true},
-        {col:api.COL.factor_original,key:'factor_original',label:'Factor original',shortLabel:'G',title:'G = Factor original (catálogo) · solo lectura',group:'surtido',w:36,hiddenDefault:true},
+        {col:api.COL.factor,key:'factor',label:'Factor general',shortLabel:'F',title:'F = Factor general (se conserva si ya existe; en SKUs nuevos toma Factor del catálogo si no hay balanceo) · clic para editar',group:'surtido',w:42,alwaysInput:true},
+        {col:api.COL.factor_original,key:'factor_original',label:'Factor original',shortLabel:'G',title:'G = Factor original del catálogo de artículos (columna Factor) · se actualiza con Sync · solo lectura',group:'surtido',w:36},
         {col:api.COL.no_surtir,key:'no_surtir',label:'No surtir',shortLabel:'No surt.',title:'Vacío=sin restricción · no surtir=todas · solo ac,al,ab=solo esas bodegas (automático)',group:'surtido',w:150},
         {col:api.COL.tipo_grupo,key:'tipo_grupo',label:'Tipo grupo',shortLabel:'T.grupo',title:'Tipo grupo cerámica',group:'ceramica',w:64,hiddenDefault:true},
         {col:api.COL.tipo_ceramico,key:'tipo_ceramico',label:'Tipo cerámico',shortLabel:'T.cer',title:'Tipo cerámico',group:'ceramica',w:64,hiddenDefault:true},
@@ -13288,12 +14226,17 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       }
       if(multEditorState?.virtualScrollRaf)cancelAnimationFrame(multEditorState.virtualScrollRaf);
     }
+    function multEditorPageSizeRaw(){
+      return String(($('multEditorPageSize')&&$('multEditorPageSize').value)||MULT_EDITOR_PAGE_DEFAULT);
+    }
     function multEditorUseVirtual(){
-      return false;
+      // Solo en "Todos": pinta ~ventana visible + buffer; el resto es padding.
+      // Con 150/300/500 basta la paginación (DOM acotado).
+      return multEditorPageSizeRaw()==='all';
     }
     function multEditorUseLiteCells(){
-      const raw=($('multEditorPageSize')&&$('multEditorPageSize').value)||MULT_EDITOR_PAGE_DEFAULT;
-      return raw==='all';
+      // Celdas ligeras (span→input al editar) en modo Todos/virtual.
+      return multEditorUseVirtual();
     }
     function multEditorQueryCell(r,c){
       return document.querySelector(`#multEditorTable [data-mult-row="${CSS.escape(String(r))}"][data-mult-col="${CSS.escape(String(c))}"]`);
@@ -13373,7 +14316,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         el.textContent=`${all.length.toLocaleString('es-MX')} visibles${filtNote}${pruneNote}${dirtyN?` · ${dirtyN.toLocaleString('es-MX')} sin guardar`:''}`;
       }
       let pageInfo;
-      if(useVirtual)pageInfo=`${all.length.toLocaleString('es-MX')} filas · desplázate para ver todas (solo se pintan las visibles)`;
+      if(useVirtual)pageInfo=`${all.length.toLocaleString('es-MX')} filas · scroll virtual (solo visibles en pantalla)`;
       else if(pages<=1)pageInfo=`Mostrando ${slice.length.toLocaleString('es-MX')} filas`;
       else pageInfo=`Página ${pg+1} de ${pages} · filas ${all.length?(pg*pageSize+1):0}–${pg*pageSize+slice.length} de ${all.length.toLocaleString('es-MX')}`;
       if($('multEditorPageInfo'))$('multEditorPageInfo').textContent=pageInfo;
@@ -14516,10 +15459,16 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     }
     async function multEditorSyncBuffer(opts={}){
       if(!multEditorState||!window.multApi)throw new Error('No hay hoja cargada.');
-      if(!multEditorState.dirtyRows.size)return;
+      if(!multEditorState.dirtyRows.size&&!opts.forceFull)return;
       const api=window.multApi;
-      const rows=new Set(multEditorState.dirtyRows);
-      const out=await api.exportMatrix(multEditorState.fileBuffer,multEditorState.matrix,multEditorState.sections,rows,{accRows:[],cerRows:[],accInsertExcelRow:0});
+      let out;
+      // Export completo si hay muchos cambios o forceFull: asegura F/filas en IndexedDB.
+      if(opts.forceFull||multEditorState.dirtyRows.size>80||typeof api.exportMatrixFull==='function'&&opts.preferFull){
+        out=api.exportMatrixFull(multEditorState.matrix,multEditorState.sheetName||'Hoja1');
+      }else{
+        const rows=new Set(multEditorState.dirtyRows);
+        out=await api.exportMatrix(multEditorState.fileBuffer,multEditorState.matrix,multEditorState.sections,rows,{accRows:[],cerRows:[],accInsertExcelRow:0});
+      }
       multEditorState.fileBuffer=multEditorBufferCopy(out);
       if(!opts.keepDirty)multEditorState.dirtyRows.clear();
     }
@@ -14566,7 +15515,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     function multEditorFormatSyncStats(sync){
       if(!sync)return[];
       const parts=[];
-      if(sync.actualizados)parts.push(`${Number(sync.actualizados).toLocaleString('es-MX')} filas status/no surtir`);
+      if(sync.actualizados)parts.push(`${Number(sync.actualizados).toLocaleString('es-MX')} filas actualizadas (status/G/catálogo)`);
       if(sync.nuevos_acc)parts.push(`${sync.nuevos_acc} acc nuevos`);
       if(sync.nuevos_cer)parts.push(`${sync.nuevos_cer} cer nuevos`);
       if(sync.nuevos_por_existencia)parts.push(`${sync.nuevos_por_existencia} por existencia`);
@@ -14577,34 +15526,39 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       if(sync.omitidos_no_activos)parts.push(`${sync.omitidos_no_activos} no activos omitidos`);
       if(sync.omitidos_sin_catalogo_inv)parts.push(`${sync.omitidos_sin_catalogo_inv} con inv. sin catálogo`);
       if(sync.omitidos_ya_en_hoja)parts.push(`${sync.omitidos_ya_en_hoja} ya estaban en hoja`);
+      if(sync.factores_desde_catalogo)parts.push(`${sync.factores_desde_catalogo} factores F corregidos desde catálogo`);
       if(sync.inv_skus_acc||sync.inv_skus_cer)parts.push(`inv: ${sync.inv_skus_acc||0} acc / ${sync.inv_skus_cer||0} cer`);
       return parts;
     }
     async function multEditorRunFullSync(opts={}){
       if(!catalogRows?.length)throw new Error('Primero carga el catálogo en la pestaña Catálogo y múltiplos.');
       const addSkus=inventoryRows.length>0;
-      if(addSkus&&!opts.silent)await progress(8,'Recalculando status y no surtir...');
-      const statusStats=await multEditorRunPipeline({recalcStatus:true,agregarInventario:false,silent:!!opts.silent});
-      let skuStats=null;
-      if(addSkus){
-        if(!opts.silent)await progress(45,'Agregando artículos activos con existencia u ordenado...');
-        skuStats=await multEditorRunPipeline({soloInventario:true,recalcStatus:false,agregarInventario:true,silent:!!opts.silent});
-      }
+      // Una sola pasada: recalcula status/no surtir, refresca G (Factor catálogo),
+      // grupo/descripcion y agrega SKUs activos con existencia. Antes el Sync del
+      // editor hacía solo status + soloInventario y NUNCA copiaba Factor a G.
+      if(!opts.silent)await progress(8,addSkus?'Actualizando catálogo/status y SKUs con inventario...':'Actualizando catálogo y status...');
+      const stats=await multEditorRunPipeline({
+        recalcStatus:true,
+        agregarInventario:addSkus,
+        soloInventario:false,
+        silent:!!opts.silent
+      });
       return{
-        actualizados:statusStats?.actualizados||0,
-        nuevos_acc:skuStats?.nuevos_acc||0,
-        nuevos_cer:skuStats?.nuevos_cer||0,
-        nuevos_por_existencia:skuStats?.nuevos_por_existencia||0,
-        nuevos_por_ordenado:skuStats?.nuevos_por_ordenado||0,
-        nuevos_mixtos:skuStats?.nuevos_mixtos||0,
-        omitidos_no_activos:skuStats?.omitidos_no_activos||0,
-        omitidos_sin_catalogo_inv:skuStats?.omitidos_sin_catalogo_inv||0,
-        omitidos_ya_en_hoja:skuStats?.omitidos_ya_en_hoja||0,
-        inv_skus_acc:skuStats?.inv_skus_acc||0,
-        inv_skus_cer:skuStats?.inv_skus_cer||0,
-        bodega_sugerida_nuevos:skuStats?.bodega_sugerida_nuevos||0,
-        sin_mapeo_bodega:skuStats?.sin_mapeo_bodega||0,
-        sin_catalogo:(statusStats?.sin_catalogo||0)+(skuStats?.sin_catalogo||0),
+        actualizados:stats?.actualizados||0,
+        nuevos_acc:stats?.nuevos_acc||0,
+        nuevos_cer:stats?.nuevos_cer||0,
+        nuevos_por_existencia:stats?.nuevos_por_existencia||0,
+        nuevos_por_ordenado:stats?.nuevos_por_ordenado||0,
+        nuevos_mixtos:stats?.nuevos_mixtos||0,
+        omitidos_no_activos:stats?.omitidos_no_activos||0,
+        omitidos_sin_catalogo_inv:stats?.omitidos_sin_catalogo_inv||0,
+        omitidos_ya_en_hoja:stats?.omitidos_ya_en_hoja||0,
+        factores_desde_catalogo:stats?.factores_desde_catalogo||0,
+        inv_skus_acc:stats?.inv_skus_acc||0,
+        inv_skus_cer:stats?.inv_skus_cer||0,
+        bodega_sugerida_nuevos:stats?.bodega_sugerida_nuevos||0,
+        sin_mapeo_bodega:stats?.sin_mapeo_bodega||0,
+        sin_catalogo:stats?.sin_catalogo||0,
       };
     }
     async function multEditorRunPipeline(opts){
@@ -14632,10 +15586,21 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         }:statusOnly||opts.agregarInventario?async()=>{await new Promise(r=>setTimeout(r,0));}:undefined,
         ...opts
       });
-      multEditorState.fileBuffer=multEditorBufferCopy(buffer instanceof ArrayBuffer?buffer:buffer.buffer);
-      // La matriz/secciones se mutan en memoria (accEnd ya se corrige al insertar).
-      // No rehidratar desde buffer aquí: si el patch XML fallara, se perderían altas.
+      // Matriz en memoria es la fuente de verdad (F, altas, G). El patch XML del xlsx
+      // a veces no refleja todo; re-export completo garantiza persistencia en IndexedDB.
       const addedNow=(stats?.nuevos_acc||0)+(stats?.nuevos_cer||0);
+      const changedNow=(stats?.actualizados||0)+addedNow+(stats?.factores_desde_catalogo||0);
+      let persistBuf=buffer instanceof ArrayBuffer?buffer:(buffer&&buffer.buffer);
+      if(changedNow>0&&typeof window.multApi.exportMatrixFull==='function'){
+        try{
+          multEditorLoadingMsg?.('Guardando múltiplos (export completo)…');
+          persistBuf=window.multApi.exportMatrixFull(multEditorState.matrix,multEditorState.sheetName||'Hoja1');
+        }catch(e){
+          console.warn('exportMatrixFull falló; se usa buffer parcheado',e);
+          persistBuf=buffer instanceof ArrayBuffer?buffer:buffer.buffer;
+        }
+      }
+      multEditorState.fileBuffer=multEditorBufferCopy(persistBuf);
       if(!statusOnly){
         multEditorState.cerBodegaIntel=window.multApi.buildCerBodegaIntelIndex(multEditorState.matrix,multEditorState.sections);
         multCerIntelMeta={total:multEditorState.cerBodegaIntel?.total||0};
@@ -14651,11 +15616,18 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       await applyMultiplosFromBuffer(multEditorState.fileName,multEditorState.fileBuffer,{
         fromMemory:false,
         save:true,
-        deferReabIndex:true,
+        // Tras export completo, indexar desde el buffer guardado (sobrevive F5).
+        // No preferir solo editor: forceBuffer evita desfase si la matriz se descarga después.
+        skipReabIndex:false,
+        forceBufferIndex:true,
         skipEditorReload:true,
         skipCerIntel:true,
         skipInvMetaReconcile:statusOnly,
       });
+      if(typeof reabLoadMultiplosReabMapFromEditor==='function'&&multEditorState?.matrix){
+        reabLoadMultiplosReabMapFromEditor();
+      }
+      if(typeof reabRefreshMultiplosOnRows==='function')reabRefreshMultiplosOnRows();
       multEditorNeedsReload=false;
       return stats;
     }
@@ -15104,6 +16076,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
 
     if($('targetPeriod'))$('targetPeriod').addEventListener('change',()=>{
       multEditorDemandFallbackMap=null;
+      reabScheduleStatePersist();
       if(multEditorState)multEditorAutoHydrateDem().catch(err=>console.warn('multEditorAutoHydrateDem period',err));
     });
     if($('btnMultEditorSync'))$('btnMultEditorSync').addEventListener('click',async()=>{
@@ -15114,7 +16087,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         const parts=multEditorFormatSyncStats(stats);
         if(!inventoryRows.length)parts.push('sin inventario: no se agregaron SKUs nuevos');
         if(hydrate?.filled)parts.push(`Dem rellenada en ${hydrate.filled.toLocaleString('es-MX')} filas`);
-        finishProgress(parts.length?`Actualizado: ${parts.join(' · ')}`:'Sin cambios que reportar.','oktxt');
+        finishProgress(parts.length?`Actualizado y guardado en el navegador: ${parts.join(' · ')}`:'Sin cambios que reportar.','oktxt');
       }catch(err){failProgress('Error: '+err.message);}
     });
     if($('btnMultEditorSave'))$('btnMultEditorSave').addEventListener('click',async()=>{
@@ -15126,14 +16099,20 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         multEditorFlushActiveCell();
         const rows=multEditorState?[...multEditorState.dirtyRows]:[];
         if(rows.length)multEditorApplyMatrixToReabNow(rows);
-        await multEditorSyncBuffer();
-        await applyMultiplosFromBuffer(multEditorState.fileName,multEditorState.fileBuffer,{fromMemory:false,save:true,skipEditorReload:true});
+        // preferFull: F y cambios del editor deben quedar en IndexedDB tras Guardar.
+        await multEditorSyncBuffer({preferFull:true,forceFull:true});
+        await applyMultiplosFromBuffer(multEditorState.fileName,multEditorState.fileBuffer,{
+          fromMemory:false,save:true,skipEditorReload:true,forceBufferIndex:true
+        });
         if(rows.length){
           rows.forEach(r=>multEditorPatchReabMapFromRow(r));
           const arts=new Set();
           rows.forEach(r=>multEditorArtsForMatrixRow(r).forEach(a=>arts.add(a)));
           multEditorRecalcReabArts(arts);
           reabRefreshInvMetaUiArts(arts);
+          reabRefreshMultUiArts(arts);
+        }else if(typeof reabRefreshMultiplosOnRows==='function'){
+          reabRefreshMultiplosOnRows();
         }
         multEditorNeedsReload=false;
         finishProgress('Múltiplos guardados en el navegador.','oktxt');
@@ -15171,6 +16150,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         await loadMultiplosLocal();
       }catch(err){console.warn('loadMultiplosLocal',err);}
       try{await initMultProvGrupoMap();}catch(err){console.warn('initMultProvGrupoMap',err);}
+      try{await reabLoadSessionState(reabCurrentTipo(),{startup:true});}catch(err){console.warn('reabLoadSessionState startup',err);}
       try{
         if(typeof updateMultBtnState==='function')updateMultBtnState();
         await updateBackupExportState();
