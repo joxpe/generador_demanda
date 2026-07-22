@@ -197,6 +197,12 @@
     .multEditorNoSurtQuick,.multEditorNoSurtActions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .multEditorNoSurtActions{justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
     .multEditorNoSurtSummary{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid var(--border);font-size:12px;color:#475569}
+    .multEditorExportChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 4px}
+    .multEditorExportChoice{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:13px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#0f172a;text-align:left;cursor:pointer;font:inherit}
+    .multEditorExportChoice:hover,.multEditorExportChoice:focus{outline:none;border-color:#60a5fa;background:#eff6ff;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+    .multEditorExportChoice strong{font-size:13px}
+    .multEditorExportChoice span{font-size:11px;color:#64748b;line-height:1.35}
+    @media(max-width:520px){.multEditorExportChoices{grid-template-columns:1fr}}
     .multEditorTdMult .multEditorCell[readonly]{cursor:pointer}
     .multEditorCell:focus{outline:2px solid #93c5fd;background:#fff}
     .multEditorTdFactor .multEditorCell{cursor:text}
@@ -1275,6 +1281,31 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       <div class="multEditorNoSurtActions">
         <button id="btnMultNoSurtCancel" type="button" class="smallbtn">Cancelar</button>
         <button id="btnMultNoSurtSave" type="button" class="smallbtn primaryMini">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="multEditorExportModal" class="multEditorNoSurtModal hidden" role="dialog" aria-modal="true" aria-labelledby="multEditorExportTitle">
+    <div class="multEditorNoSurtCard">
+      <div class="multEditorNoSurtHead">
+        <div>
+          <strong id="multEditorExportTitle">¿Qué deseas exportar a Excel?</strong>
+          <span id="multEditorExportSummary">Selecciona el alcance de la lista.</span>
+        </div>
+        <button id="btnMultExportClose" type="button" class="smallbtn">Cerrar</button>
+      </div>
+      <div class="multEditorExportChoices">
+        <button id="btnMultExportAll" type="button" class="multEditorExportChoice">
+          <strong>Lista completa</strong>
+          <span id="multEditorExportAllCount">Todos los productos.</span>
+        </button>
+        <button id="btnMultExportFiltered" type="button" class="multEditorExportChoice">
+          <strong>Solo filtrados</strong>
+          <span id="multEditorExportFilteredCount">Todos los productos que cumplen los filtros, aunque estén en otras páginas.</span>
+        </button>
+      </div>
+      <div class="multEditorNoSurtActions">
+        <button id="btnMultExportCancel" type="button" class="smallbtn">Cancelar</button>
       </div>
     </div>
   </div>
@@ -2508,7 +2539,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
 
   function ensureAutoFilterInSheetXml(sheetXml, sections) {
     const ref = autofilterRef(sections);
-    const tag = `<autoFilter ref="${ref}" xr:uid="{00000000-0009-0000-0000-000000000000}"/>`;
+    // El xr:uid no es necesario para el autofiltro y vuelve inválido el XLSX
+    // cuando la hoja original no declara xmlns:xr. El nodo OOXML estándar es
+    // compatible con Excel y evita el aviso de reparación al abrir el archivo.
+    const tag = `<autoFilter ref="${ref}"/>`;
     let text = sheetXml;
     if (/<autoFilter\b/.test(text)) {
       text = text.replace(/<autoFilter[^/]*\/>/, tag);
@@ -2531,17 +2565,19 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       text = text.replace(ignoredMatch[0], '');
     }
 
-    const anchors = ['</mergeCells>', '</sheetData>'];
-    let inserted = false;
-    for (const anchor of anchors) {
-      const idx = text.indexOf(anchor);
-      if (idx >= 0) {
-        const pos = idx + anchor.length;
-        text = text.slice(0, pos) + cfXml + text.slice(pos);
-        inserted = true;
-        break;
-      }
-    }
+    // conditionalFormatting debe ir después de autoFilter y mergeCells según
+    // el orden OOXML. Insertarlo justo después de sheetData hacía que Excel
+    // tuviera que reordenar/reparar la hoja.
+    const anchorEnds=[];
+    const sheetDataEnd=text.indexOf('</sheetData>');
+    if(sheetDataEnd>=0)anchorEnds.push(sheetDataEnd+'</sheetData>'.length);
+    const mergeEnd=text.indexOf('</mergeCells>');
+    if(mergeEnd>=0)anchorEnds.push(mergeEnd+'</mergeCells>'.length);
+    const autoMatch=text.match(/<autoFilter\b[^>]*(?:\/>|>[\s\S]*?<\/autoFilter>)/);
+    if(autoMatch)anchorEnds.push(autoMatch.index+autoMatch[0].length);
+    const insertPos=anchorEnds.length?Math.max(...anchorEnds):-1;
+    let inserted=insertPos>=0;
+    if(inserted)text=text.slice(0,insertPos)+cfXml+text.slice(insertPos);
     if (!inserted) {
       if (text.includes('<pageMargins')) {
         text = text.replace('<pageMargins', `${cfXml}<pageMargins`);
@@ -3466,7 +3502,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       if (target === 'reab' || target === 'backup' || target === 'mult' || target === 'demanda' || target === 'archivos' || target === 'cerbod') {
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
-      if (target !== 'mult' && typeof multEditorOnHide === 'function') multEditorOnHide({unload:false});
+      if (target !== 'mult' && typeof multEditorOnHide === 'function') multEditorOnHide({unload:false,deferPersist:true});
       if (target === 'mult' && typeof multEditorOnShow === 'function') multEditorOnShow();
       else if (target === 'reab' && typeof reabOnPanelShow === 'function') reabOnPanelShow();
       else if (target === 'archivos' && typeof window.updateMultBtnState === 'function') window.updateMultBtnState();
@@ -4460,6 +4496,18 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       reabDemandMemoryCache.set(id,compactRows);
       try{await putOne(REAB_DEMAND_STORE,{id,cacheVersion:REAB_DEMAND_CACHE_VERSION,target,createdAt:new Date().toISOString(),monthCount:eligible.length,rowCount:compactRows.length,months:eligible.map(m=>m.periodo),rows:compactRows});}catch(err){console.warn('No se pudo guardar cache de demanda reabastecimiento',err);}
     }
+    async function cleanupObsoleteReabDemandCaches(){
+      if(!db)return{removed:0,kept:0};
+      const keys=await getAllKeysFromStore(REAB_DEMAND_STORE);
+      let removed=0,kept=0;
+      for(const key of keys){
+        if(String(key||'').startsWith(REAB_DEMAND_CACHE_VERSION+'|')){kept++;continue;}
+        await deleteOne(REAB_DEMAND_STORE,key);
+        reabDemandMemoryCache.delete(key);
+        removed++;
+      }
+      return{removed,kept};
+    }
     function reabCentralLineType(){return reabCurrentTipo()==='ceramicos'?'ceramicos':'accesorios';}
     function reabNormalizeCentralLines(raw){
       const src=Array.isArray(raw)?raw:(Array.isArray(raw?.lines)?raw.lines:[]);
@@ -4875,10 +4923,12 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       multEditorMetaPersistRows.clear();
       if(typeof multEditorFlushActiveCell==='function')multEditorFlushActiveCell();
       const dirty=[...multEditorState.dirtyRows];
-      if(!dirty.length)return 0;
-      await multEditorSyncBuffer({keepDirty:true,preferFull:true,forceFull:true});
+      if(dirty.length)await multEditorSyncBuffer({keepDirty:true,preferFull:true,forceFull:true});
+      const repaired=await multEditorRepairXlsxBuffer(multEditorState.fileBuffer);
+      multEditorState.fileBuffer=multEditorBufferCopy(repaired);
+      await multEditorValidateXlsxBuffer(multEditorState.fileBuffer);
       const savedLen=await saveMultiplosLocal(multEditorState.fileName,multEditorState.fileBuffer);
-      if(!savedLen)throw new Error('No se pudieron guardar los cambios pendientes del editor antes del respaldo.');
+      if(!savedLen)throw new Error('No se pudo guardar el archivo de múltiplos validado antes del respaldo.');
       if(typeof invMetaSidecarReconcileFromBuffer==='function')await invMetaSidecarReconcileFromBuffer(multEditorState.fileBuffer);
       await applyMultiplosFromBuffer(multEditorState.fileName,multEditorState.fileBuffer,{fromMemory:false,save:false,skipEditorReload:true,forceBufferIndex:true});
       dirty.forEach(r=>multEditorState.dirtyRows.delete(r));
@@ -8201,10 +8251,28 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     /** Tras Sync/guardar múltiplos: alinea Multiplo y F en filas ya calculadas del semáforo. */
     function reabRefreshMultiplosOnRows(arts){
       if(!reabRows?.length)return 0;
-      const filter=arts&&arts.length?new Set([...arts].map(a=>reabArtKey(a)).filter(Boolean)):null;
+      const artList=arts instanceof Set?[...arts]:Array.isArray(arts)?arts:(arts?[arts]:[]);
+      const filter=artList.length?new Set(artList.map(a=>reabArtKey(a)).filter(Boolean)):null;
+      // Para cambios puntuales usa el índice por artículo. Antes recorría todas
+      // las filas del semáforo aun cuando solo se había editado un SKU.
+      let sourceRows=reabRows;
+      if(filter){
+        const indexed=[];
+        const seen=new Set();
+        for(const art of filter){
+          const matches=reabRowsByArt.get(art)||reabRowsByArt.get('30'+art)||[];
+          for(const row of matches){
+            const id=row?.Id||row;
+            if(seen.has(id))continue;
+            seen.add(id);
+            indexed.push(row);
+          }
+        }
+        sourceRows=indexed;
+      }
       let n=0;
       const touchedArts=new Set();
-      for(const r of reabRows){
+      for(const r of sourceRows){
         const art=reabArtKey(r.Articulo);
         if(!art)continue;
         if(filter&&!filter.has(art))continue;
@@ -8687,19 +8755,30 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       r.InvMetaDias=ui.v;
       return `<input type="number" min="1" step="1" class="reabInvMetaInput${ui.inherited?' reabInvMetaInherited':''}" data-reab-id="${reabEsc(r.Id)}" data-reab-field="InvMeta" value="${ui.v}" title="${reabEsc(ui.tip)}">`;
     }
+    let reabPanelMapRecoveryQueued=false;
     function reabOnPanelShow(){
-      // Al volver al semáforo: traer F/Múlt del editor (matriz en vivo) para que FactorF no quede en 1.
+      // El editor ya aplica al mapa únicamente los renglones modificados al
+      // confirmar la celda/salir del panel. Evita reconstruir aquí los 10 mil+
+      // SKUs en cada cambio de pestaña: era trabajo duplicado y bloqueaba la UI.
       try{
         if(typeof multEditorFlushActiveCell==='function')multEditorFlushActiveCell();
-        if(multEditorState?.matrix){
-          const n=reabLoadMultiplosReabMapFromEditor();
-          if(n>0&&reabRows?.length){
-            reabRefreshMultiplosOnRows();
-            // FactorF se pinta como span; re-render de la página actual.
-            if(typeof reabRender==='function')reabRender();
-          }
-        }
-      }catch(e){console.warn('reabOnPanelShow multiplos sync',e);}
+        const needsRecovery=!!(multEditorState?.matrix&&reabRows?.length&&!multiplosReabMap.size);
+        if(!needsRecovery||reabPanelMapRecoveryQueued)return;
+        reabPanelMapRecoveryQueued=true;
+        requestAnimationFrame(()=>setTimeout(()=>{
+          try{
+            const n=reabLoadMultiplosReabMapFromEditor();
+            if(n>0&&reabRows?.length){
+              reabRefreshMultiplosOnRows();
+              if(typeof reabRender==='function')reabRender({keepPage:true,invalidateFilters:false});
+            }
+          }catch(e){console.warn('reabOnPanelShow multiplos recovery',e);}
+          finally{reabPanelMapRecoveryQueued=false;}
+        },0));
+      }catch(e){
+        reabPanelMapRecoveryQueued=false;
+        console.warn('reabOnPanelShow multiplos sync',e);
+      }
     }
     window.reabOnPanelShow=reabOnPanelShow;
     let reabMetaPersistTimer=null;
@@ -15695,7 +15774,15 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       if(committed)rows.add(committed.r);
       if(rows.size){
         if(reabRows?.length)multEditorApplyMatrixToReabNow([...rows]);
-        try{await multEditorPersistDirtyRows([...rows]);}catch(err){console.warn('multEditorOnHide persist',err);}
+        const persistRows=[...rows];
+        if(opts.deferPersist&&!opts.unload){
+          // Deja que el panel destino se pinte antes de comprimir/escribir el XLSX.
+          requestAnimationFrame(()=>setTimeout(()=>{
+            multEditorPersistDirtyRows(persistRows).catch(err=>console.warn('multEditorOnHide persist',err));
+          },0));
+        }else{
+          try{await multEditorPersistDirtyRows(persistRows);}catch(err){console.warn('multEditorOnHide persist',err);}
+        }
       }
       if(opts&&opts.unload)multEditorUnload();
     }
@@ -16118,24 +16205,166 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         finishProgress('Múltiplos guardados en el navegador.','oktxt');
       }catch(err){failProgress('Error: '+err.message);}
     });
-    function multEditorDownloadFileName(){
+    function multEditorDownloadFileName(scope='all'){
       const stamp=new Date().toISOString().slice(0,10);
-      return `multiplos de surtido ${stamp}.xlsx`;
+      return `multiplos de surtido${scope==='filtered'?' filtrados':''} ${stamp}.xlsx`;
     }
+    let multEditorExportChoiceResolve=null;
+    function multEditorCloseExportChoice(choice=null){
+      const modal=$('multEditorExportModal');
+      if(modal)modal.classList.add('hidden');
+      const resolve=multEditorExportChoiceResolve;
+      multEditorExportChoiceResolve=null;
+      if(resolve)resolve(choice);
+      try{$('btnMultEditorDownload')?.focus();}catch(err){}
+    }
+    function multEditorAskExportScope(){
+      if(!multEditorState)return Promise.resolve(null);
+      const filtered=multEditorFilteredRows();
+      const total=multEditorState.rowCache?.size||window.multApi.allDataRowIndexes(multEditorState.sections).length;
+      const filteredWord=filtered.length===1?'producto':'productos';
+      const totalWord=total===1?'producto':'productos';
+      if($('multEditorExportSummary'))$('multEditorExportSummary').textContent=`El filtro actual muestra ${filtered.length.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} ${totalWord}.`;
+      if($('multEditorExportAllCount'))$('multEditorExportAllCount').textContent=`Exportar ${total.toLocaleString('es-MX')} ${totalWord} de la hoja.`;
+      if($('multEditorExportFilteredCount'))$('multEditorExportFilteredCount').textContent=`Exportar ${filtered.length.toLocaleString('es-MX')} ${filteredWord} que cumplen los filtros, aunque estén en otras páginas.`;
+      if(multEditorExportChoiceResolve)multEditorCloseExportChoice(null);
+      $('multEditorExportModal')?.classList.remove('hidden');
+      return new Promise(resolve=>{
+        multEditorExportChoiceResolve=resolve;
+        setTimeout(()=>{
+          const preferred=filtered.length<total?$('btnMultExportFiltered'):$('btnMultExportAll');
+          try{preferred?.focus();}catch(err){}
+        },0);
+      });
+    }
+    function multEditorFilteredExportMatrix(rows){
+      if(!multEditorState)throw new Error('No hay hoja cargada.');
+      const {matrix,sections}=multEditorState;
+      const cloneRow=r=>Array.isArray(matrix[r])?matrix[r].slice():[];
+      const acc=(rows||[]).filter(r=>r>=sections.accStart&&r<=sections.accEnd);
+      const cer=(rows||[]).filter(r=>r>=sections.cerStart&&r<=sections.cerEnd);
+      return[
+        cloneRow(0),
+        cloneRow(1),
+        ...acc.map(cloneRow),
+        cloneRow(sections.cerHeader-1),
+        cloneRow(sections.cerHeader),
+        ...cer.map(cloneRow),
+      ];
+    }
+    async function multEditorRepairXlsxBuffer(buf){
+      if(typeof JSZip==='undefined')throw new Error('JSZip no está disponible para reparar el Excel.');
+      const zip=await JSZip.loadAsync(buf);
+      const sheetPath='xl/worksheets/sheet1.xml';
+      const stylesPath='xl/styles.xml';
+      const entry=zip.file(sheetPath);
+      if(!entry)throw new Error('Excel inválido: falta xl/worksheets/sheet1.xml.');
+      let sheetXml=await entry.async('string');
+      const stylesEntry=zip.file(stylesPath);
+      if(!stylesEntry)throw new Error('Excel inválido: falta xl/styles.xml.');
+      const stylesXml=await stylesEntry.async('string');
+      const cellXfsBlock=stylesXml.match(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/)?.[1]||'';
+      const cellStyleCount=(cellXfsBlock.match(/<xf\b/g)||[]).length;
+      if(!cellStyleCount)throw new Error('Excel inválido: no contiene estilos de celda base.');
+      // Repara archivos que fueron guardados antes de retirar xr:uid.
+      sheetXml=sheetXml.replace(/\s+xr:uid="[^"]*"/g,'');
+      // Las filas insertadas podían conservar s="5" aunque styles.xml solo
+      // tuviera estilos 0 y 1. Quita únicamente referencias inexistentes.
+      sheetXml=sheetXml.replace(/<c\b([^>]*)>/g,(tag,attrs)=>{
+        const style=attrs.match(/\s+s="(\d+)"/);
+        return style&&Number(style[1])>=cellStyleCount?tag.replace(style[0],''):tag;
+      });
+      // Reubica los bloques existentes sin depender de funciones internas del
+      // módulo de múltiplos. OOXML exige autoFilter/mergeCells antes de CF.
+      const cfBlocks=sheetXml.match(/<conditionalFormatting[^>]*>[\s\S]*?<\/conditionalFormatting>/g)||[];
+      if(cfBlocks.length){
+        sheetXml=sheetXml.replace(/<conditionalFormatting[^>]*>[\s\S]*?<\/conditionalFormatting>/g,'');
+        const anchorEnds=[];
+        const sheetDataEnd=sheetXml.indexOf('</sheetData>');
+        if(sheetDataEnd>=0)anchorEnds.push(sheetDataEnd+'</sheetData>'.length);
+        const mergeEnd=sheetXml.indexOf('</mergeCells>');
+        if(mergeEnd>=0)anchorEnds.push(mergeEnd+'</mergeCells>'.length);
+        const autoMatch=sheetXml.match(/<autoFilter\b[^>]*(?:\/>|>[\s\S]*?<\/autoFilter>)/);
+        if(autoMatch)anchorEnds.push(autoMatch.index+autoMatch[0].length);
+        const pos=anchorEnds.length?Math.max(...anchorEnds):-1;
+        if(pos>=0)sheetXml=sheetXml.slice(0,pos)+cfBlocks.join('')+sheetXml.slice(pos);
+        else sheetXml=sheetXml.replace('</worksheet>',cfBlocks.join('')+'</worksheet>');
+      }
+      zip.file(sheetPath,sheetXml);
+      return zip.generateAsync({type:'uint8array',compression:'DEFLATE',compressionOptions:{level:1}});
+    }
+    async function multEditorValidateXlsxBuffer(buf){
+      if(typeof JSZip==='undefined')throw new Error('JSZip no está disponible para validar el Excel.');
+      const zip=await JSZip.loadAsync(buf);
+      const required=['[Content_Types].xml','xl/workbook.xml','xl/_rels/workbook.xml.rels','xl/styles.xml','xl/worksheets/sheet1.xml'];
+      const docs={};
+      for(const path of required){
+        const entry=zip.file(path);
+        if(!entry)throw new Error(`Excel inválido: falta ${path}.`);
+        const xml=await entry.async('string');
+        const doc=new DOMParser().parseFromString(xml,'application/xml');
+        const parserError=doc.getElementsByTagName('parsererror')[0];
+        if(parserError)throw new Error(`Excel inválido en ${path}: ${String(parserError.textContent||'XML mal formado').split('\n')[0]}`);
+        docs[path]={xml,doc};
+      }
+      const sheet=docs['xl/worksheets/sheet1.xml'];
+      const autoPos=sheet.xml.indexOf('<autoFilter');
+      const cfPos=sheet.xml.indexOf('<conditionalFormatting');
+      if(autoPos>=0&&cfPos>=0&&autoPos>cfPos)throw new Error('Excel inválido: el autofiltro quedó después del formato condicional.');
+      const dxfs=docs['xl/styles.xml'].doc.getElementsByTagName('dxf').length;
+      for(const rule of sheet.doc.getElementsByTagName('cfRule')){
+        const id=rule.getAttribute('dxfId');
+        if(id!=null&&id!==''&&Number(id)>=dxfs)throw new Error(`Excel inválido: formato condicional dxfId ${id} sin estilo.`);
+      }
+      const cellXfs=docs['xl/styles.xml'].doc.getElementsByTagName('cellXfs')[0];
+      const cellStyleCount=cellXfs?cellXfs.getElementsByTagName('xf').length:0;
+      if(!cellStyleCount)throw new Error('Excel inválido: no contiene estilos de celda base.');
+      for(const match of sheet.xml.matchAll(/<c\b[^>]*\s+s="(\d+)"[^>]*>/g)){
+        if(Number(match[1])>=cellStyleCount)throw new Error(`Excel inválido: referencia de estilo s="${match[1]}" fuera de rango.`);
+      }
+      return true;
+    }
+    if($('btnMultExportAll'))$('btnMultExportAll').addEventListener('click',()=>multEditorCloseExportChoice('all'));
+    if($('btnMultExportFiltered'))$('btnMultExportFiltered').addEventListener('click',()=>multEditorCloseExportChoice('filtered'));
+    if($('btnMultExportCancel'))$('btnMultExportCancel').addEventListener('click',()=>multEditorCloseExportChoice(null));
+    if($('btnMultExportClose'))$('btnMultExportClose').addEventListener('click',()=>multEditorCloseExportChoice(null));
+    if($('multEditorExportModal'))$('multEditorExportModal').addEventListener('click',e=>{if(e.target.id==='multEditorExportModal')multEditorCloseExportChoice(null);});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('multEditorExportModal')?.classList.contains('hidden'))multEditorCloseExportChoice(null);});
     if($('btnMultEditorDownload'))$('btnMultEditorDownload').addEventListener('click',async()=>{
       try{
+        const scope=await multEditorAskExportScope();
+        if(!scope)return;
         multEditorFlushActiveCell();
         await multEditorSyncBuffer();
-        const name=multEditorDownloadFileName();
-        downloadBlob(new Blob([multEditorState.fileBuffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);
-        setMultEditorStatus(`Descargado: ${name}`,'oktxt');
+        const repaired=await multEditorRepairXlsxBuffer(multEditorState.fileBuffer);
+        multEditorState.fileBuffer=multEditorBufferCopy(repaired);
+        let exportBuffer=multEditorState.fileBuffer;
+        let exportedRows=multEditorState.rowCache?.size||0;
+        if(scope==='filtered'){
+          const filteredRows=multEditorFilteredRows();
+          const filteredMatrix=multEditorFilteredExportMatrix(filteredRows);
+          const filteredRaw=window.multApi.exportMatrixFull(filteredMatrix,multEditorState.sheetName||'Hoja1');
+          exportBuffer=await multEditorRepairXlsxBuffer(filteredRaw);
+          exportedRows=filteredRows.length;
+        }
+        await multEditorValidateXlsxBuffer(exportBuffer);
+        const name=multEditorDownloadFileName(scope);
+        downloadBlob(new Blob([exportBuffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),name);
+        setMultEditorStatus(`Descargado: ${name} · ${exportedRows.toLocaleString('es-MX')} ${exportedRows===1?'producto':'productos'}.`,'oktxt');
       }catch(err){setMultEditorStatus(err.message,'errtxt');}
     });
 
     (async()=>{
       try{
         db=await openDB();
+        try{
+          const cleanup=await cleanupObsoleteReabDemandCaches();
+          if(cleanup.removed)console.info(`Cachés de demanda obsoletos eliminados: ${cleanup.removed}; actuales conservados: ${cleanup.kept}.`);
+          window.__reabCacheCleanupResult=cleanup;
+        }catch(err){console.warn('cleanupObsoleteReabDemandCaches',err);}
         await refreshSaved();
+        const cleanup=window.__reabCacheCleanupResult;
+        if(cleanup?.removed)setBackupStatus(`Limpieza terminada: <strong>${cleanup.removed}</strong> cachés antiguos eliminados; meses, reglas y datos maestros se conservaron.`,'oktxt');
       }catch(err){
         const msg='No se pudo abrir la base local: '+err.message+' (cierra otras pestañas del generador y recarga con Cmd+Shift+R)';
         if($('savedList'))$('savedList').innerHTML='<div class="errtxt">'+msg+'</div>';
