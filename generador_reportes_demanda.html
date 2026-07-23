@@ -632,6 +632,7 @@
     .reabTable input[data-reab-field="Autorizado"]{width:58px!important;max-width:58px!important;text-align:right}
     .reabTable input[data-reab-field="InvMeta"]{width:48px!important;max-width:48px!important;text-align:right}
     .reabTable input[data-reab-field="Multiplo"]{width:48px!important;max-width:48px!important;text-align:right}
+    .reabTable input[data-reab-field="MaximoMin"]{width:52px!important;max-width:52px!important;text-align:right}
     .reabMultInput{cursor:text}
     .reabTable input.reabInvMetaInherited{color:#94a3b8;font-style:italic}
     .reabInvMetaSaving,.reabMultSaving{opacity:.55;pointer-events:none}
@@ -667,6 +668,7 @@
     .semRojo{background:#fee2e2;color:#991b1b}.semRojo::before{color:#ef4444}
     .semAma{background:#fef3c7;color:#92400e}.semAma::before{color:#f59e0b}
     .semVerde{background:#dcfce7;color:#166534}.semVerde::before{color:#22c55e}
+    .semSinDem{background:#e0f2fe;color:#075985}.semSinDem::before{color:#38bdf8}
     .semAzul{background:#dbeafe;color:#1e40af}.semAzul::before{color:#3b82f6}
     .semGris{background:#f1f5f9;color:#475569}.semGris::before{color:#94a3b8}
 
@@ -719,6 +721,20 @@
       background: #eff6ff;
       box-shadow: 0 -2px 0 #1d4ed8 inset;
     }
+    .app-version{
+      align-self:center;
+      margin-left:auto;
+      padding:3px 8px;
+      border:1px solid #cbd5e1;
+      border-radius:999px;
+      background:#f8fafc;
+      color:#64748b;
+      font-size:10px;
+      font-weight:700;
+      line-height:1.2;
+      white-space:nowrap;
+      font-variant-numeric:tabular-nums;
+    }
     .panel {
       display: block;
     }
@@ -750,6 +766,16 @@
     .cerBodAssigned{color:#15803d;font-weight:700}
     .cerBodExamples{max-width:360px;white-space:normal;line-height:1.35;color:#475569}
     .cerBodEmpty{padding:24px;text-align:center;color:#64748b}
+    .tipoGrupoCard{margin-top:12px}
+    .tipoGrupoAdd{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px}
+    .tipoGrupoAdd .field{min-width:170px}
+    .tipoGrupoInput{width:100%;min-width:150px;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:#fff;font-size:12px}
+    .tipoGrupoDelete{padding:4px 8px;color:#b91c1c;border-color:#fecaca;background:#fff}
+    .cerAdminTabs{display:flex;gap:6px;margin:0 0 10px;padding:5px;background:#eaf2ff;border:1px solid #cbdcf7;border-radius:10px;position:sticky;top:0;z-index:5}
+    .cerAdminTab{flex:1 1 0;padding:8px 12px;border:1px solid transparent;border-radius:8px;background:transparent;color:#475569;font-size:12px;font-weight:800;cursor:pointer}
+    .cerAdminTab:hover{background:#f8fbff;color:#1d4ed8}
+    .cerAdminTab.active{background:#fff;border-color:#93b4e8;color:#1d4ed8;box-shadow:0 1px 3px rgba(15,23,42,.08)}
+    .cerAdminPane.hidden{display:none!important}
 
   </style>
 </head>
@@ -776,6 +802,7 @@
       <button class="main-tab" data-panel="reab" onclick="switchMainPanel('reab')">Semáforo de Reabastecimiento</button>
       <button class="main-tab" data-panel="mult" onclick="switchMainPanel('mult')">Editor múltiplos</button>
       <button class="main-tab" data-panel="backup" onclick="switchMainPanel('backup')">Respaldos</button>
+      <span id="appVersion" class="app-version" title="Versión de la aplicación"></span>
     </div>
 
     <div id="panel-demanda" class="panel">
@@ -1023,7 +1050,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       <div class="reabEditorPanel">
         <div class="reabFilterDense">
           <div class="field reabSearchField"><label for="reabSearch">Buscar</label><input id="reabSearch" type="search" placeholder="Buscar…" title="Código, descripción, proveedor, grupo" /></div>
-          <div class="field"><label for="reabFilterSem">Semáforo</label><select id="reabFilterSem" title="Semáforo" aria-label="Semáforo"><option value="">Todos</option><option value="Rojo">Rojo</option><option value="Amarillo">Amarillo</option><option value="Verde">Verde</option><option value="Sob.inv">Sob.inv</option><option value="No auto">No auto</option><option value="N/A">N/A</option></select></div>
+          <div class="field"><label for="reabFilterSem">Semáforo</label><select id="reabFilterSem" title="Semáforo" aria-label="Semáforo"><option value="">Todos</option><option value="Rojo">Rojo</option><option value="Amarillo">Amarillo</option><option value="Verde">Verde</option><option value="S/dem">S/dem</option><option value="Sob.inv">Sob.inv</option><option value="No auto">No auto</option><option value="N/A">N/A</option></select></div>
           <div class="field reabStatusField">
             <label for="btnReabStatusFilter">Status</label>
             <div class="reabMultiFilter" id="reabFilterStatusWrap">
@@ -1187,7 +1214,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     </div> <!-- /panel-mult -->
 
     <div id="panel-cerbod" class="panel hidden">
-      <div class="card cerBodCard">
+      <div class="cerAdminTabs" role="tablist" aria-label="Administradores de cerámicos">
+        <button id="cerAdminTabBodegas" class="cerAdminTab active" data-cer-admin-tab="bodegas" type="button" role="tab" aria-selected="true">Bodegas de cerámicos</button>
+        <button id="cerAdminTabGrupos" class="cerAdminTab" data-cer-admin-tab="grupos" type="button" role="tab" aria-selected="false">Clasificación de grupos cerámicos</button>
+      </div>
+      <div id="cerAdminPaneBodegas" class="card cerBodCard cerAdminPane" role="tabpanel">
         <h2>Bodegas de cerámicos</h2>
         <p class="muted">Administra directamente el mapa <strong>Proveedor + Grupo → Bodega cerámica</strong>. La lista conserva las asignaciones existentes y agrega combinaciones nuevas únicamente cuando existe inventario positivo en una bodega cerámica original. Las bodegas permitidas son <strong>A1, A2, B, C y CR</strong>.</p>
         <div class="cerBodToolbar">
@@ -1215,6 +1246,28 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         <div id="cerBodStatus" class="status"></div>
         <div id="cerBodTable" class="cerBodTableWrap"><div class="cerBodEmpty">Abre esta pestaña para cargar las combinaciones de cerámicos.</div></div>
         <div class="note" style="margin-top:10px">Al guardar, el mapa queda almacenado en este navegador y se incluye en <strong>Respaldos → Exportar todo</strong>. La próxima actualización del Excel de múltiplos usará estas asignaciones.</div>
+      </div>
+      <div id="cerAdminPaneGrupos" class="card cerBodCard tipoGrupoCard cerAdminPane hidden" role="tabpanel">
+        <h2>Clasificación de grupos cerámicos</h2>
+        <p class="muted">Administra el catálogo <strong>Grupo → T.grupo</strong>. Estos valores se usan en el Semáforo y al sincronizar el Excel de múltiplos; ya no necesitas modificar el código.</p>
+        <div class="cerBodToolbar">
+          <div class="field cerBodSearch">
+            <label for="tipoGrupoSearch">Buscar</label>
+            <input id="tipoGrupoSearch" type="search" placeholder="Grupo o T.grupo…" />
+          </div>
+          <div class="tipoGrupoAdd">
+            <div class="field"><label for="tipoGrupoNewGrupo">Grupo nuevo</label><input id="tipoGrupoNewGrupo" type="text" placeholder="ej. poj5u" /></div>
+            <div class="field"><label for="tipoGrupoNewTipo">T.grupo</label><input id="tipoGrupoNewTipo" type="text" placeholder="ej. JUNTEADORES" /></div>
+            <button id="btnTipoGrupoAdd" class="smallbtn" type="button">Agregar</button>
+          </div>
+          <div class="cerBodActions">
+            <button id="btnTipoGrupoSave" class="smallbtn primaryMini" type="button" disabled>Guardar cambios</button>
+          </div>
+        </div>
+        <div id="tipoGrupoSummary" class="cerBodSummary"></div>
+        <div id="tipoGrupoStatus" class="status"></div>
+        <div id="tipoGrupoTable" class="cerBodTableWrap"><div class="cerBodEmpty">Abre esta pestaña para cargar las clasificaciones.</div></div>
+        <div class="note" style="margin-top:10px">Los cambios quedan guardados en esta computadora y se incluyen en <strong>Respaldos → Exportar todo</strong>. Al abrir el Editor de múltiplos, las clasificaciones se actualizan y persisten automáticamente.</div>
       </div>
     </div> <!-- /panel-cerbod -->
 
@@ -1554,9 +1607,12 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     const cod = String(codigo ?? '').trim().toLowerCase();
     const skNorm = String(sk ?? '').trim().toLowerCase();
     const desc = String(descripcion ?? '').trim().toLowerCase();
-    if ((cod.startsWith('30per') || skNorm.startsWith('per')) && desc.includes('piedra')) return 'PIEDRA';
     const fn = global.reabTipoCeramicoGrupo;
-    if (typeof fn === 'function') return fn(grupo, codigo, descripcion) || '';
+    if (typeof fn === 'function') {
+      const classified = fn(grupo, codigo, descripcion) || '';
+      if (classified) return classified;
+    }
+    if ((cod.startsWith('30per') || skNorm.startsWith('per')) && desc.includes('piedra')) return 'PIEDRA';
     return '';
   }
 
@@ -3010,7 +3066,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     const balanceoCrMap = opts.balanceoCrMap
       || (opts.balanceoCrBuffer ? parseBalanceoFactorMap(opts.balanceoCrBuffer, 'ab', 10) : {});
     const invSkus = loadInventorySkus(inventoryRows);
-    const statusOnly = !!(opts.recalcStatus && !opts.agregarInventario && !opts.soloInventario);
+    const statusOnly = !!(opts.recalcStatus && !opts.agregarInventario && !opts.soloInventario && !opts.fullCatalogSync);
     const cerBodegaIntel = statusOnly ? { byProvGrupo: {}, bySku: {}, total: 0 } : buildCerBodegaIntelIndex(matrix, sections);
     const stats = {
       actualizados: 0,
@@ -3403,12 +3459,14 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         let factorVal = 1;
         if (typeof fRaw === 'number' && fRaw > 0) factorVal = fRaw;
         else if (typeof gRaw === 'number' && gRaw > 0) factorVal = gRaw;
+        const tipoGrupoFn = global.reabTipoCeramicoGrupo;
+        const tipoGrupoCalculado = typeof tipoGrupoFn === 'function' ? tipoGrupoFn(row.grupo,row.codigo,row.descripcion) : '';
         map.set(row.sk, {
           ...nsMeta,
           status: normalizeLegacyMultiplosStatus(row.status == null ? '' : String(row.status).trim()),
           grupo: normGrupo(row.grupo || ''),
           bodega: normCerBodega(row.bodega || ''),
-          tipo_grupo: String(row.tipo_grupo ?? '').trim(),
+          tipo_grupo: tipoGrupoCalculado||String(row.tipo_grupo ?? '').trim(),
           tipo_ceramico: String(row.tipo_ceramico ?? '').trim(),
           dias_inventario_max: (() => { const d = coerceNum(row.dias_inventario_max); return typeof d === 'number' && d > 0 ? Math.round(d) : null; })(),
           inv_meta_bodegas,
@@ -3481,6 +3539,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
 
   <!-- Tab switcher para separación rápida de pantallas (Opción A) -->
   <script>
+    const APP_VERSION='2026.07.22.16';
+    window.APP_VERSION=APP_VERSION;
+
     function switchMainPanel(panel) {
       const panels = {
         demanda: document.getElementById('panel-demanda'),
@@ -3511,6 +3572,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
 
     // Asegurar estado inicial correcto al cargar
     document.addEventListener('DOMContentLoaded', function() {
+      const versionEl=document.getElementById('appVersion');
+      if(versionEl)versionEl.textContent='v'+APP_VERSION;
+      document.title='Semáforo de Reabastecimiento LIMSA · v'+APP_VERSION;
       ['panel-reab', 'panel-mult', 'panel-backup', 'panel-archivos', 'panel-cerbod'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -3601,7 +3665,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       };
       return inventoryDerivedCache;
     }
-    let multiplosFile=null, multiplosFileName='', multProvGrupoMap=null, multCerIntelMeta={total:0}, multDuplicateValidation=null;
+    let multiplosFile=null, multiplosFileName='', multProvGrupoMap=null, multTipoGrupoMap=null, multCerIntelMeta={total:0}, multDuplicateValidation=null;
     const INV_META_SIDECAR_KEY='limsa_mult_inv_meta_v1';
     let reabActiveRowId='';
     let reabSort={key:'__orden',dir:'asc'};
@@ -3639,8 +3703,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     function reabDefaultColumnFilters(){const f={}; REAB_FILTERABLE_COLS.forEach(k=>f[k]=''); return f;}
     let reabColumnFilters=reabDefaultColumnFilters();
     let reabPendingFilterFocus=null;
-    const REAB_VISIBLE_COLUMNS_STORAGE_PREFIX='limsaReabVisibleColumnsV8_cat_';
-    const REAB_VISIBLE_COLUMNS_MIGRATE_KEYS=['limsaReabVisibleColumnsV7_','limsaReabVisibleColumnsV6_','limsaReabVisibleColumnsV5_'];
+    const REAB_VISIBLE_COLUMNS_STORAGE_PREFIX='limsaReabVisibleColumnsV9_min_pr_';
+    const REAB_VISIBLE_COLUMNS_MIGRATE_KEYS=['limsaReabVisibleColumnsV8_cat_','limsaReabVisibleColumnsV7_','limsaReabVisibleColumnsV6_','limsaReabVisibleColumnsV5_'];
     const REAB_VISIBLE_COLUMNS_LEGACY_KEY='limsaReabVisibleColumnsV4_multiplo_programa';
     const REAB_COLUMN_FILTERS_STORAGE_PREFIX='limsaReabColumnFiltersV5_';
     const REAB_VIEW_FILTERS_STORAGE_PREFIX='limsaReabViewFiltersV5_';
@@ -3708,7 +3772,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     const REAB_DEFAULT_COLUMN_WIDTHS={
       Central:40,Origen:40,Destino:40,Articulo:118,Status:54,Categoria:38,Semaforo:64,CompraAuto:44,PoliticaInv:100,TipoDemanda:72,SegmentoABC:38,Proveedor:68,Grupo:56,CostoP:54,Descripcion:200,TipoGrupoCeramico:76,TipoCeramico:72,
       DiasInv:40,DemMes:42,DispDespManual:46,TotalBodega:44,ExistBodega:44,Transito:40,Ordenado:40,Necesidad:44,Sugerido:44,Programa:58,Multiplo:40,DMult:44,FactorF:40,Abast:44,
-      Leadtime:40,InvMeta:40,PuntoReorden:40,Maximo:40,Alerta:72,
+      Leadtime:40,InvMeta:40,PuntoReorden:40,Maximo:40,MaximoMin:48,Alerta:72,
       Exist_ai:26,Exist_ac:26,Exist_as:26,Exist_at:26,Exist_am:26,Exist_al:26,Exist_ab:26,Exist_ag:26,Exist_aa:26,Exist_ad:26,Exist_ah:26,Exist_aj:26,
       Exist_ci:26,Exist_cr:26,Exist_cc:26,Exist_cs:26,Exist_ct:26,Exist_cm:26,Exist_cl:26,Exist_cb:26,Exist_cg:26,Exist_cd:26,Exist_ch:26,Exist_cj:26
     };
@@ -3721,7 +3785,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     const REAB_SIGA_LOGIN='jpedroza';
     const REAB_ORIGEN_CIA={...REAB_BODEGA_CIA,cg:70};
     const REAB_DESTINO_CIA={...REAB_BODEGA_CIA,cg:72};
-    const REAB_CER_REGIONAL_PRIORITY=['cc','cs','ct','cm','cl','cb','cj'];
+    const REAB_CER_REGIONAL_PRIORITY=['cb','cl','cc','ct','cs','cm','cj'];
     const REAB_CONFIGS={
       accesorios:{
         label:'Accesorios',
@@ -3729,11 +3793,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         bodegaTipo:'Accesorios',
         fileRevision:'revision_reabastecimiento_accesorios.csv',
         bodegas:['ai','ac','as','at','am','al','ab','ag','aa','ad','ah','aj'],
-        visiblesDefault:['Origen','Destino','Articulo','Status','Categoria','Semaforo','Proveedor','CostoP','Descripcion','DiasInv','DemMes','DispDespManual','TotalBodega','Necesidad','Sugerido','Programa','Multiplo','DMult','FactorF','Abast','Exist_ai','Exist_ac','Exist_as','Exist_at','Exist_am','Exist_al','Exist_ab','Exist_ag','Exist_aa','Exist_ad','Exist_ah','Exist_aj','Leadtime','InvMeta','PuntoReorden','Maximo'],
+        visiblesDefault:['Origen','Destino','Articulo','Status','Categoria','Semaforo','Proveedor','CostoP','Descripcion','DiasInv','DemMes','DispDespManual','TotalBodega','Necesidad','Sugerido','Programa','Multiplo','DMult','FactorF','Abast','Exist_ai','Exist_ac','Exist_as','Exist_at','Exist_am','Exist_al','Exist_ab','Exist_ag','Exist_aa','Exist_ad','Exist_ah','Exist_aj','Leadtime','InvMeta','PuntoReorden','Maximo','MaximoMin'],
         sharedCoverage:true,
         routes:[
-          {central:'ag',centralCia:70,filePrefix:'ag',priority:['aa','ad','ah']},
-          {central:'ai',centralCia:25,filePrefix:'a',priority:['ab','al','ac','at','ah','aj','aa','as','am','ad']}
+          {central:'ag',centralCia:70,filePrefix:'ag',priority:['ah','aa','ad']},
+          {central:'ai',centralCia:25,filePrefix:'a',priority:['ab','al','ac','at','ah','as','aa','aj','ad','am']}
         ]
       },
       ceramicos:{
@@ -3742,7 +3806,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         bodegaTipo:'Cerámicos',
         fileRevision:'revision_reabastecimiento_ceramicos.csv',
         bodegas:['ci','cr','cc','cs','ct','cm','cl','cb','cg','cd','ch','cj'],
-        visiblesDefault:['Origen','Destino','Articulo','Status','Categoria','Semaforo','Proveedor','CostoP','Descripcion','TipoGrupoCeramico','TipoCeramico','DiasInv','DemMes','DispDespManual','TotalBodega','Necesidad','Sugerido','Programa','Multiplo','DMult','FactorF','Abast','Exist_ci','Exist_cr','Exist_cc','Exist_cs','Exist_ct','Exist_cm','Exist_cl','Exist_cb','Exist_cg','Exist_cd','Exist_ch','Exist_cj','Leadtime','InvMeta','PuntoReorden','Maximo'],
+        visiblesDefault:['Origen','Destino','Articulo','Status','Categoria','Semaforo','Proveedor','CostoP','Descripcion','TipoGrupoCeramico','TipoCeramico','DiasInv','DemMes','DispDespManual','TotalBodega','Necesidad','Sugerido','Programa','Multiplo','DMult','FactorF','Abast','Exist_ci','Exist_cr','Exist_cc','Exist_cs','Exist_ct','Exist_cm','Exist_cl','Exist_cb','Exist_cg','Exist_cd','Exist_ch','Exist_cj','Leadtime','InvMeta','PuntoReorden','Maximo','MaximoMin'],
         sharedCoverage:false,
         routes:[
           {central:'cr',centralCia:25,cerBodegaMode:'cr',priority:REAB_CER_REGIONAL_PRIORITY},
@@ -4900,6 +4964,23 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         return false;
       }
     }
+    async function saveTipoGrupoLocal(map){
+      if(!map||!Object.keys(map).length)throw new Error('El catálogo Grupo → T.grupo no puede quedar vacío.');
+      await putOne(PROV_GRUPO_STORE,{id:'tipo_grupo',createdAt:new Date().toISOString(),ruleCount:Object.keys(map).length,map});
+    }
+    async function loadTipoGrupoLocal(){
+      try{
+        const rec=await getOne(PROV_GRUPO_STORE,'tipo_grupo');
+        if(!rec?.map||!Object.keys(rec.map).length)return false;
+        multTipoGrupoMap=rec.map;
+        window.MULT_TIPO_GRUPO_MAP=multTipoGrupoMap;
+        if(typeof tipoGrupoAdminState!=='undefined')tipoGrupoAdminState.loaded=false;
+        return true;
+      }catch(e){
+        console.warn('loadTipoGrupoLocal',e);
+        return false;
+      }
+    }
     function uint8ToBase64(bytes){
       const arr=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
       let bin='';
@@ -4914,7 +4995,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       return out;
     }
     function backupPayloadIsFull(data){
-      return !!(data&&typeof data==='object'&&!Array.isArray(data)&&(data.format===BACKUP_FORMAT||data.version>=2||data.catalogo||data.categorias||data.multiplos||data.provGrupo||data.centralLines||data.reabSessions||data.reabDemandCache));
+      return !!(data&&typeof data==='object'&&!Array.isArray(data)&&(data.format===BACKUP_FORMAT||data.version>=2||data.catalogo||data.categorias||data.multiplos||data.provGrupo||data.tipoGrupo||data.centralLines||data.reabSessions||data.reabDemandCache));
     }
     async function flushPendingEditorForFullBackup(){
       if(!multEditorState)return 0;
@@ -4983,6 +5064,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         }catch(e){}
         provGrupo={sourceName,map:pmap};
       }
+      const tipoGrupoMap=multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP;
+      const tipoGrupo=tipoGrupoMap&&Object.keys(tipoGrupoMap).length?{map:{...tipoGrupoMap}}:null;
       let centralLines=null;
       try{
         const rec=await reabGetCentralLinesRecord();
@@ -4992,7 +5075,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       let reabDemandCache=[];
       try{reabSessions=await getAllFromStore(REAB_STATE_STORE);}catch(e){console.warn('buildFullBackupPayload reabSessions',e);}
       try{reabDemandCache=await getAllFromStore(REAB_DEMAND_STORE);}catch(e){console.warn('buildFullBackupPayload reabDemandCache',e);}
-      return{format:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),editorRowsSaved,meses,catalogo,categorias,multiplos,provGrupo,centralLines,reabSessions,reabDemandCache,semaforoRules:reabGetSemaforoRulesConfig()};
+      return{format:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),editorRowsSaved,meses,catalogo,categorias,multiplos,invMetaSidecar:invMetaSidecarLoad(),provGrupo,tipoGrupo,centralLines,reabSessions,reabDemandCache,semaforoRules:reabGetSemaforoRulesConfig()};
     }
     function backupZipSafeName(value,fallback='registro'){
       const clean=String(value||fallback).trim().replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'');
@@ -5171,7 +5254,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const editorRowsSaved=await flushPendingEditorForFullBackup();
         clearTimeout(reabStatePersistTimer);reabStatePersistTimer=null;
         await reabPersistCurrentSession({flushEditor:false});
-        const manifest={format:BACKUP_ZIP_FORMAT,payloadFormat:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),editorRowsSaved,storage:'zip-stream-deflate',purpose:'calculation-inputs',meses:[],catalogo:null,categorias:null,multiplos:null,invMetaSidecar:null,provGrupo:null,centralLines:null,reabSessions:[],reabDemandCache:[],semaforoRules:null};
+        const manifest={format:BACKUP_ZIP_FORMAT,payloadFormat:BACKUP_FORMAT,version:BACKUP_VERSION,exportedAt:new Date().toISOString(),editorRowsSaved,storage:'zip-stream-deflate',purpose:'calculation-inputs',meses:[],catalogo:null,categorias:null,multiplos:null,invMetaSidecar:null,provGrupo:null,tipoGrupo:null,centralLines:null,reabSessions:[],reabDemandCache:[],semaforoRules:null};
         const monthKeys=(await getAllKeysFromStore(STORE)).sort((a,b)=>String(a).localeCompare(String(b)));
         for(let i=0;i<monthKeys.length;i++){
           setBackupStatus(`Escribiendo mes ${i+1}/${monthKeys.length} directamente al archivo...`);
@@ -5194,6 +5277,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(invMeta&&Object.keys(invMeta).length){const path='metas_inventario_por_articulo.json';await writer.add(path,JSON.stringify(invMeta));manifest.invMetaSidecar={path,count:Object.keys(invMeta).length};}
         const pmap=(multProvGrupoMap&&Object.keys(multProvGrupoMap).length)?multProvGrupoMap:(window.MULT_PROV_GRUPO_MAP||null);
         if(pmap&&Object.keys(pmap).length){let sourceName='embebido en generador';try{const p=await getOne(PROV_GRUPO_STORE,'actual');if(p?.sourceName)sourceName=p.sourceName;}catch(e){}const path='prov_grupo.json';await writer.add(path,JSON.stringify({sourceName,map:pmap}));manifest.provGrupo={path,count:Object.keys(pmap).length};}
+        const tgMap=multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP;
+        if(tgMap&&Object.keys(tgMap).length){const path='tipo_grupo.json';await writer.add(path,JSON.stringify({map:tgMap}));manifest.tipoGrupo={path,count:Object.keys(tgMap).length};}
         try{const central=await reabGetCentralLinesRecord();if(central.lines.length){const path='lineas_centrales.json';await writer.add(path,JSON.stringify({version:1,updatedAt:central.updatedAt||'',lineCount:central.lines.length,lines:central.lines}));manifest.centralLines={path,count:central.lines.length};}}catch(e){console.warn('writeFullBackupStream centralLines',e);}
         const sessionKeys=await getAllKeysFromStore(REAB_STATE_STORE);
         for(let i=0;i<sessionKeys.length;i++){
@@ -5219,7 +5304,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const manifest={
         format:BACKUP_ZIP_FORMAT,payloadFormat:BACKUP_FORMAT,version:BACKUP_VERSION,
         exportedAt:new Date().toISOString(),editorRowsSaved,
-        meses:[],catalogo:null,categorias:null,multiplos:null,provGrupo:null,
+        meses:[],catalogo:null,categorias:null,multiplos:null,invMetaSidecar:null,provGrupo:null,tipoGrupo:null,
         centralLines:null,reabSessions:[],reabDemandCache:[],semaforoRules:null
       };
       const meses=await getAllMonths();
@@ -5246,6 +5331,12 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           manifest.multiplos={path,fileName:rec?.fileName||multiplosFileName||'multiplos de surtido.xlsx',createdAt:rec?.createdAt||new Date().toISOString(),byteLength:buf.byteLength};
         }
       }catch(e){console.warn('buildFullBackupZip multiplos',e);}
+      const invMeta=invMetaSidecarLoad();
+      if(invMeta&&Object.keys(invMeta).length){
+        const path='metas_inventario_por_articulo.json';
+        zip.file(path,JSON.stringify(invMeta));
+        manifest.invMetaSidecar={path,count:Object.keys(invMeta).length};
+      }
       const pmap=(multProvGrupoMap&&Object.keys(multProvGrupoMap).length)?multProvGrupoMap:(window.MULT_PROV_GRUPO_MAP||null);
       if(pmap&&Object.keys(pmap).length){
         let sourceName='embebido en generador';
@@ -5253,6 +5344,12 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const path='prov_grupo.json';
         zip.file(path,JSON.stringify({sourceName,map:pmap}));
         manifest.provGrupo={path,count:Object.keys(pmap).length};
+      }
+      const tgMap=multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP;
+      if(tgMap&&Object.keys(tgMap).length){
+        const path='tipo_grupo.json';
+        zip.file(path,JSON.stringify({map:tgMap}));
+        manifest.tipoGrupo={path,count:Object.keys(tgMap).length};
       }
       try{
         const central=await reabGetCentralLinesRecord();
@@ -5345,7 +5442,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const metas=JSON.parse(await entry.async('string'));
         invMetaSidecarSave(metas);
         if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
-        parts.push(`metas por artículo/bodega (${Object.keys(metas||{}).length.toLocaleString('es-MX')})`);
+        parts.push(`metas y mínimos estratégicos por artículo/bodega (${Object.keys(metas||{}).length.toLocaleString('es-MX')})`);
       }
       if(manifest.provGrupo?.path){
         const p=JSON.parse(await zip.file(manifest.provGrupo.path).async('string'));
@@ -5354,6 +5451,17 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           await saveProvGrupoLocal(p.sourceName||'respaldo',p.map);
           if(typeof renderProvGrupoInfo==='function')renderProvGrupoInfo(p.sourceName||'respaldo');
           parts.push(`prov_grupo (${Object.keys(p.map).length.toLocaleString('es-MX')} reglas)`);
+        }
+      }
+      if(manifest.tipoGrupo?.path){
+        const p=JSON.parse(await zip.file(manifest.tipoGrupo.path).async('string'));
+        if(p?.map&&Object.keys(p.map).length){
+          multTipoGrupoMap=p.map;
+          window.MULT_TIPO_GRUPO_MAP=multTipoGrupoMap;
+          await saveTipoGrupoLocal(multTipoGrupoMap);
+          tipoGrupoAdminState.loaded=false;
+          multEditorNeedsReload=true;
+          parts.push(`Grupo → T.grupo (${Object.keys(p.map).length.toLocaleString('es-MX')} reglas)`);
         }
       }
       if(manifest.centralLines?.path){
@@ -5421,12 +5529,15 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(mult&&multiplosBufferFromRecord(mult))return true;
         const prov=await getOne(PROV_GRUPO_STORE,'actual');
         if(prov?.map&&Object.keys(prov.map).length)return true;
+        const tipoGrupo=await getOne(PROV_GRUPO_STORE,'tipo_grupo');
+        if(tipoGrupo?.map&&Object.keys(tipoGrupo.map).length)return true;
         const centralLines=await getOne(REAB_CENTRAL_LINES_STORE,'actual');
         if(centralLines?.lines?.length)return true;
         const sessionKeys=await getAllKeysFromStore(REAB_STATE_STORE);
         if(sessionKeys.length)return true;
       }catch(e){}
       if(multProvGrupoMap&&Object.keys(multProvGrupoMap).length)return true;
+      if((multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP)&&Object.keys(multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP).length)return true;
       return false;
     }
     async function renderBackupSummary(){
@@ -5446,13 +5557,16 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const prov=await getOne(PROV_GRUPO_STORE,'actual');
         const provN=(prov?.map&&Object.keys(prov.map).length)||safeProvMapSize();
         items.push({ok:provN>0,label:`prov_grupo (${provN.toLocaleString('es-MX')} reglas)`});
+        const tipoGrupo=await getOne(PROV_GRUPO_STORE,'tipo_grupo');
+        const tipoGrupoN=(tipoGrupo?.map&&Object.keys(tipoGrupo.map).length)||Object.keys(multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP).length;
+        items.push({ok:tipoGrupoN>0,label:`Grupo → T.grupo (${tipoGrupoN.toLocaleString('es-MX')} reglas)`});
         const centralLines=await getOne(REAB_CENTRAL_LINES_STORE,'actual');
         const centralLineN=reabNormalizeCentralLines(centralLines).length;
         items.push({ok:centralLineN>0,label:`Líneas por inventario central${centralLineN?` (${centralLineN.toLocaleString('es-MX')} artículo-central)`:''}`});
         const sessionKeys=await getAllKeysFromStore(REAB_STATE_STORE);
         items.push({ok:sessionKeys.length>0,label:`Parámetros de cálculo${sessionKeys.length?` (${sessionKeys.length.toLocaleString('es-MX')} tipos: mes, lead time, meta y alcance)`:''}`});
         const invMetaCount=Object.keys(invMetaSidecarLoad()).length;
-        items.push({ok:invMetaCount>0,label:`Metas por artículo/bodega${invMetaCount?` (${invMetaCount.toLocaleString('es-MX')} artículos)`:''}`});
+        items.push({ok:invMetaCount>0,label:`Metas y mínimos estratégicos por artículo/bodega${invMetaCount?` (${invMetaCount.toLocaleString('es-MX')} artículos)`:''}`});
         items.push({ok:true,label:'Caché y renglones calculados se regeneran (no se respaldan)'});
         items.push({ok:true,label:'Reglas del semáforo y metas por bodega'});
       }catch(e){
@@ -5460,9 +5574,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         items.push({ok:categoriaRows?.length>0,label:'Categorías ARTICULO/CAT'});
         items.push({ok:!!multiplosFile,label:'Múltiplos de surtido'});
         items.push({ok:safeProvMapSize()>0,label:'prov_grupo'});
+        items.push({ok:Object.keys(multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP).length>0,label:'Grupo → T.grupo'});
         items.push({ok:false,label:'Líneas por inventario central'});
         items.push({ok:false,label:'Parámetros de cálculo'});
-        items.push({ok:Object.keys(invMetaSidecarLoad()).length>0,label:'Metas por artículo/bodega'});
+        items.push({ok:Object.keys(invMetaSidecarLoad()).length>0,label:'Metas y mínimos estratégicos por artículo/bodega'});
         items.push({ok:true,label:'Caché y renglones calculados se regeneran (no se respaldan)'});
         items.push({ok:true,label:'Reglas del semáforo y metas por bodega'});
       }
@@ -5501,7 +5616,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       if(payload?.invMetaSidecar&&typeof payload.invMetaSidecar==='object'){
         invMetaSidecarSave(payload.invMetaSidecar);
         if(typeof invMetaSidecarPatchReabMap==='function')invMetaSidecarPatchReabMap();
-        parts.push(`metas por artículo/bodega (${Object.keys(payload.invMetaSidecar).length.toLocaleString('es-MX')})`);
+        parts.push(`metas y mínimos estratégicos por artículo/bodega (${Object.keys(payload.invMetaSidecar).length.toLocaleString('es-MX')})`);
       }
       if(payload?.provGrupo?.map&&Object.keys(payload.provGrupo.map).length){
         multProvGrupoMap=payload.provGrupo.map;
@@ -5509,6 +5624,14 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(typeof renderProvGrupoInfo==='function')renderProvGrupoInfo(payload.provGrupo.sourceName||'respaldo');
         if(typeof updateMultBtnState==='function')updateMultBtnState();
         parts.push(`prov_grupo (${Object.keys(payload.provGrupo.map).length.toLocaleString('es-MX')} reglas)`);
+      }
+      if(payload?.tipoGrupo?.map&&Object.keys(payload.tipoGrupo.map).length){
+        multTipoGrupoMap=payload.tipoGrupo.map;
+        window.MULT_TIPO_GRUPO_MAP=multTipoGrupoMap;
+        await saveTipoGrupoLocal(multTipoGrupoMap);
+        tipoGrupoAdminState.loaded=false;
+        multEditorNeedsReload=true;
+        parts.push(`Grupo → T.grupo (${Object.keys(multTipoGrupoMap).length.toLocaleString('es-MX')} reglas)`);
       }
       if(payload?.centralLines?.lines?.length){
         const incoming=reabNormalizeCentralLines(payload.centralLines);
@@ -5724,9 +5847,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(data.categorias)parts.push('categorías');
         if(data.multiplos)parts.push('múltiplos');
         if(data.provGrupo)parts.push('prov_grupo');
+        if(data.tipoGrupo)parts.push('clasificaciones Grupo → T.grupo');
         if(data.centralLines)parts.push('líneas por inventario central');
         if(data.reabSessions?.length)parts.push('parámetros de cálculo');
-        if(data.invMetaSidecar)parts.push('metas por artículo/bodega');
+        if(data.invMetaSidecar)parts.push('metas y mínimos estratégicos por artículo/bodega');
         if(data.editorRowsSaved)parts.push(`${data.editorRowsSaved} cambios pendientes del editor guardados`);
         if(data.semaforoRules)parts.push('reglas y metas por bodega');
         setBackupStatus(`Respaldo completo exportado: <strong>${parts.length?parts.join(', '):'sin datos'}</strong>.`,'oktxt');
@@ -5760,9 +5884,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         const isFull=backupPayloadIsFull(raw);
         const meses=normalizeBackupPayload(raw);
         const hasMeses=meses.length>0;
-        const hasExtras=isFull&&(raw.catalogo||raw.categorias||raw.multiplos||raw.provGrupo||raw.centralLines||raw.reabSessions||raw.reabDemandCache||raw.semaforoRules);
-        if(!hasMeses&&!hasExtras)throw new Error('El respaldo no contiene meses, catálogo, categorías, múltiplos, prov_grupo, líneas centrales, sesiones, caché ni reglas del semáforo.');
-        if(!confirm('Se importará el respaldo completo'+(hasMeses?' (meses existentes se reemplazan)':'')+(hasExtras?', más catálogo/categorías/múltiplos/prov_grupo/líneas centrales/sesiones/caché y reglas/metas si vienen en el archivo':'')+'. ¿Continuar?'))return;
+        const hasExtras=isFull&&(raw.catalogo||raw.categorias||raw.multiplos||raw.provGrupo||raw.tipoGrupo||raw.centralLines||raw.reabSessions||raw.reabDemandCache||raw.semaforoRules);
+        if(!hasMeses&&!hasExtras)throw new Error('El respaldo no contiene meses, catálogo, categorías, múltiplos, prov_grupo, Grupo → T.grupo, líneas centrales, sesiones, caché ni reglas del semáforo.');
+        if(!confirm('Se importará el respaldo completo'+(hasMeses?' (meses existentes se reemplazan)':'')+(hasExtras?', más catálogo/categorías/múltiplos/prov_grupo/Grupo → T.grupo/líneas centrales/sesiones/caché y reglas/metas si vienen en el archivo':'')+'. ¿Continuar?'))return;
         let msgParts=[];
         if(hasMeses){
           const r=await restoreDemandMonths(meses);
@@ -7647,16 +7771,21 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       cocp:'COCINA / TARJAS', cocv:'TARJAS', cofcp:'TARJAS', cohoes:'COCINA', comm:'MUEBLES', cotral:'TARJAS',
       cp1bc:'CERAMICOS', cp1bf:'CERAMICOS', cp1bi:'CERAMICOS', cp1bl:'CERAMICOS', cp1cf:'CERAMICOS', cp1ci:'CERAMICOS', cp1cl:'CERAMICOS', cp1cp:'CERAMICOS', cp1cr:'CERAMICOS', cp1es:'CERAMICOS', cp1md:'CERAMICOS', cp1pc:'CERAMICOS', cp1pf:'CERAMICOS', cp1pr:'CERAMICOS', cp1pt:'CERAMICOS', cp1re:'BA\u00d1O', cpf:'PIEDRA', cpc:'PIEDRA', apmve:'PIEDRA',
       cupu:'TEJA', laasac:'TEJA', lapl:'LAMINA', laplac:'LAMINA', mb:'MUEBLES', mbcm:'MUEBLES', mees:'CALENTADOR SOLAR', mema:'POLIDUCTOS', memam:'POLIDUCTOS', metcg:'TUBO', metcp:'TUBO', pima:'CERAMICOS', plma:'MANGUERA', plmam:'MANGUERA', pltcl:'TUBO', pltcm:'TUBO', pltg:'TUBO', pltma:'TUBO', pltmg:'TUBO', pltp:'TUBO', pltph:'TUBO', pltpo:'TUBO',
-      tctibi:'TINACOS', tctitr:'TINACOS', plkit:'TINACOS', tcco:'TINACOS', tctitc:'TINACOS', tctitd:'TINACOS', tcci:'TINACOS', tccide:'TINACOS', tccidu:'TINACOS', tccieq:'TINACOS', tccoeq:'TINACOS', plva:'REFACCION TINACO', poa2el:'ADHESIVOS', poa2rl:'ADHESIVOS', poa2te:'ADHESIVOS', poa1rl:'ADHESIVOS', imper:'ADHESIVOS', pos2:'ADHESIVOS', poa2nl:'ADHESIVOS', poj5s:'ADHESIVOS', liad:'ADHESIVOS', av:'ADHESIVOS', pojei:'ADHESIVOS', poj1a:'ADHESIVOS', pojed:'ADHESIVOS', pojur:'ADHESIVOS', poj5u:'ADHESIVOS', liim:'imper', poa2:'ADHESIVOS', poakna:'ADHESIVOS', poaknl:'ADHESIVOS', poa2pi:'ADHESIVOS', pos4:'ADHESIVOS', poa2ea:'ADHESIVOS', ptlos:'PISO VINILICO', ptmd:'LAMBRIN', ptva:'LAMBRIN', recal:'CALENTADOR SOLAR', reti:'TINAS', reva:'REFAC CANCEL', tich:'TINAS', tish:'TINAS'
+      tctibi:'TINACOS', tctitr:'TINACOS', plkit:'TINACOS', tcco:'TINACOS', tctitc:'TINACOS', tctitd:'TINACOS', tcci:'TINACOS', tccide:'TINACOS', tccidu:'TINACOS', tccieq:'TINACOS', tccoeq:'TINACOS', plva:'REFACCION TINACO', poa2el:'ADHESIVOS', poa2rl:'ADHESIVOS', poa2te:'ADHESIVOS', poa1rl:'ADHESIVOS', imper:'imper', pos2:'ADHESIVOS', poa2nl:'ADHESIVOS', poj5s:'ADHESIVOS', liad:'ADITIVOS', av:'ADHESIVOS', pojei:'ADHESIVOS', poj1a:'JUNTEADORES', pojed:'ADHESIVOS', pojur:'ADHESIVOS', poj5u:'JUNTEADORES', liim:'imper', poa2:'ADHESIVOS', poakna:'ADHESIVOS', poaknl:'ADHESIVOS', poa2pi:'ADHESIVOS', pos4:'ADHESIVOS', poa2ea:'ADHESIVOS', ptlos:'PISO VINILICO', ptmd:'LAMBRIN', ptva:'LAMBRIN', recal:'CALENTADOR SOLAR', reti:'TINAS', reva:'REFAC CANCEL', tich:'TINAS', tish:'TINAS'
     };
     function reabTipoCeramicoGrupo(grupo,articulo,descripcion){
       const art=String(articulo||'').trim().toLowerCase();
       const sk=reabArtKey(articulo);
       const desc=norm(String(descripcion||''));
-      if((art.startsWith('30per')||sk.startsWith('per'))&&desc.includes('piedra'))return 'PIEDRA';
       const key=String(grupo||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
-      return REAB_TIPO_GRUPO_CERAMICO_MAP[key]||'';
+      const map=multTipoGrupoMap||window.MULT_TIPO_GRUPO_MAP||REAB_TIPO_GRUPO_CERAMICO_MAP;
+      const classified=map[key]||'';
+      if(classified)return classified;
+      if((art.startsWith('30per')||sk.startsWith('per'))&&desc.includes('piedra'))return 'PIEDRA';
+      return '';
     }
+    window.reabTipoCeramicoGrupo=reabTipoCeramicoGrupo;
+    window.reabTipoCeramicoDescripcion=reabTipoCeramicoDescripcion;
     function reabNumberFmt(v){return (Number(v)||0).toLocaleString('es-MX',{maximumFractionDigits:2});}
     function reabDMult(r){
       const mult=toNumber(r&&r.Multiplo), demDia=toNumber(r&&r.DemDia);
@@ -7690,7 +7819,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       if(!row)return;
       const mult=Math.max(1,toNumber(row.Multiplo)||1);
       const meta=reabRowSkuMetaDays(row,metaDaysFallback);
-      const tipo=reabAbastecimientoTipoFrom(mult,toNumber(row.DemMes),meta);
+      let tipo=reabAbastecimientoTipoFrom(mult,toNumber(row.DemMes),meta);
+      // Un mínimo estratégico permite reponer artículos nuevos o rezagados aun sin demanda calculada.
+      if(tipo==='sin_dem'&&toNumber(row.MaximoMin)>0)tipo='pr';
       row.Abastecimiento=tipo;
       row.AbastecimientoLabel=reabAbastecimientoLabel(tipo);
       row.DuracionLote=reabDMult(row);
@@ -7704,7 +7835,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const metaDays=reabRowSkuMetaDays(row);
       const nec=Math.max(0,reabInt(necesidadRestante));
       if(nec<=0)return 0;
-      const tipo=reabAbastecimientoTipoFrom(mult,toNumber(row.DemMes),metaDays);
+      let tipo=reabAbastecimientoTipoFrom(mult,toNumber(row.DemMes),metaDays);
+      if(tipo==='sin_dem'&&toNumber(row.MaximoMin)>0)tipo='pr';
       let raw=0;
       if(tipo==='buffer'){
         const maximo=toNumber(row.Maximo);
@@ -7734,11 +7866,11 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     }
     function reabFocusProgramaInput(inp){
       if(!inp)return;
-      requestAnimationFrame(()=>{
-        const v=String(inp.value??'').trim();
-        if(!v||v==='0')inp.value='';
-        else{try{inp.select();}catch(e){}}
-      });
+      // Selecciona de inmediato. La selección diferida con requestAnimationFrame
+      // podía ejecutarse después del primer dígito y hacer que el segundo lo reemplazara.
+      const v=String(inp.value??'').trim();
+      if(!v||v==='0')inp.value='';
+      else{try{inp.select();}catch(e){}}
     }
     function reabVisibleFieldInputs(field){
       const table=$('reabTable');
@@ -7775,8 +7907,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const isProg=inp.matches('[data-reab-field="Autorizado"]');
       const isMeta=inp.matches('[data-reab-field="InvMeta"]');
       const isMult=inp.matches('[data-reab-field="Multiplo"]');
+      const isMaxMin=inp.matches('[data-reab-field="MaximoMin"]');
       const isMatrix=inp.matches('[data-reab-matrix-source][data-reab-matrix-target]');
-      if(!isProg&&!isMeta&&!isMult&&!isMatrix)return;
+      if(!isProg&&!isMeta&&!isMult&&!isMaxMin&&!isMatrix)return;
       if(e.key==='Enter'){
         e.preventDefault();
         if(isProg){
@@ -7790,6 +7923,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           const row=reabRowById.get(inp.getAttribute('data-reab-id'));
           if(row)reabHandleMultiploChange(row,inp);
           if(!reabFocusNextFieldInput(inp,'Multiplo'))inp.blur();
+        }else if(isMaxMin){
+          const row=reabRowById.get(inp.getAttribute('data-reab-id'));
+          if(row)reabHandleMaximoMinChange(row,inp);
+          if(!reabFocusNextFieldInput(inp,'MaximoMin'))inp.blur();
         }else{
           reabHandleMatrixProgramInput(inp);
           inp.blur();
@@ -7807,6 +7944,9 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         }else if(isMult){
           const row=reabRowById.get(inp.getAttribute('data-reab-id'));
           if(row)inp.value=String(Math.max(1,reabInt(row.Multiplo)||1));
+        }else if(isMaxMin){
+          const row=reabRowById.get(inp.getAttribute('data-reab-id'));
+          if(row)inp.value=toNumber(row.MaximoMin)>0?String(reabInt(row.MaximoMin)):'';
         }else{
           const src=reabRowById.get(inp.getAttribute('data-reab-matrix-source'));
           const bod=inp.getAttribute('data-reab-matrix-target');
@@ -7815,12 +7955,12 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         inp.blur();
         return;
       }
-      if(isMeta||isMult||isProg||isMatrix){
+      if(isMeta||isMult||isMaxMin||isProg||isMatrix){
         if(e.ctrlKey||e.metaKey||e.altKey)return;
         if(['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
         if(/^\d$/.test(e.key))return;
         // Permitir punto/coma solo en campos que no son enteros estrictos; programa/mult/meta son enteros.
-        if(isProg||isMult||isMeta||isMatrix){e.preventDefault();return;}
+        if(isProg||isMult||isMeta||isMaxMin||isMatrix){e.preventDefault();return;}
       }
     }
     function reabCatalogKey(v){return reabArtKey(v);}
@@ -8113,11 +8253,12 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       return m;
     }
     function reabInv(m,art,bodega){return m.get(art+'|'+bodega)||{Articulo:art,Bodega:bodega,Cia:REAB_BODEGA_CIA[bodega]||'',Existencia:0,Pendiente:0,Ordenado:0,CostoP:0,CostoTotal:0,Total:0};}
-    function reabCalcNecesidadBruta(demMes,total,maximo){
+    function reabCalcNecesidadBruta(demMes,total,maximo,maximoMin=0){
       const dem=toNumber(demMes);
       const inv=toNumber(total);
       const max=toNumber(maximo);
-      if(dem<=0||max<=0||inv>=max)return 0;
+      const minEstrategico=toNumber(maximoMin);
+      if((dem<=0&&minEstrategico<=0)||max<=0||inv>=max)return 0;
       return reabInt(max-inv);
     }
     function reabBufferEsperandoMultiploCompleto(row,necesidad,sugerido){
@@ -8137,6 +8278,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
     }
     function reabSemaforo(total,pr,maximo,auto,necesidad,sugerido,row){
       if(!auto)return {k:'noauto',t:'No auto',c:'semGris'};
+      if(toNumber(row?.DemMes)<=0&&toNumber(total)<=0&&toNumber(necesidad)<=0)return {k:'sindem',t:'S/dem',c:'semSinDem'};
       if(maximo>0 && total>maximo*1.25)return {k:'sob',t:'Sob.inv',c:'semAzul'};
       if(reabBufferEsperandoMultiploCompleto(row,necesidad,sugerido))return {k:'ver',t:'Verde',c:'semVerde'};
       if(necesidad>0 && total<=pr)return {k:'roj',t:'Rojo',c:'semRojo'};
@@ -8391,16 +8533,24 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const side=invMetaSidecarLoad();
       const prev=side[sk]||{};
       const inv={...(prev.inv_meta_bodegas||{})};
+      const maxMin={...(prev.maximo_min_bodegas||{})};
       if(patch.inv_meta_bodegas){
         for(const [bod,val] of Object.entries(patch.inv_meta_bodegas)){
           if(val==null)delete inv[bod];
           else inv[bod]=Math.max(1,Math.round(val));
         }
       }
-      const next={...prev,...patch,inv_meta_bodegas:inv};
+      if(patch.maximo_min_bodegas){
+        for(const [bod,val] of Object.entries(patch.maximo_min_bodegas)){
+          if(val==null||!(toNumber(val)>0))delete maxMin[bod];
+          else maxMin[bod]=Math.max(1,Math.round(toNumber(val)));
+        }
+      }
+      const next={...prev,...patch,inv_meta_bodegas:inv,maximo_min_bodegas:maxMin};
       if(!Object.keys(inv).length)delete next.inv_meta_bodegas;
+      if(!Object.keys(maxMin).length)delete next.maximo_min_bodegas;
       if(next.dias_inventario_max==null)delete next.dias_inventario_max;
-      if(!next.dias_inventario_max&&!next.inv_meta_bodegas)delete side[sk];
+      if(!next.dias_inventario_max&&!next.inv_meta_bodegas&&!next.maximo_min_bodegas)delete side[sk];
       else side[sk]=next;
       invMetaSidecarSave(side);
     }
@@ -8413,6 +8563,27 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       else if(d!=null)d=Math.max(1,Math.round(d));
       const store=(d==null||(g!=null&&d===g))?null:d;
       invMetaSidecarUpdateSku(sk,{inv_meta_bodegas:{[bod]:store}});
+    }
+    function reabMaximoMinBodega(art,bodega){
+      const bod=String(bodega||'').trim().toLowerCase();
+      if(!bod)return 0;
+      const m=reabMultiplosMeta(art)||{};
+      return Math.max(0,Math.round(toNumber(m.maximo_min_bodegas?.[bod])||0));
+    }
+    function reabPatchMaximoMinInMap(art,bodega,value){
+      const bod=String(bodega||'').trim().toLowerCase();
+      const sk=window.multApi?.skuKey?.(art)||reabArtKey(art);
+      if(!sk||!bod)return;
+      const v=Math.max(0,Math.round(toNumber(value)||0));
+      invMetaSidecarUpdateSku(sk,{maximo_min_bodegas:{[bod]:v>0?v:null}});
+      const prev=reabMultiplosMeta(art)||{};
+      const maxMin={...(prev.maximo_min_bodegas||{})};
+      if(v>0)maxMin[bod]=v;else delete maxMin[bod];
+      const entry={...prev,maximo_min_bodegas:maxMin};
+      if(!Object.keys(maxMin).length)delete entry.maximo_min_bodegas;
+      multiplosReabMap.set(sk,entry);
+      const alt=reabArtKey(art);
+      if(alt&&alt!==sk)multiplosReabMap.set(alt,entry);
     }
     function invMetaSidecarApplyToMatrix(matrix,sections){
       const api=window.multApi;
@@ -8458,10 +8629,16 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           if(val==null)delete inv_meta_bodegas[bod];
           else inv_meta_bodegas[bod]=Math.max(1,Math.round(val));
         }
+        const maximo_min_bodegas={...(prev.maximo_min_bodegas||{})};
+        for(const [bod,val] of Object.entries(entry.maximo_min_bodegas||{})){
+          if(val==null||!(toNumber(val)>0))delete maximo_min_bodegas[bod];
+          else maximo_min_bodegas[bod]=Math.max(1,Math.round(toNumber(val)));
+        }
         const merged={
           ...prev,
           ...(entry.dias_inventario_max!=null?{dias_inventario_max:Math.round(entry.dias_inventario_max)}:{}),
           inv_meta_bodegas,
+          maximo_min_bodegas,
         };
         multiplosReabMap.set(sk,merged);
         const alt=reabArtKey(sk);
@@ -8523,7 +8700,14 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
               if(!match)break;
             }
           }
-          if(match){delete side[sk];pruned=true;}
+          if(match){
+            // Las metas ya embebidas en el XLSX pueden limpiarse, pero el mínimo
+            // estratégico no tiene columna en ese archivo y debe permanecer local.
+            const maxMin={...(entry.maximo_min_bodegas||{})};
+            if(Object.keys(maxMin).length)side[sk]={maximo_min_bodegas:maxMin};
+            else delete side[sk];
+            pruned=true;
+          }
         }
         if(pruned)invMetaSidecarSave(side);
       }catch(e){console.warn('invMetaSidecarReconcileFromBuffer',e);}
@@ -8694,16 +8878,20 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const fallback=reabSkuMetaFallbackDays();
       allRows.forEach(r=>{
         r.Multiplo=reabMultiploBodega(art,r.BodegaDestino);
-        reabPatchAbastecimientoFields(r,fallback);
         const invMetaDays=reabInvMetaDays(art,r.BodegaDestino,fallback);
+        const maximoMin=reabMaximoMinBodega(art,r.BodegaDestino);
         const demDia=toNumber(r.DemDia);
         const total=toNumber(r.TotalBodega);
         const leadDays=toNumber(r.Leadtime);
         const demMes=toNumber(r.DemMes);
         const punto=reabInt(demDia*leadDays);
-        const maximo=reabInt(demDia*invMetaDays);
+        const maximoCalculado=reabInt(demDia*invMetaDays);
+        const maximo=Math.max(maximoCalculado,maximoMin);
+        r.MaximoMin=maximoMin;
+        r.MaximoCalculado=maximoCalculado;
+        reabPatchAbastecimientoFields(r,fallback);
         reabPatchRowAutomaticoState(r);
-        const necesidadBruta=reabCalcNecesidadBruta(demMes,total,maximo);
+        const necesidadBruta=reabCalcNecesidadBruta(demMes,total,maximo,maximoMin);
         const necesidad=necesidadBruta;
         r.InvMetaDias=invMetaDays;
         r.PuntoReorden=punto;
@@ -8711,12 +8899,13 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         r.DiasInv=demDia>0?round2(total/demDia):0;
         r.NecesidadBruta=necesidadBruta;
         r.Necesidad=necesidad;
-        r.Semaforo=reabSemaforo(total,punto,maximo,r.Automatico,necesidadBruta);
+        r.Semaforo=reabSemaforo(total,punto,maximo,r.Automatico,necesidadBruta,0,r);
       });
       reabRecalcProgramacionForRows(allRows);
       reabUpdateArticleFast(art);
       reabRefreshInvMetaUiArts([art]);
       reabRefreshMultUiArts([art]);
+      reabRefreshMaximoMinUiArts([art]);
       for(const rr of allRows){
         const tr=document.querySelector(`#reabTable tr[data-reab-row-id="${CSS.escape(rr.Id)}"]`);
         if(!tr)continue;
@@ -8744,7 +8933,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         if(!rr||!want.has(reabArtKey(rr.Articulo)))return;
         const ui=reabInvMetaUiState(rr);
         rr.InvMetaDias=ui.v;
-        inp.value=String(ui.v);
+        // No reemplazar una captura que aún está activa por un refresco en segundo plano.
+        if(document.activeElement!==inp)inp.value=String(ui.v);
         inp.classList.toggle('reabInvMetaInherited',ui.inherited);
         inp.classList.remove('reabInvMetaSaving');
         inp.title=ui.tip;
@@ -8803,6 +8993,36 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       reabPatchInvMetaInMap(row.Articulo,row.BodegaDestino,days);
       reabRecalcArticleInvMeta(row.Articulo);
       reabScheduleInvMetaPersist(row.Articulo,row.BodegaDestino,days,inp);
+    }
+    function reabRefreshMaximoMinUiArts(arts){
+      const want=new Set([...arts].map(a=>reabArtKey(a)).filter(Boolean));
+      if(!want.size)return;
+      document.querySelectorAll('[data-reab-field="MaximoMin"]').forEach(inp=>{
+        const rr=reabRowById.get(inp.getAttribute('data-reab-id'));
+        if(!rr||!want.has(reabArtKey(rr.Articulo)))return;
+        const v=reabMaximoMinBodega(rr.Articulo,rr.BodegaDestino);
+        rr.MaximoMin=v;
+        if(document.activeElement!==inp)inp.value=v>0?String(v):'';
+        inp.title=`Mínimo estratégico en piezas para ${String(rr.BodegaDestino||'').toUpperCase()}. Vacío o 0 usa solamente el cálculo por demanda.`;
+      });
+    }
+    function reabMaximoMinInputHtml(r){
+      const v=reabMaximoMinBodega(r.Articulo,r.BodegaDestino);
+      r.MaximoMin=v;
+      const bod=String(r.BodegaDestino||'').toUpperCase();
+      return `<input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-reab-id="${reabEsc(r.Id)}" data-reab-field="MaximoMin" value="${v>0?v:''}" placeholder="—" title="Mínimo estratégico en piezas para ${reabEsc(bod)}. Max/P.R. usará el mayor entre su cálculo y este valor.">`;
+    }
+    function reabHandleMaximoMinChange(row,inp){
+      if(!row||!inp)return;
+      const v=Math.max(0,reabParseProgramaInput(inp.value));
+      inp.value=v>0?String(v):'';
+      reabPatchMaximoMinInMap(row.Articulo,row.BodegaDestino,v);
+      reabRecalcArticleInvMeta(row.Articulo);
+      reabScheduleStatePersist();
+      const bod=String(row.BodegaDestino||'').toUpperCase();
+      setStatus(v>0
+        ?`Mínimo estratégico guardado: ${reabArticuloTxt(row.Articulo)||row.Articulo} · ${bod} = ${v} piezas.`
+        :`Mínimo estratégico eliminado: ${reabArticuloTxt(row.Articulo)||row.Articulo} · ${bod}.`,'oktxt');
     }
     function reabMultFactorGeneral(art){
       // Columna F del editor/Excel (factor general). No confundir con D MULT (días de cobertura del múltiplo).
@@ -8902,8 +9122,8 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const v=toNumber(m.bodegas?.[bod]);
       const factor=reabMultFactorGeneral(art);
       if(v>0){
-        // Múlt·bodega = 1 con F > 1 = placeholder de alta → usar F (no D MULT).
-        if(v===1&&factor>1)return Math.round(factor);
+        // Respeta siempre el múltiplo guardado. El valor 1 es una decisión válida
+        // del usuario y no debe sustituirse nuevamente por el factor general F.
         return v;
       }
       return factor>0?Math.round(factor):1;
@@ -9264,12 +9484,13 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       return dMult>cfg.dMultMin;
     }
     function reabNoAutomaticoReason(catalogAuto,pol,multMeta,bodega,statusLinea,opts={}){
+      const estrategico=toNumber(opts.maximoMin)>0;
       if(reabNoSurtirBlocksAuto(multMeta,bodega))return 'No surtir';
       if(reabCategoryKBlocksAuto(opts.categoria,bodega))return reabCategoryKBlockReason(bodega);
       const supplierRouteBlock=reabSupplierRouteExclusionInfo(opts.proveedor,opts.central,bodega);
       if(supplierRouteBlock)return reabSupplierRouteExclusionReason(supplierRouteBlock);
-      if(reabDemandBlocksReabAuto(pol))return pol?.PoliticaInventario||'Política de demanda sin compra automática';
-      if(reabSparseHistoryBlocksAuto(pol,opts.statusSt,statusLinea))return reabSparseHistoryBlockReason();
+      if(!estrategico&&reabDemandBlocksReabAuto(pol))return pol?.PoliticaInventario||'Política de demanda sin compra automática';
+      if(!estrategico&&reabSparseHistoryBlocksAuto(pol,opts.statusSt,statusLinea))return reabSparseHistoryBlockReason();
       if(reabHighValueSlowBlocksAuto(bodega,opts.costoP,opts.mult,opts.demMes))return reabHighValueSlowBlockReason();
       return pol?.PoliticaInventario||'Sin compra automática';
     }
@@ -9283,7 +9504,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const categoria=reabCategoriaForArt(r.Articulo);
       r.Categoria=categoria;
       const proveedorRegla=r.Proveedor||meta.Proveedor||reabProveedorFromArticulo(r.Articulo);
-      const opts={costoP:r.CostoP,mult:r.Multiplo,demMes:r.DemMes,statusSt,categoria,proveedor:proveedorRegla,central:r.Central};
+      const opts={costoP:r.CostoP,mult:r.Multiplo,demMes:r.DemMes,maximoMin:r.MaximoMin,statusSt,categoria,proveedor:proveedorRegla,central:r.Central};
       const automatico=reabResolveAutomatico(st.auto,pol,skuMeta,r.BodegaDestino,st.linea,opts);
       r.Automatico=automatico;
       r.CompraAutomatica=automatico?'Sí':'No';
@@ -9299,10 +9520,10 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       for(const r of reabRows){
         const was=!!r.Automatico;
         reabPatchRowAutomaticoState(r);
-        const necesidadBruta=reabCalcNecesidadBruta(r.DemMes,r.TotalBodega,r.Maximo);
+        const necesidadBruta=reabCalcNecesidadBruta(r.DemMes,r.TotalBodega,r.Maximo,r.MaximoMin);
         r.NecesidadBruta=necesidadBruta;
         r.Necesidad=necesidadBruta;
-        r.Semaforo=reabSemaforo(r.TotalBodega,r.PuntoReorden,r.Maximo,r.Automatico,necesidadBruta);
+        r.Semaforo=reabSemaforo(r.TotalBodega,r.PuntoReorden,r.Maximo,r.Automatico,necesidadBruta,0,r);
         if(was!==r.Automatico)changed++;
       }
       if(changed){
@@ -9324,17 +9545,20 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       const bod=String(bodega||'').trim().toLowerCase();
       if(rule.type==='global')return true;
       if(rule.type==='solo'){
-        const allowed=new Set((rule.bods||[]).map(b=>String(b).toLowerCase()));
-        return !allowed.has(bod);
+        // El editor usa «solo: cl, cb» para indicar No surtir únicamente
+        // en esas bodegas (las casillas seleccionadas son las bloqueadas).
+        const blocked=new Set((rule.bods||[]).map(b=>String(b).toLowerCase()));
+        return blocked.has(bod);
       }
       return false;
     }
     function reabResolveAutomatico(catalogAuto,pol,multMeta,bodega,statusLinea,opts={}){
+      const estrategico=toNumber(opts.maximoMin)>0;
       if(reabNoSurtirBlocksAuto(multMeta,bodega))return false;
       if(reabCategoryKBlocksAuto(opts.categoria,bodega))return false;
       if(reabSupplierRouteExclusionInfo(opts.proveedor,opts.central,bodega))return false;
-      if(reabDemandBlocksReabAuto(pol))return false;
-      if(reabSparseHistoryBlocksAuto(pol,opts.statusSt,statusLinea))return false;
+      if(!estrategico&&reabDemandBlocksReabAuto(pol))return false;
+      if(!estrategico&&reabSparseHistoryBlocksAuto(pol,opts.statusSt,statusLinea))return false;
       if(reabHighValueSlowBlocksAuto(bodega,opts.costoP,opts.mult,opts.demMes))return false;
       return !!catalogAuto;
     }
@@ -9448,23 +9672,25 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
           const total=round2(toNumber(inv.Total));
           const diasInv=demDia>0?round2(total/demDia):0;
           const invMetaDays=reabInvMetaDays(art,bodega,skuMetaFallback);
+          const maximoMin=reabMaximoMinBodega(art,bodega);
           const multiplo=reabMultiploBodega(art,bodega);
           const punto=reabInt(demDia*leadDays);
-          const maximo=reabInt(demDia*invMetaDays);
-          const necesidadBruta=reabCalcNecesidadBruta(demMes,total,maximo);
+          const maximoCalculado=reabInt(demDia*invMetaDays);
+          const maximo=Math.max(maximoCalculado,maximoMin);
+          const necesidadBruta=reabCalcNecesidadBruta(demMes,total,maximo,maximoMin);
           const pol=policyMap.get(art+'|'+cia)||{};
           const statusSt=reabStatusShort(st.label,st.linea);
-          const autoOpts={costoP:inv.CostoP||costoArt,mult:multiplo,demMes,statusSt,categoria,proveedor:proveedor||d.Proveedor||reabProveedorFromArticulo(art),central:''};
+          const autoOpts={costoP:inv.CostoP||costoArt,mult:multiplo,demMes,maximoMin,statusSt,categoria,proveedor:proveedor||d.Proveedor||reabProveedorFromArticulo(art),central:''};
           const automatico=reabResolveAutomatico(st.auto,pol,skuMeta,bodega,st.linea,autoOpts);
           const necesidad=necesidadBruta;
-          const sem=reabSemaforo(total,punto,maximo,automatico,necesidadBruta);
+          const sem=reabSemaforo(total,punto,maximo,automatico,necesidadBruta,0,{DemMes:demMes});
           const polDemanda=String(pol?.PoliticaInventario||'').trim();
           const motivoAuto=st.motivo+(polDemanda?'; Pol demanda: '+polDemanda+' (no bloquea semáforo)':'');
           const motivoNoAuto=reabNoAutomaticoReason(st.auto,pol,skuMeta,bodega,st.linea,autoOpts);
           const baseRow={
             Articulo:art,ArticuloTxt:articuloTxt,Categoria:categoria,Proveedor:proveedor||d.Proveedor||'',Grupo:grupo||d.Grupo||'',Grupo2:meta.Grupo2||'',StatusCatalogo:meta.Status||'',StatusLinea:st.linea||'',StatusOperativo:st.label,Automatico:automatico,MotivoStatus:automatico?motivoAuto:motivoNoAuto,Descripcion:meta.Nombre||'',TipoGrupoCeramico:tipoGrupoCer,TipoCeramico:tipoCer,BodegaCeramica:cerBodegaOnce,Factor:meta.Factor||0,LoteSurte:meta.LoteSurte||0,
             CompraAutomatica:automatico?'Sí':'No',CompraAutomaticaDemanda:pol.CompraAutomatica||'No',PoliticaInventario:pol.PoliticaInventario||'',TipoDemanda:pol.TipoDemanda||'',MesesConVenta:pol.MesesConVenta,SegmentoABC:pol.SegmentoABC||'',SegmentoServicio:pol.SegmentoServicio||'',Multiplo:multiplo,
-            CiaDestino:cia,BodegaDestino:bodega,DemMes:demMes,DemDia:demDia,ExistenciaBodega:inv.Existencia||0,Transito:inv.Pendiente||0,Ordenado:inv.Ordenado||0,TotalBodega:total,CostoP:inv.CostoP||costoArt,DiasInv:diasInv,PuntoReorden:punto,Maximo:maximo,Leadtime:leadDays,InvMetaDias:invMetaDays,Necesidad:necesidad,NecesidadBruta:necesidadBruta,Semaforo:sem,Otras:otras,OtrasManual:{...otrasManualBase},
+            CiaDestino:cia,BodegaDestino:bodega,DemMes:demMes,DemDia:demDia,ExistenciaBodega:inv.Existencia||0,Transito:inv.Pendiente||0,Ordenado:inv.Ordenado||0,TotalBodega:total,CostoP:inv.CostoP||costoArt,DiasInv:diasInv,PuntoReorden:punto,Maximo:maximo,MaximoCalculado:maximoCalculado,MaximoMin:maximoMin,Leadtime:leadDays,InvMetaDias:invMetaDays,Necesidad:necesidad,NecesidadBruta:necesidadBruta,Semaforo:sem,Otras:otras,OtrasManual:{...otrasManualBase},
             Sugerido:0,Autorizado:0,Accion:'',Central:'',CentralCia:'',Origen:'',Destino:reabDestinoCode(bodega),RouteId:'',FilePrefix:'',BodegaCeramicaRuta:'',ExistenciaCentral:0,DisponibleAntes:0,DisponibleDespues:0,DisponibleManualAntes:0,DisponibleManualDespues:0,
             CentralSeedOnly:!normalSparse.has(bodega)&&seedDestCentrals.has(bodega),CentralSeeds:Array.from(seedDestCentrals.get(bodega)||[]),CreatedFromCentralInventory:seedDestCentrals.has(bodega),
             Alerta:!normalSparse.has(bodega)&&seedDestCentrals.has(bodega)?'Línea persistente creada por existencia en bodega central':''
@@ -9490,7 +9716,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       row.ApoyoAg=agExist;
       row.TotalBodega=total;
       row.DiasInv=toNumber(row.DemDia)>0?round2(total/toNumber(row.DemDia)):0;
-      row.NecesidadBruta=reabCalcNecesidadBruta(row.DemMes,total,row.Maximo);
+      row.NecesidadBruta=reabCalcNecesidadBruta(row.DemMes,total,row.Maximo,row.MaximoMin);
       row.Necesidad=row.NecesidadBruta;
       row.Semaforo=reabSemaforo(total,row.PuntoReorden,row.Maximo,row.Automatico,row.NecesidadBruta,0,row);
       row.CoberturaEspecial='AI-AA';
@@ -9865,7 +10091,11 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         const maximo=toNumber(r.Maximo);
         const punto=toNumber(r.PuntoReorden);
         let tip='';
-        if(key==='Maximo')tip=`Max/P.R. = Dem/día × Meta SKU = ${reabNumberFmt(demDia)} × ${metaDays} d = ${reabNumberFmt(maximo)}`;
+        if(key==='Maximo'){
+          const calculado=toNumber(r.MaximoCalculado??reabInt(demDia*metaDays));
+          const minimo=toNumber(r.MaximoMin);
+          tip=`Max/P.R. calculado = Dem/día × Meta SKU = ${reabNumberFmt(demDia)} × ${metaDays} d = ${reabNumberFmt(calculado)}`+(minimo>0?` · mínimo estratégico ${reabNumberFmt(minimo)} · valor efectivo ${reabNumberFmt(maximo)}`:'');
+        }
         else if(key==='PuntoReorden')tip=`InvSeg = Dem/día × Lead = ${reabNumberFmt(demDia)} × ${toNumber(r.Leadtime)} d = ${reabNumberFmt(punto)}`;
         else if(key==='Necesidad')tip=`Nec teórica sin restricciones = Máximo − Total, cuando Total < Máximo. ${reabNumberFmt(maximo)} − ${reabNumberFmt(total)} = ${reabNumberFmt(r.Necesidad)} (meta SKU ${metaDays} d; P.R. ${reabNumberFmt(punto)}). No auto, categoría k, proveedor, ruta y central solo afectan Sugerido/Programa.`;
         else if(key==='DiasInv')tip=`Cobertura ${reabNumberFmt(r.DiasInv)} d vs meta SKU ${metaDays} d en ${String(r.BodegaDestino||'').toUpperCase()}`;
@@ -9960,10 +10190,12 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       const total=round2(toNumber(inv.Total));
       const diasInv=demDia>0?round2(total/demDia):0;
       const invMetaDays=reabInvMetaDays(art,b,reabSkuMetaFallbackDays());
+      const maximoMin=reabMaximoMinBodega(art,b);
       const multiplo=reabMultiploBodega(art,b);
       const punto=reabInt(demDia*leadDays);
-      const maximo=reabInt(demDia*invMetaDays);
-      const necesidadBruta=reabCalcNecesidadBruta(demMes,total,maximo);
+      const maximoCalculado=reabInt(demDia*invMetaDays);
+      const maximo=Math.max(maximoCalculado,maximoMin);
+      const necesidadBruta=reabCalcNecesidadBruta(demMes,total,maximo,maximoMin);
       const meta=sourceRow.RouteId?reabRouteMetaById(sourceRow.RouteId):reabRouteMetaList().find(m=>m.route.central===(sourceRow.Central));
       const route=meta?.route||{central:sourceRow.Central,centralCia:sourceRow.CentralCia,filePrefix:sourceRow.FilePrefix};
       const central=String(route.central||sourceRow.Central||'').toLowerCase();
@@ -9992,6 +10224,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         DiasInv:diasInv,
         PuntoReorden:punto,
         Maximo:maximo,
+        MaximoCalculado:maximoCalculado,
+        MaximoMin:maximoMin,
         Leadtime:leadDays,
         InvMetaDias:invMetaDays,
         Multiplo:multiplo,
@@ -10176,8 +10410,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       return map;
     }
     const REAB_XFER_DISPLAY_ORDER={
-      accesorios:['ac','as','at','am','al','ab','aa','ad','ah','aj'],
-      ceramicos:['cc','cs','ct','cm','cl','cb','cg','cd','ch','cj']
+      accesorios:['ab','al','ac','at','ah','as','aa','aj','ad','am'],
+      ceramicos:['cb','cl','cc','ct','cs','cm','cj','cg','cd','ch']
     };
     function reabTransferLinesHtml(rows){
       const byCentral=reabXferSkuCountByCentral(rows);
@@ -10834,6 +11068,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       if(key==='Ordenado')return toNumber(r.Ordenado);
       if(key==='PuntoReorden')return toNumber(r.PuntoReorden);
       if(key==='Maximo')return toNumber(r.Maximo);
+      if(key==='MaximoMin')return toNumber(r.MaximoMin);
       if(key==='DMult'){const d=reabDMult(r);return d==null?-1:d;}
       if(key==='FactorF')return reabFactorGeneral(r.Articulo);
       if(key==='Abast')return reabAbastDisplayLabel(r);
@@ -11053,6 +11288,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         {label:'Meta',title:'Días inv. meta: general salvo override por bodega en múltiplos',key:'InvMeta',num:true,render:r=>reabInvMetaInputHtml(r)},
         {label:'InvSeg',title:'Inventario de seguridad',key:'PuntoReorden',num:true,render:r=>reabLiveSpan(r,'PuntoReorden')},
         {label:'Max/P.R.',title:'Máximo inventario (meta días)',key:'Maximo',num:true,render:r=>reabLiveSpan(r,'Maximo')},
+        {label:'Mín P.R.',title:'Mínimo estratégico en piezas para Max/P.R.',key:'MaximoMin',num:true,render:r=>reabMaximoMinInputHtml(r)},
         {label:'Alt',title:'Alerta',key:'Alerta',render:r=>reabLiveSpan(r,'Alerta')}
       );
       return cols;
@@ -11088,8 +11324,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     function reabViewFiltersStorageKey(tipo){return REAB_VIEW_FILTERS_STORAGE_PREFIX+(tipo||reabCurrentTipo());}
     const REAB_COLUMNS_FORCE_VISIBLE=['DMult','Abast'];
     const REAB_COLUMNS_NEVER_VISIBLE=['LoteSurte','LoteDias'];
-    /** Columnas nuevas que se agregan solo al migrar prefs antiguas (V4–V6), no en cada carga. */
-    const REAB_COLUMNS_MERGE_IF_MISSING=['Categoria','Abast','FactorF'];
+    /** Columnas nuevas que se agregan solo al migrar preferencias antiguas, no en cada carga. */
+    const REAB_COLUMNS_MERGE_IF_MISSING=['Categoria','Abast','FactorF','MaximoMin'];
     function reabEnsureForceVisibleCols(valid){
       const v=valid||new Set(reabAllColumns().map(c=>c.key));
       REAB_COLUMNS_FORCE_VISIBLE.forEach(k=>{if(v.has(k))reabVisibleColumns.add(k);});
@@ -11279,6 +11515,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       ExistBodega:'Existencia en bodega destino',
       PuntoReorden:'Inventario de seguridad',
       Maximo:'Máximo de inventario',
+      MaximoMin:'Mínimo estratégico de Max/P.R.',
       CompraAuto:'Compra automática',
       PoliticaInv:'Política de inventario',
       TipoDemanda:'Tipo de demanda',
@@ -11323,11 +11560,11 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     function reabColumnChooserGroups(cols){
       const existKeys=cols.filter(c=>c.key.startsWith('Exist_')).map(c=>c.key);
       return[
-        {id:'identidad',keys:['Central','Origen','Destino','Articulo','Status','Semaforo','CompraAuto','PoliticaInv','TipoDemanda','SegmentoABC','Proveedor','Grupo','CostoP','Descripcion','TipoGrupoCeramico','TipoCeramico']},
+        {id:'identidad',keys:['Central','Origen','Destino','Articulo','Status','Categoria','Semaforo','CompraAuto','PoliticaInv','TipoDemanda','SegmentoABC','Proveedor','Grupo','CostoP','Descripcion','TipoGrupoCeramico','TipoCeramico']},
         {id:'operacion',keys:['DiasInv','DemMes','DispDespManual','TotalBodega','ExistBodega','Transito','Ordenado','Necesidad','Sugerido','Programa']},
         {id:'multiplos',keys:['Multiplo','DMult','FactorF','Abast']},
         {id:'existencias',keys:existKeys},
-        {id:'inventario',keys:['Leadtime','InvMeta','PuntoReorden','Maximo','Alerta']}
+        {id:'inventario',keys:['Leadtime','InvMeta','PuntoReorden','Maximo','MaximoMin','Alerta']}
       ];
     }
     function reabRenderColumnChooser(){
@@ -11464,14 +11701,14 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       const hs=['Central','Origen','Destino','Articulo','Status','Status multiplos','CAT','Semaforo','Compra automatica','Politica inventario','Tipo demanda','ABC','Proveedor','Grupo','Costo P','Descripcion']
         .concat(incluirTipoCeramico?['Tipo grupo','Tipo ceramico']:[])
         .concat(['Dias inv','Dem mes','Inv Alm central','Total bodega','Existencia bodega','Transito','Ordenado','Necesidad','Sugerido','Programa','Multiplo bodega','D MULT','Factor F','Abastecimiento'])
-        .concat(bcols.map(b=>'Exist '+b)).concat(['Leadtime','Inv meta dias','InvSeg','Max/P.R.','Alerta']);
+        .concat(bcols.map(b=>'Exist '+b)).concat(['Leadtime','Inv meta dias','InvSeg','Max/P.R.','Min P.R. estrategico','Alerta']);
       const out=[hs];
       for(const r of rows){
         out.push([r.Central,r.Origen,r.Destino,r.ArticuloTxt,r.StatusOperativo,r.StatusLinea||'',String(r.Categoria||'').toLowerCase(),r.Semaforo.t,r.CompraAutomatica||'',r.PoliticaInventario||'',r.TipoDemanda||'',r.SegmentoABC||'',r.Proveedor,r.Grupo,r.CostoP,r.Descripcion]
           .concat(incluirTipoCeramico?[r.TipoGrupoCeramico||'',r.TipoCeramico||'']:[])
           .concat([r.DiasInv,r.DemMes,r.DisponibleManualDespues,r.TotalBodega,r.ExistenciaBodega,r.Transito,r.Ordenado,r.Necesidad,r.Sugerido,r.Autorizado,r.Multiplo,reabDMult(r)??'',reabFactorGeneral(r.Articulo),reabAbastDisplayLabel(r)])
           .concat(bcols.map(b=>((r.OtrasManual||r.Otras||{})[b])||0))
-          .concat([r.Leadtime,r.InvMetaDias,r.PuntoReorden,r.Maximo,r.Alerta]));
+          .concat([r.Leadtime,r.InvMetaDias,r.PuntoReorden,r.Maximo,r.MaximoMin||0,r.Alerta]));
       }
       return out;
     }
@@ -11812,7 +12049,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
     });
     if($('reabTable')){
       $('reabTable').addEventListener('focusin',e=>{
-        if(e.target.matches('[data-reab-field="Autorizado"],[data-reab-field="Multiplo"],[data-reab-field="InvMeta"],[data-reab-matrix-source][data-reab-matrix-target]'))reabFocusProgramaInput(e.target);
+        if(e.target.matches('[data-reab-field="Autorizado"],[data-reab-field="Multiplo"],[data-reab-field="InvMeta"],[data-reab-field="MaximoMin"],[data-reab-matrix-source][data-reab-matrix-target]'))reabFocusProgramaInput(e.target);
       },true);
       $('reabTable').addEventListener('keydown',reabProgramaKeydown,true);
     }
@@ -11830,6 +12067,10 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       }
       if(field==='Multiplo'){
         reabHandleMultiploChange(row,e.target);
+        return;
+      }
+      if(field==='MaximoMin'){
+        reabHandleMaximoMinChange(row,e.target);
         return;
       }
       reabRender();
@@ -12143,7 +12384,18 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       }catch(err){cerBodSetStatus('Error guardando: '+err.message,'errtxt');}
       finally{if(btn)btn.disabled=!cerBodState.dirty.size;}
     }
-    window.cerBodOnShow=function(){cerBodLoadRows(false);};
+    function cerAdminShowTab(tab){
+      const grupos=tab==='grupos';
+      $('cerAdminPaneBodegas')?.classList.toggle('hidden',grupos);
+      $('cerAdminPaneGrupos')?.classList.toggle('hidden',!grupos);
+      $('cerAdminTabBodegas')?.classList.toggle('active',!grupos);
+      $('cerAdminTabGrupos')?.classList.toggle('active',grupos);
+      $('cerAdminTabBodegas')?.setAttribute('aria-selected',String(!grupos));
+      $('cerAdminTabGrupos')?.setAttribute('aria-selected',String(grupos));
+      if(grupos)tipoGrupoAdminLoad();else cerBodLoadRows(false);
+    }
+    window.cerBodOnShow=function(){cerAdminShowTab($('cerAdminTabGrupos')?.classList.contains('active')?'grupos':'bodegas');};
+    document.querySelectorAll('[data-cer-admin-tab]').forEach(btn=>btn.addEventListener('click',()=>cerAdminShowTab(btn.getAttribute('data-cer-admin-tab'))));
     window.cerBodMarkStale=cerBodMarkStale;
     if($('cerBodSearch'))$('cerBodSearch').addEventListener('input',e=>{cerBodState.search=e.target.value||'';cerBodRender();});
     if($('cerBodFilter'))$('cerBodFilter').addEventListener('change',e=>{cerBodState.filter=e.target.value||'';cerBodRender();});
@@ -12161,6 +12413,97 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       if(st){st.textContent=row.bodega?'Asignado':'Falta bodega';st.className=row.bodega?'cerBodAssigned':'cerBodMissing';}
       cerBodRenderSummary(cerBodFilteredRows());
       cerBodSetStatus('Hay cambios pendientes de guardar.','warntxt');
+    });
+
+    // ===== Administrador Grupo → T.grupo =====
+    const tipoGrupoAdminState={rows:[],dirty:false,loaded:false,search:''};
+    function tipoGrupoAdminSetStatus(msg,cls){const el=$('tipoGrupoStatus');if(!el)return;el.textContent=msg||'';el.className='status '+(cls||'');}
+    function tipoGrupoAdminRows(){
+      const q=String(tipoGrupoAdminState.search||'').trim().toLowerCase();
+      return tipoGrupoAdminState.rows.filter(r=>!q||r.grupo.includes(q)||r.tipoGrupo.toLowerCase().includes(q));
+    }
+    function tipoGrupoAdminSummary(visible){
+      const el=$('tipoGrupoSummary');if(el)el.innerHTML=`<span class="cerBodChip">${tipoGrupoAdminState.rows.length.toLocaleString('es-MX')} reglas</span>`+
+        (visible.length!==tipoGrupoAdminState.rows.length?`<span class="cerBodChip">${visible.length.toLocaleString('es-MX')} visibles</span>`:'')+
+        (tipoGrupoAdminState.dirty?'<span class="cerBodChip pending">Cambios pendientes</span>':'');
+      const btn=$('btnTipoGrupoSave');if(btn)btn.disabled=!tipoGrupoAdminState.dirty;
+    }
+    function tipoGrupoAdminRender(){
+      const host=$('tipoGrupoTable');if(!host)return;
+      const rows=tipoGrupoAdminRows();
+      tipoGrupoAdminSummary(rows);
+      if(!rows.length){host.innerHTML='<div class="cerBodEmpty">No hay clasificaciones para la búsqueda.</div>';return;}
+      const body=rows.map(r=>`<tr data-tg-row="${reabEsc(r.grupo)}">`+
+        `<td class="mono"><strong>${reabEsc(r.grupo)}</strong></td>`+
+        `<td><input class="tipoGrupoInput" data-tg-value="${reabEsc(r.grupo)}" value="${reabEsc(r.tipoGrupo)}" /></td>`+
+        `<td><button class="smallbtn tipoGrupoDelete" data-tg-delete="${reabEsc(r.grupo)}" type="button">Eliminar</button></td></tr>`).join('');
+      host.innerHTML=`<table class="cerBodTable"><thead><tr><th>Grupo</th><th>T.grupo</th><th>Acción</th></tr></thead><tbody>${body}</tbody></table>`;
+    }
+    function tipoGrupoAdminLoad(){
+      if(tipoGrupoAdminState.loaded){tipoGrupoAdminRender();return;}
+      const source=multTipoGrupoMap||REAB_TIPO_GRUPO_CERAMICO_MAP;
+      tipoGrupoAdminState.rows=Object.entries(source).map(([grupo,tipoGrupo])=>({grupo:multProvGrupoNormGrupo(grupo),tipoGrupo:String(tipoGrupo||'').trim()}))
+        .filter(r=>r.grupo&&r.tipoGrupo).sort((a,b)=>a.grupo.localeCompare(b.grupo,'es'));
+      tipoGrupoAdminState.loaded=true;
+      tipoGrupoAdminState.dirty=false;
+      tipoGrupoAdminRender();
+      tipoGrupoAdminSetStatus(multTipoGrupoMap?'Catálogo personalizado cargado desde esta computadora.':'Reglas iniciales cargadas; guarda cuando hagas tu primer cambio.','oktxt');
+    }
+    function tipoGrupoAdminMarkDirty(){tipoGrupoAdminState.dirty=true;tipoGrupoAdminSummary(tipoGrupoAdminRows());tipoGrupoAdminSetStatus('Hay cambios pendientes de guardar.','warntxt');}
+    async function tipoGrupoAdminSave(){
+      const btn=$('btnTipoGrupoSave');if(btn)btn.disabled=true;
+      try{
+        const map={};
+        for(const row of tipoGrupoAdminState.rows){
+          const grupo=multProvGrupoNormGrupo(row.grupo);
+          const tipoGrupo=String(row.tipoGrupo||'').trim();
+          if(!grupo||!tipoGrupo)throw new Error('Todas las reglas deben tener Grupo y T.grupo.');
+          if(Object.prototype.hasOwnProperty.call(map,grupo))throw new Error(`El grupo ${grupo} está repetido.`);
+          map[grupo]=tipoGrupo;
+        }
+        await saveTipoGrupoLocal(map);
+        multTipoGrupoMap=map;
+        window.MULT_TIPO_GRUPO_MAP=map;
+        let updated=0;
+        if(multEditorState&&typeof multEditorMigrateLegacyClassifications==='function'){
+          const changed=multEditorMigrateLegacyClassifications(multEditorState.matrix,multEditorState.sections);
+          changed.forEach(r=>multEditorState.dirtyRows.add(r));
+          updated=changed.size;
+          if(updated){
+            await multEditorPersistDirtyRows([...changed]);
+            multEditorInvalidateRowDerivedIndexes();
+            await multEditorBuildRowCache();
+            await multEditorRender();
+          }
+        }else multEditorNeedsReload=true;
+        tipoGrupoAdminState.dirty=false;
+        tipoGrupoAdminRender();
+        await updateBackupExportState();
+        tipoGrupoAdminSetStatus(`Guardado: ${Object.keys(map).length.toLocaleString('es-MX')} reglas Grupo → T.grupo${updated?` · ${updated.toLocaleString('es-MX')} filas del Editor actualizadas`:''}. Recalcula el Semáforo para reflejar los cambios.`,'oktxt');
+      }catch(err){tipoGrupoAdminSetStatus('Error guardando: '+err.message,'errtxt');}
+      finally{if(btn)btn.disabled=!tipoGrupoAdminState.dirty;}
+    }
+    if($('tipoGrupoSearch'))$('tipoGrupoSearch').addEventListener('input',e=>{tipoGrupoAdminState.search=e.target.value||'';tipoGrupoAdminRender();});
+    if($('btnTipoGrupoAdd'))$('btnTipoGrupoAdd').addEventListener('click',()=>{
+      const grupo=multProvGrupoNormGrupo($('tipoGrupoNewGrupo')?.value);
+      const tipoGrupo=String($('tipoGrupoNewTipo')?.value||'').trim();
+      if(!grupo||!tipoGrupo){tipoGrupoAdminSetStatus('Escribe Grupo y T.grupo para agregar la regla.','errtxt');return;}
+      if(tipoGrupoAdminState.rows.some(r=>r.grupo===grupo)){tipoGrupoAdminSetStatus(`El grupo ${grupo} ya existe; edítalo en la tabla.`,'errtxt');return;}
+      tipoGrupoAdminState.rows.push({grupo,tipoGrupo});
+      tipoGrupoAdminState.rows.sort((a,b)=>a.grupo.localeCompare(b.grupo,'es'));
+      if($('tipoGrupoNewGrupo'))$('tipoGrupoNewGrupo').value='';if($('tipoGrupoNewTipo'))$('tipoGrupoNewTipo').value='';
+      tipoGrupoAdminMarkDirty();tipoGrupoAdminRender();
+    });
+    if($('btnTipoGrupoSave'))$('btnTipoGrupoSave').addEventListener('click',tipoGrupoAdminSave);
+    if($('tipoGrupoTable'))$('tipoGrupoTable').addEventListener('input',e=>{
+      const grupo=e.target.getAttribute('data-tg-value');if(!grupo)return;
+      const row=tipoGrupoAdminState.rows.find(r=>r.grupo===grupo);if(!row)return;
+      row.tipoGrupo=e.target.value;tipoGrupoAdminMarkDirty();
+    });
+    if($('tipoGrupoTable'))$('tipoGrupoTable').addEventListener('click',e=>{
+      const grupo=e.target.getAttribute('data-tg-delete');if(!grupo)return;
+      tipoGrupoAdminState.rows=tipoGrupoAdminState.rows.filter(r=>r.grupo!==grupo);
+      tipoGrupoAdminMarkDirty();tipoGrupoAdminRender();
     });
 
     function renderProvGrupoInfo(source){
@@ -13996,7 +14339,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         {col:MULT_EDITOR_COSTO_COL_BASE,key:'costo_p',label:'Costo P',shortLabel:'C$',title:'Costo P (inventario diario)',costoLive:true,group:'identidad',w:54},
         {col:api.COL.factor,key:'factor',label:'Factor general',shortLabel:'F',title:'F = Factor general (se conserva si ya existe; en SKUs nuevos toma Factor del catálogo si no hay balanceo) · clic para editar',group:'surtido',w:42,alwaysInput:true},
         {col:api.COL.factor_original,key:'factor_original',label:'Factor original',shortLabel:'G',title:'G = Factor original del catálogo de artículos (columna Factor) · se actualiza con Sync · solo lectura',group:'surtido',w:36},
-        {col:api.COL.no_surtir,key:'no_surtir',label:'No surtir',shortLabel:'No surt.',title:'Vacío=sin restricción · no surtir=todas · solo ac,al,ab=solo esas bodegas (automático)',group:'surtido',w:150},
+        {col:api.COL.no_surtir,key:'no_surtir',label:'No surtir',shortLabel:'No surt.',title:'Vacío=sin restricción · no surtir=todas · solo: ac,al,ab=no surtir únicamente en esas bodegas',group:'surtido',w:150},
         {col:api.COL.tipo_grupo,key:'tipo_grupo',label:'Tipo grupo',shortLabel:'T.grupo',title:'Tipo grupo cerámica',group:'ceramica',w:64,hiddenDefault:true},
         {col:api.COL.tipo_ceramico,key:'tipo_ceramico',label:'Tipo cerámico',shortLabel:'T.cer',title:'Tipo cerámico',group:'ceramica',w:64,hiddenDefault:true},
         ...bod,
@@ -15496,6 +15839,22 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       const totalRows=multEditorState.rowCache?multEditorState.rowCache.size:all.length;
       multEditorUpdateFooter(all,slice,dirtyN,totalRows,pages,pg,pageSize,useVirtual);
     }
+    function multEditorMigrateLegacyClassifications(matrix,sections){
+      const api=window.multApi;
+      const changed=new Set();
+      const managed=!!(multTipoGrupoMap||window.MULT_TIPO_GRUPO_MAP);
+      if(!api||!matrix||!sections)return changed;
+      for(const r of api.allDataRowIndexes(sections)){
+        const row=api.readRow(matrix,r,sections);
+        const expected=typeof reabTipoCeramicoGrupo==='function'?reabTipoCeramicoGrupo(row.grupo,row.codigo,row.descripcion):'';
+        if(row.tipo!=='ceramica'||(!expected&&!managed))continue;
+        if(api.normGrupo(row.tipo_grupo)===api.normGrupo(expected))continue;
+        api.ensureRow(matrix,r,api.MATRIX_COL_COUNT);
+        matrix[r][api.COL.tipo_grupo]=expected;
+        changed.add(r);
+      }
+      return changed;
+    }
     async function multEditorLoadFromBuffer(buf,fileName){
       if(!window.multApi)throw new Error('Módulo de múltiplos no disponible.');
       multEditorSetLoading(true,'Cargando múltiplos…');
@@ -15505,10 +15864,11 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         const copy=multEditorBufferCopy(buf);
         const {matrix,sections,sheetName}=window.multApi.prepareMatrixFromBuffer(copy);
         invMetaSidecarApplyToMatrix(matrix,sections);
+        const migratedRows=multEditorMigrateLegacyClassifications(matrix,sections);
         const filt=multEditorApplyFiltersToUi(multEditorLoadFiltersRaw());
         multEditorState={
           fileBuffer:copy,fileName:fileName||'multiplos de surtido.xlsx',matrix,sections,sheetName,
-          dirtyRows:new Set(),selectedRows:new Set(),selectedCells:new Set(),cellSelAnchor:null,cellBulkDraft:'',filterTipo:filt.filterTipo,
+          dirtyRows:new Set(migratedRows),selectedRows:new Set(),selectedCells:new Set(),cellSelAnchor:null,cellBulkDraft:'',filterTipo:filt.filterTipo,
           search:filt.search,filterProv:filt.filterProv,filterGrupo:filt.filterGrupo,
           filterStatus:filt.filterStatus||'',filterTipoGrupo:filt.filterTipoGrupo||'',filterTipoCer:filt.filterTipoCer||'',filterNoSurtir:filt.filterNoSurtir||'',
           sortCol:filt.sortCol,sortDir:filt.sortDir,page:0,rowCache:null,rowMetaRev:0,tipoRowsCache:null,tipoRowsCacheKey:'',provGrupoIndex:null,fieldFilterIndex:null,filterMasterIndex:null,filterMasterIndexKey:'',suggestionUndo:new Map(),
@@ -15516,6 +15876,16 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
           renderComplete:false,
           cerBodegaIntel:window.multApi.buildCerBodegaIntelIndex(matrix,sections)
         };
+        let migratedSaved=0;
+        if(migratedRows.size){
+          multEditorLoadingMsg('Corrigiendo clasificaciones…');
+          try{
+            await multEditorPersistDirtyRows([...migratedRows]);
+            migratedSaved=migratedRows.size;
+          }catch(err){
+            console.warn('No se pudo persistir la migración de clasificaciones',err);
+          }
+        }
         multEditorLoadingMsg('Indexando SKUs…');
         if($('multEditorPageInfo'))$('multEditorPageInfo').textContent='Preparando índice de SKUs…';
         await multEditorBuildRowCache();
@@ -15527,6 +15897,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         multEditorLoadingMsg('Preparando tabla…');
         await multEditorRender();
         const pending=[];
+        if(migratedSaved)pending.push(`${migratedSaved.toLocaleString('es-MX')} clasificaciones corregidas y guardadas`);
+        else if(migratedRows.size)pending.push(`${migratedRows.size.toLocaleString('es-MX')} clasificaciones corregidas pendientes de guardar`);
         if(multEditorMatrixHasEmptyStatus(matrix,sections))pending.push('hay status vacíos');
         if(catalogRows?.length&&inventoryRows?.length)pending.push('Sync disponible para revisar artículos activos');
         const suffix=pending.length?` ${pending.join(' · ')}.`:'';
@@ -15620,6 +15992,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         recalcStatus:true,
         agregarInventario:addSkus,
         soloInventario:false,
+        // Aun sin inventario, actualiza descripción, grupo, T.grupo, T.cer y factores.
+        fullCatalogSync:true,
         silent:!!opts.silent
       });
       return{
@@ -15646,7 +16020,8 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         throw new Error('Para agregar artículos activos primero carga el inventario.');
       }
       await multEditorSyncBuffer();
-      const statusOnly=!!(opts.recalcStatus&&!opts.agregarInventario);
+      const statusOnly=!!(opts.recalcStatus&&!opts.agregarInventario&&!opts.fullCatalogSync);
+      const shouldYield=!!(statusOnly||opts.agregarInventario||opts.fullCatalogSync);
       let yieldN=0;
       const {buffer,stats,updatedRows}=await window.actualizarMultiplosSurtido(multEditorState.fileBuffer,{
         catalogRows,
@@ -15655,14 +16030,15 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         matrix:multEditorState.matrix,
         sections:multEditorState.sections,
         sheetName:multEditorState.sheetName,
-        onYield:!opts.silent&&(statusOnly||opts.agregarInventario)?async(n)=>{
+        onYield:!opts.silent&&shouldYield?async(n)=>{
           yieldN=n||yieldN+(statusOnly?1500:400);
           const pct=statusOnly
             ?Math.min(88,12+Math.floor(yieldN/250))
             :Math.min(80,20+Math.floor(yieldN/300));
-          await progress(pct,statusOnly?'Recalculando status y no surtir...':'Agregando artículos activos...');
+          const msg=statusOnly?'Recalculando status y no surtir...':(opts.agregarInventario?'Actualizando catálogo y agregando artículos activos...':'Actualizando catálogo y clasificación...');
+          await progress(pct,msg);
           await new Promise(r=>setTimeout(r,0));
-        }:statusOnly||opts.agregarInventario?async()=>{await new Promise(r=>setTimeout(r,0));}:undefined,
+        }:shouldYield?async()=>{await new Promise(r=>setTimeout(r,0));}:undefined,
         ...opts
       });
       // Matriz en memoria es la fuente de verdad (F, altas, G). El patch XML del xlsx
@@ -16375,6 +16751,7 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       try{await loadCategoriaLocal();}catch(err){console.warn('loadCategoriaLocal',err);}
       try{await loadInventoryLocal();}catch(err){console.warn('loadInventoryLocal',err);}
       try{await ensureInventoryFresh();}catch(err){console.warn('ensureInventoryFresh',err);}
+      try{await loadTipoGrupoLocal();}catch(err){console.warn('loadTipoGrupoLocal',err);}
       try{
         await loadMultiplosLocal();
       }catch(err){console.warn('loadMultiplosLocal',err);}
