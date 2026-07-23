@@ -194,6 +194,8 @@
     .multEditorNoSurtChip{display:flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;user-select:none}
     .multEditorNoSurtChip:has(input:checked){background:#fee2e2;border-color:#fca5a5;color:#991b1b}
     .multEditorNoSurtChip input{margin:0;width:15px;height:15px;accent-color:#dc2626}
+    .reabTxtCiChip:has(input:checked){background:#dbeafe;border-color:#60a5fa;color:#1d4ed8}
+    .reabTxtCiChip input{accent-color:#2563eb}
     .multEditorNoSurtQuick,.multEditorNoSurtActions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .multEditorNoSurtActions{justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
     .multEditorNoSurtSummary{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid var(--border);font-size:12px;color:#475569}
@@ -1038,7 +1040,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
         </div>
         <div id="reabProgramScopeHint" class="reabScopeHint" title="Alcance aplicado al cálculo y a las exportaciones TXT/CSV">Programa completo</div>
         <div class="reabActionsDense">
-          <button id="btnBuildReab" class="smallbtn primaryMini" type="button" title="Calcular semáforo con prioridad y descuento dinámico del central">Calcular</button>
+          <button id="btnBuildReab" class="smallbtn primaryMini" type="button" title="Calcula y guarda en un solo proceso Accesorios, CR y CI">Calcular</button>
           <button id="btnClearReabProgram" class="smallbtn" type="button" disabled title="Poner en cero todo el Programa actual para capturar únicamente una necesidad puntual" style="background:#fef2f2;border-color:#fecaca;color:#991b1b">Borrar prog</button>
           <button id="btnExportReabTxt" class="smallbtn" type="button" disabled title="Exportar TXT programados">TXT</button>
           <button id="btnExportReabCsv" class="smallbtn" type="button" disabled title="Exportar revisión CSV">CSV</button>
@@ -1334,6 +1336,30 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       <div class="multEditorNoSurtActions">
         <button id="btnMultNoSurtCancel" type="button" class="smallbtn">Cancelar</button>
         <button id="btnMultNoSurtSave" type="button" class="smallbtn primaryMini">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="reabTxtCiModal" class="multEditorNoSurtModal hidden" role="dialog" aria-modal="true" aria-labelledby="reabTxtCiTitle">
+    <div class="multEditorNoSurtCard" style="width:min(440px,96vw)">
+      <div class="multEditorNoSurtHead">
+        <div><strong id="reabTxtCiTitle">Archivos TXT de CI→6</strong><span>Selecciona los grupos que deseas generar.</span></div>
+        <button id="btnReabTxtCiClose" class="smallbtn" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div class="multEditorNoSurtQuick">
+        <button id="btnReabTxtCiAll" class="smallbtn" type="button">Seleccionar todos</button>
+        <button id="btnReabTxtCiNone" class="smallbtn" type="button">Quitar todos</button>
+      </div>
+      <div id="reabTxtCiGrid" class="multEditorNoSurtGrid">
+        <label class="multEditorNoSurtChip reabTxtCiChip"><input type="checkbox" value="a1" checked>A1</label>
+        <label class="multEditorNoSurtChip reabTxtCiChip"><input type="checkbox" value="a2" checked>A2</label>
+        <label class="multEditorNoSurtChip reabTxtCiChip"><input type="checkbox" value="b" checked>B</label>
+        <label class="multEditorNoSurtChip reabTxtCiChip"><input type="checkbox" value="c" checked>C</label>
+      </div>
+      <div id="reabTxtCiSummary" class="multEditorNoSurtSummary">Se generarán: A1, A2, B y C.</div>
+      <div class="multEditorNoSurtActions">
+        <button id="btnReabTxtCiCancel" class="smallbtn" type="button">Cancelar</button>
+        <button id="btnReabTxtCiGenerate" class="smallbtn primaryMini" type="button">Generar seleccionados</button>
       </div>
     </div>
   </div>
@@ -3539,7 +3565,7 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
 
   <!-- Tab switcher para separación rápida de pantallas (Opción A) -->
   <script>
-    const APP_VERSION='2026.07.22.16';
+    const APP_VERSION='2026.07.23.3';
     window.APP_VERSION=APP_VERSION;
 
     function switchMainPanel(panel) {
@@ -3932,14 +3958,15 @@ rot" style="width:100%;min-height:88px;resize:vertical;font-family:ui-monospace,
       reabRenderProgramScopeOptions();
       reabUpdateProgramScopeUi();
       const mode=$('reabProgramScopeMode');
-      if(mode)mode.addEventListener('change',()=>{
+      if(mode)mode.addEventListener('change',async()=>{
         const allowedModes=new Set(['full','daily_acc','daily_cr','daily_ci','selected']);
         reabProgramScopeMode=allowedModes.has(mode.value)?mode.value:'full';
+        const requestedScopeMode=reabProgramScopeMode;
         const requiredTipo=reabProgramScopeRequiredTipo();
         const tipo=$('reabTipo');
         if(requiredTipo&&tipo&&tipo.value!==requiredTipo){
-          tipo.value=requiredTipo;
-          tipo.dispatchEvent(new Event('change'));
+          clearTimeout(reabProgramScopeTimer);
+          await reabActivateTipo(requiredTipo,{requestedScopeMode});
         }
         const view=$('reabViewBodega'); if(view)view.value='todas';
         const central=$('reabFilterCentral'); if(central)central.value='';
@@ -11764,6 +11791,81 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         }).catch(err=>console.warn('multEditorAutoHydrateDem reab',err));
       }
     }
+    async function reabActivateTipo(tipoValue,opts={}){
+      const tipo=$('reabTipo');
+      if(tipo&&tipoValue)tipo.value=reabSessionType(tipoValue);
+      const requestedScopeMode=String(opts.requestedScopeMode||'');
+      const requiredScopeTipo=reabProgramScopeRequiredTipo(requestedScopeMode||reabProgramScopeMode);
+      if(!requestedScopeMode&&requiredScopeTipo&&requiredScopeTipo!==reabCurrentTipo())reabProgramScopeMode='full';
+      reabInvalidateRouteCache();
+      reabInvLookupCache=null; reabInvLookupStamp='';
+      reabRows=[]; reabRowById=new Map(); reabRowsByArt=new Map(); reabRowsByGroup=new Map(); reabTargetByKey=new Map();
+      multiplosReabMap=new Map();
+      window.multEditorInvLookupCache=null; window.multEditorCostoPCache=null;
+      reabInvalidateFilterCache(); reabInvalidateColumnsCache();
+      _reabFamiliaBarTipo=''; _reabCeramicFilterSig='';
+      reabLoadVisibleColumnsForType(); reabLoadColumnFiltersForType(); reabRefreshTipoUi();
+      reabRenderProgramScopeOptions(); reabUpdateProgramScopeUi(); reabLoadViewFiltersForType(); reabUpdateDisponQuickActive();
+      try{await reabEnsureMultiplosMap();}catch(err){console.warn('reabEnsureMultiplosMap tipo',err);}
+      const restored=opts.loadSession===false?false:await reabLoadSessionState(reabCurrentTipo());
+      if(requestedScopeMode){
+        reabProgramScopeMode=requestedScopeMode;
+        if(opts.requestedScopeSelected instanceof Set)reabProgramScopeSelected=new Set(opts.requestedScopeSelected);
+        reabEnsureProgramScopeSelection();
+        reabRenderProgramScopeOptions();
+        reabUpdateProgramScopeUi();
+        if(reabRows.length)reabApplyProgramScope();
+      }
+      if(multEditorState&&typeof multEditorRender==='function')multEditorRender();
+      if(!restored&&opts.loadSession!==false){
+        reabRender();
+        if($('reabSummary'))$('reabSummary').innerHTML='';
+        if($('reabXferBar'))$('reabXferBar').innerHTML='';
+        if($('reabPagerBar'))$('reabPagerBar').innerHTML='';
+        if($('btnClearReabProgram'))$('btnClearReabProgram').disabled=true;
+        if($('reabTable'))$('reabTable').innerHTML='Calcula el semaforo para ver la propuesta.';
+      }
+      return restored;
+    }
+    async function reabBuildAllTypes(){
+      const btn=$('btnBuildReab');
+      const snapshot={
+        tipo:reabCurrentTipo(),
+        scopeMode:reabProgramScopeMode,
+        scopeSelected:new Set(reabEnsureProgramScopeSelection()),
+        target:String($('targetPeriod')?.value||''),
+        lead:String($('reabLeadtimeDays')?.value||'6'),
+        meta:String($('reabMetaDays')?.value||'')
+      };
+      if(btn)btn.disabled=true;
+      try{
+        for(const tipo of ['accesorios','ceramicos']){
+          await reabActivateTipo(tipo,{loadSession:false,requestedScopeMode:'full'});
+          if($('targetPeriod'))$('targetPeriod').value=snapshot.target;
+          if($('reabLeadtimeDays'))$('reabLeadtimeDays').value=snapshot.lead;
+          if($('reabMetaDays'))$('reabMetaDays').value=snapshot.meta;
+          await progress(tipo==='accesorios'?4:52,`Calculando ${tipo==='accesorios'?'Accesorios (AI y AG)':'Cerámicos (CR y CI)'}...`);
+          await reabBuild();
+          clearTimeout(reabStatePersistTimer); reabStatePersistTimer=null;
+          await reabPersistCurrentSession({tipo});
+        }
+        await reabActivateTipo(snapshot.tipo,{
+          requestedScopeMode:snapshot.scopeMode,
+          requestedScopeSelected:snapshot.scopeSelected
+        });
+        finishProgress('Cálculo completo listo: Accesorios, CR y CI quedaron actualizados.','oktxt');
+      }catch(err){
+        try{
+          await reabActivateTipo(snapshot.tipo,{
+            requestedScopeMode:snapshot.scopeMode,
+            requestedScopeSelected:snapshot.scopeSelected
+          });
+        }catch(restoreErr){console.warn('No se pudo restaurar la vista del semáforo',restoreErr);}
+        throw err;
+      }finally{
+        if(btn)btn.disabled=false;
+      }
+    }
     function reabClearAllProgram(){
       if(!reabRows.length){alert('Primero calcula el semáforo.');return;}
       const conPrograma=reabRows.filter(r=>reabInt(r.Autorizado)>0).length;
@@ -11780,15 +11882,47 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
       reabScheduleStatePersist();
     }
 
-    function reabExportTxt(){
+    let reabTxtCiResolve=null;
+    function reabUpdateTxtCiPicker(){
+      const checked=[...document.querySelectorAll('#reabTxtCiGrid input:checked')].map(x=>x.value.toUpperCase());
+      const summary=$('reabTxtCiSummary');
+      if(summary)summary.textContent=checked.length?`Se generarán: ${checked.join(', ')}.`:'Selecciona al menos un grupo.';
+      const generate=$('btnReabTxtCiGenerate');
+      if(generate)generate.disabled=!checked.length;
+    }
+    function reabCloseTxtCiPicker(result=null){
+      $('reabTxtCiModal')?.classList.add('hidden');
+      const resolve=reabTxtCiResolve;
+      reabTxtCiResolve=null;
+      if(resolve)resolve(result);
+    }
+    function reabChooseTxtCiPrefixes(){
+      if(reabTxtCiResolve)reabCloseTxtCiPicker(null);
+      document.querySelectorAll('#reabTxtCiGrid input[type="checkbox"]').forEach(x=>{x.checked=true;});
+      reabUpdateTxtCiPicker();
+      $('reabTxtCiModal')?.classList.remove('hidden');
+      return new Promise(resolve=>{reabTxtCiResolve=resolve;});
+    }
+    async function reabExportTxt(){
       reabRecomputeManual();
       const files=new Map();
-      const stamp=new Date().toISOString().slice(0,10).replace(/-/g,'');
+      const txtDate=new Date();
+      const stamp=[
+        String(txtDate.getDate()).padStart(2,'0'),
+        String(txtDate.getMonth()+1).padStart(2,'0'),
+        String(txtDate.getFullYear()).slice(-2)
+      ].join('');
+      let ciPrefixes=null;
+      if(reabProgramScopeMode==='daily_ci'){
+        ciPrefixes=await reabChooseTxtCiPrefixes();
+        if(!(ciPrefixes instanceof Set)||!ciPrefixes.size)return;
+      }
       for(const r of reabRows){
         if(!reabProgramScopeAllows(r))continue;
         const qty=reabActiveProgramQty(r); if(qty<=0)continue;
         const prefix=String(r.FilePrefix||r.Central||'mov').trim().toLowerCase();
-        const fname=`${prefix}${stamp}.txt`;
+        if(ciPrefixes&&!ciPrefixes.has(prefix))continue;
+        const fname=`${prefix}_${stamp}.txt`;
         if(!files.has(fname))files.set(fname,[]);
         files.get(fname).push({
           origen:r.Origen||'',
@@ -11870,40 +12004,25 @@ Max/P.R.: ${reabNumberFmt(max)}${diasLine}`;
         finishProgress('Catálogo listo y guardado.','oktxt');
       }catch(err){setCatalogEmpty('No se pudo leer catálogo.'); failProgress('Error catálogo: '+err.message);}
     });
-    if($('btnBuildReab')) $('btnBuildReab').addEventListener('click',async()=>{try{await reabBuild();}catch(err){failProgress('Error reabastecimiento: '+err.message);}});
+    if($('btnBuildReab')) $('btnBuildReab').addEventListener('click',async()=>{try{await reabBuildAllTypes();}catch(err){failProgress('Error reabastecimiento: '+err.message);}});
     let reabMetaFilterTimer=null;
     if($('reabMetaDays')) $('reabMetaDays').addEventListener('input',()=>{reabUpdateMetaProgramUiTitle(); reabScheduleStatePersist(); clearTimeout(reabMetaFilterTimer); reabMetaFilterTimer=setTimeout(()=>reabRecalcProgramacionAll(),400);});
     if($('reabLeadtimeDays')) $('reabLeadtimeDays').addEventListener('change',()=>reabScheduleStatePersist());
     if($('btnReabMetaReset')) $('btnReabMetaReset').addEventListener('click',reabResetMetaProgramForView);
     if($('btnClearReabProgram')) $('btnClearReabProgram').addEventListener('click',reabClearAllProgram);
     if($('btnExportReabTxt')) $('btnExportReabTxt').addEventListener('click',reabExportTxt);
+    if($('reabTxtCiGrid'))$('reabTxtCiGrid').addEventListener('change',reabUpdateTxtCiPicker);
+    if($('btnReabTxtCiAll'))$('btnReabTxtCiAll').addEventListener('click',()=>{document.querySelectorAll('#reabTxtCiGrid input[type="checkbox"]').forEach(x=>{x.checked=true;});reabUpdateTxtCiPicker();});
+    if($('btnReabTxtCiNone'))$('btnReabTxtCiNone').addEventListener('click',()=>{document.querySelectorAll('#reabTxtCiGrid input[type="checkbox"]').forEach(x=>{x.checked=false;});reabUpdateTxtCiPicker();});
+    if($('btnReabTxtCiGenerate'))$('btnReabTxtCiGenerate').addEventListener('click',()=>reabCloseTxtCiPicker(new Set([...document.querySelectorAll('#reabTxtCiGrid input:checked')].map(x=>x.value))));
+    if($('btnReabTxtCiCancel'))$('btnReabTxtCiCancel').addEventListener('click',()=>reabCloseTxtCiPicker(null));
+    if($('btnReabTxtCiClose'))$('btnReabTxtCiClose').addEventListener('click',()=>reabCloseTxtCiPicker(null));
+    if($('reabTxtCiModal'))$('reabTxtCiModal').addEventListener('click',e=>{if(e.target.id==='reabTxtCiModal')reabCloseTxtCiPicker(null);});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('reabTxtCiModal')?.classList.contains('hidden'))reabCloseTxtCiPicker(null);});
     if($('btnExportReabCsv')) $('btnExportReabCsv').addEventListener('click',reabExportCsv);
     if($('btnReabColumns')) $('btnReabColumns').addEventListener('click',()=>{const p=$('reabColumnsPanel'); if(p){reabRenderColumnChooser(); p.classList.toggle('open');}});
     reabRenderColumnChooser();
-    if($('reabTipo')) $('reabTipo').addEventListener('change',async()=>{
-      const requiredScopeTipo=reabProgramScopeRequiredTipo();
-      if(requiredScopeTipo&&requiredScopeTipo!==reabCurrentTipo())reabProgramScopeMode='full';
-      reabInvalidateRouteCache();
-      reabInvLookupCache=null; reabInvLookupStamp='';
-      reabRows=[]; reabRowById=new Map(); reabRowsByArt=new Map(); reabRowsByGroup=new Map(); reabTargetByKey=new Map();
-      multiplosReabMap=new Map();
-      window.multEditorInvLookupCache=null; window.multEditorCostoPCache=null;
-      reabInvalidateFilterCache(); reabInvalidateColumnsCache();
-      _reabFamiliaBarTipo=''; _reabCeramicFilterSig='';
-      reabLoadVisibleColumnsForType(); reabLoadColumnFiltersForType(); reabRefreshTipoUi();
-      reabRenderProgramScopeOptions(); reabUpdateProgramScopeUi(); reabLoadViewFiltersForType(); reabUpdateDisponQuickActive();
-      try{await reabEnsureMultiplosMap();}catch(err){console.warn('reabEnsureMultiplosMap tipo',err);}
-      const restored=await reabLoadSessionState(reabCurrentTipo());
-      if(multEditorState&&typeof multEditorRender==='function')multEditorRender();
-      if(!restored){
-        reabRender();
-        if($('reabSummary'))$('reabSummary').innerHTML='';
-        if($('reabXferBar'))$('reabXferBar').innerHTML='';
-        if($('reabPagerBar'))$('reabPagerBar').innerHTML='';
-        if($('btnClearReabProgram'))$('btnClearReabProgram').disabled=true;
-        if($('reabTable'))$('reabTable').innerHTML='Calcula el semaforo para ver la propuesta.';
-      }
-    });
+    if($('reabTipo')) $('reabTipo').addEventListener('change',()=>{reabActivateTipo(reabCurrentTipo()).catch(err=>failProgress('Error al cambiar semáforo: '+err.message));});
     reabInitStatusFilterUi();
     reabInitTipoCeramicoFilterUi();
     reabInitProgramScopeUi();
