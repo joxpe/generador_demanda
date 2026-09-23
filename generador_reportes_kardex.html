@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de Reportes Kardex LIMSA v2026-05-26.8</title>
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+      --primary:#2563eb; --primary2:#1d4ed8; --border:#dbe3ef;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px 32px}
+    .hero{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:24px;border-radius:18px;margin-bottom:18px}
+    .hero h1{margin:0 0 8px}
+    .hero p{margin:0;color:#dbeafe}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 6px 16px rgba(15,23,42,.05)}
+    h2{margin:0 0 12px}
+    .muted{color:var(--muted)}
+    .drop{border:2px dashed #93c5fd;border-radius:16px;padding:24px;text-align:center;background:#eff6ff}
+    .drop.drag{background:#dbeafe}
+    .drop input{display:none}
+    .drop label{display:inline-block;padding:12px 18px;background:var(--primary);color:#fff;border-radius:12px;cursor:pointer;font-weight:700}
+    .filebox{margin-top:14px;padding:12px 14px;border-radius:12px;background:#f8fafc;border:1px solid var(--border);font-size:14px}
+    .actions{display:grid;gap:12px;margin-top:12px}
+    .btn{width:100%;border:none;border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;background:#eef2ff;color:#1e3a8a;font-weight:700}
+    .btn:hover{background:#dbeafe}
+    .btn small{display:block;color:#475569;font-weight:400;margin-top:4px;line-height:1.35}
+    .btn.primary{background:var(--primary);color:#fff}
+    .btn.primary:hover{background:var(--primary2)}
+    .status{margin-top:12px;min-height:24px;font-size:14px}
+    .ok{color:#16a34a}.err{color:#dc2626}
+    .list{margin:0;padding-left:18px;line-height:1.6}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:700;margin-right:6px;margin-bottom:6px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+    .tool-section{border:1px solid var(--border);background:#f8fbff;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+    .tool-section.alt{background:#f5f8ff}
+    .tool-title{font-size:13px;font-weight:800;color:#1e3a8a;text-transform:uppercase;letter-spacing:.03em;margin:0}
+    .tool-subtitle{font-size:12px;color:#64748b;margin:-6px 0 2px;line-height:1.25}
+    .tool-inputs{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .tool-inputs input{padding:14px 12px;border:1px solid var(--border);border-radius:14px;font-size:16px;background:#fff}
+    .tool-inputs input[type=number]{width:90px}
+    .tool-inputs input[type=text]{flex:1;min-width:220px}
+    .check{display:flex;gap:8px;align-items:center;font-size:14px;color:#334155;margin-top:10px}
+    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Generador de Reportes Kardex LIMSA <span style="font-size:16px;font-weight:700;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:999px;vertical-align:middle;">v2026-05-26.8</span></h1>
+      <p>Sube tu archivo Excel y genera los reportes configurados. <span style="opacity:.95;">Versión visible para control de cambios.</span></p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1) Cargar archivo</h2>
+        <div id="drop" class="drop">
+          <p><strong>Arrastra aquí tu archivo .xlsx / .xlsm</strong></p>
+          <p class="muted">o</p>
+          <label for="fileInput">Seleccionar archivo</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls,.xlsb" />
+        </div>
+        <div id="fileInfo" class="filebox muted">Aún no has cargado ningún archivo.</div>
+
+        <div class="check">
+          <input id="lowerBodega" type="checkbox" checked />
+          <label for="lowerBodega">Mostrar bodegas en minúsculas</label>
+        </div>
+
+        <div class="actions">
+          <button id="btn2949" class="btn primary" disabled>
+            Generar reporte 29 y 49
+            <small>Tipo 29 en una pestaña, tipo 49 en otra, con observaciones y formato estándar.</small>
+          </button>
+
+          <button id="btn272850" class="btn" disabled>
+            Generar reporte 27, 28 y 50
+            <small>Tipos 27 y 28 juntos, tipo 50 aparte, más resumen por bodega en 2 bloques.</small>
+          </button>
+
+          <button id="btn0460" class="btn" disabled>
+            Generar reporte 04 al 60
+            <small>Una pestaña por tipo y una pestaña de resumen por cada tipo.</small>
+          </button>
+
+          <button id="btnPrepararOriginal" class="btn" disabled>
+            Preparar Kardex original SIGA
+            <small>Convierte el archivo original al formato base limpio con columnas codigo, prov, descripcion, Entradas $ y Salidas $.</small>
+          </button>
+
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;">
+            <button id="btnTipoResumen" class="btn" disabled style="margin:0;">
+              Generar reporte por rango, más resumen por bodega
+              <small>Escribe un rango, por ejemplo 45 a 45 o 36 a 45. Genera una pestaña detalle y una de resumen por cada tipo dentro del rango.</small>
+            </button>
+            <input id="inputTipoDesde" type="number" min="0" max="999" placeholder="36"
+              style="width:90px;padding:14px 12px;border:1px solid var(--border);border-radius:14px;font-size:16px;" />
+            <input id="inputTipoHasta" type="number" min="0" max="999" placeholder="45"
+              style="width:90px;padding:14px 12px;border:1px solid var(--border);border-radius:14px;font-size:16px;" />
+          </div>
+
+          <div class="tool-section">
+            <p class="tool-title">Reporte por rango y proveedor</p>
+            <p class="tool-subtitle">Usa estos campos solo para generar el Excel por proveedor.</p>
+            <div class="tool-inputs">
+              <input id="inputProvDesde" type="number" min="0" max="999" placeholder="30" />
+              <input id="inputProvHasta" type="number" min="0" max="999" placeholder="31" />
+              <input id="inputProveedores" type="text" placeholder="ala, ces, dal, gre" />
+            </div>
+            <button id="btnRangoProveedor" class="btn" disabled style="margin:0;">
+              Generar reporte por rango y proveedor
+              <small>Filtra por un rango de tipos y hasta 5 proveedores. Cada proveedor genera su pestaña detalle y su pestaña de resumen.</small>
+            </button>
+          </div>
+
+          <div class="tool-section alt">
+            <p class="tool-title">Concentrado por proveedor</p>
+            <p class="tool-subtitle">Usa estos campos para concentrado Excel o PDF de impresión.</p>
+            <div class="tool-inputs">
+              <input id="inputConcDesde" type="number" min="0" max="999" placeholder="26" />
+              <input id="inputConcHasta" type="number" min="0" max="999" placeholder="31" />
+              <input id="inputConcProveedores" type="text" placeholder="por, dal, ces, gre" />
+            </div>
+            <label class="check" style="margin-top:0;">
+              <input id="separarConcPorMes" type="checkbox" />
+              <span>Separar el concentrado por mes</span>
+            </label>
+            <label class="check" style="margin-top:0;">
+              <input id="concEntradas" type="checkbox" />
+              <span>Calcular entradas en lugar de salidas</span>
+            </label>
+            <button id="btnProvConcentrado" class="btn" disabled style="margin:0;">
+              Generar concentrado por proveedor y tipos
+              <small>Una pestaña por proveedor. Considera salidas, o entradas si activas la casilla; cada tipo queda en su propio bloque con código, descripción y cantidad.</small>
+            </button>
+            <button id="btnProvConcentradoPDF" class="btn" disabled style="margin:0;">
+              Generar PDF por proveedor para imprimir
+              <small>Crea un PDF por cada proveedor seleccionado, con bloques por tipo y espacio de firma al final.</small>
+            </button>
+          </div>
+          <button id="btnMetas" class="btn" disabled>
+            Generar reporte de metas
+            <small>Crea una pestaña Metas con bloques para tipo 50, tipos 27 y 28, tipo 45 y tipo 36.</small>
+          </button>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>2) Qué hace el programa</h2>
+        <div class="row">
+          <span class="pill">Formato estándar</span>
+          <span class="pill">Observaciones</span>
+          <span class="pill">Totales</span>
+          <span class="pill">Total bono</span>
+          <span class="pill">Resumen por bodega</span>
+        </div>
+        <ul class="list">
+          <li>Detecta columnas como <strong>tipo, bodega, código/codigos, descripción, folio, fecha, entradas, salidas, entradas $, salidas $, observaciones</strong>.</li>
+          <li>Si subes el <strong>Kardex original de SIGA</strong>, también puede prepararlo automáticamente al formato base limpio.</li>
+          <li>Agrupa por bodega y ordena los movimientos de mayor a menor por <strong>salida $</strong>.</li>
+          <li>Resalta en <strong>rojo</strong> los montos altos y en <strong>azul</strong> los menores a 85.</li>
+          <li>Calcula <strong>TOTAL BONO</strong> restando las salidas menores a 85.</li>
+          <li>Genera el Excel listo para descargar.</li>
+          <li>Ahora también permite generar un <strong>tipo individual</strong> (por ejemplo 45) con su <strong>resumen por bodega</strong>.</li>
+          <li>También puede generar reportes por <strong>rango de tipos + proveedor</strong>, con hasta <strong>5 proveedores</strong> y una pestaña por cada proveedor.</li>
+          <li>Y puede generar un <strong>concentrado por proveedor</strong> en Excel o en <strong>PDF listo para imprimir</strong>, con un espacio de firma al final.</li>
+          <li>También puede generar un <strong>reporte exclusivo de metas</strong> para los tipos 50, 27/28, 45 y 36.</li>
+        </ul>
+
+        <h2 style="margin-top:18px">3) Notas</h2>
+        <ul class="list muted">
+          <li>Las fechas se conservan como texto para respetar el formato original del archivo.</li>
+          <li>El archivo de salida se guarda como <strong>.xlsx</strong>.</li>
+          <li>En reportes por rango, solo se generan hojas de tipos que sí tienen datos.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <script>
+    let sourceRows = [];
+    let normalizedRows = [];
+    let sourceName = "";
+    let sourceMonthLabel = "";
+    let sourceMode = "";
+    const APP_VERSION = "v2026-05-26.8";
+
+
+    const drop = document.getElementById("drop");
+    const fileInput = document.getElementById("fileInput");
+    const fileInfo = document.getElementById("fileInfo");
+    const statusEl = document.getElementById("status");
+    const btn2949 = document.getElementById("btn2949");
+    const btn272850 = document.getElementById("btn272850");
+    const btn0460 = document.getElementById("btn0460");
+    const btnPrepararOriginal = document.getElementById("btnPrepararOriginal");
+    const btnMetas = document.getElementById("btnMetas");
+    const btnTipoResumen = document.getElementById("btnTipoResumen");
+    const inputTipoDesde = document.getElementById("inputTipoDesde");
+    const inputTipoHasta = document.getElementById("inputTipoHasta");
+    const btnRangoProveedor = document.getElementById("btnRangoProveedor");
+    const inputProvDesde = document.getElementById("inputProvDesde");
+    const inputProvHasta = document.getElementById("inputProvHasta");
+    const inputProveedores = document.getElementById("inputProveedores");
+    const btnProvConcentrado = document.getElementById("btnProvConcentrado");
+    const btnProvConcentradoPDF = document.getElementById("btnProvConcentradoPDF");
+    const inputConcDesde = document.getElementById("inputConcDesde");
+    const inputConcHasta = document.getElementById("inputConcHasta");
+    const inputConcProveedores = document.getElementById("inputConcProveedores");
+    const separarConcPorMes = document.getElementById("separarConcPorMes");
+    const concEntradas = document.getElementById("concEntradas");
+    const lowerBodega = document.getElementById("lowerBodega");
+
+    function setStatus(msg, kind=""){
+      statusEl.className = "status" + (kind ? " " + kind : "");
+      statusEl.textContent = msg;
+    }
+
+    function norm(v){ return String(v ?? "").trim().toLowerCase(); }
+    function compactText(v){ return String(v ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, "").trim(); }
+    function textValue(v){ return String(v ?? "").replace(/\u00a0/g, " "); }
+
+    function findKey(keys, possible, containsAll){
+      for (const p of (possible || [])) if (keys.includes(p)) return p;
+      if (containsAll){
+        for (const k of keys){
+          if (containsAll.every(token => k.includes(token))) return k;
+        }
+      }
+      return null;
+    }
+
+    function parseFileNameMonth(name){
+      const n = name.toLowerCase();
+      if (n.includes("enero")) return "Ene";
+      if (n.includes("febrero")) return "Feb";
+      if (n.includes("marzo")) return "Mar";
+      if (n.includes("abril")) return "Abr";
+      if (n.includes("mayo")) return "May";
+      if (n.includes("junio")) return "Jun";
+      if (n.includes("julio")) return "Jul";
+      if (n.includes("agosto")) return "Ago";
+      if (n.includes("septiembre")) return "Sep";
+      if (n.includes("octubre")) return "Oct";
+      if (n.includes("noviembre")) return "Nov";
+      if (n.includes("diciembre")) return "Dic";
+      return "Reporte";
+    }
+
+    function getMonthKey(value){
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2,"0")}`;
+      }
+
+      // Excel puede entregar la fecha como número serial cuando el archivo la conserva así.
+      if (typeof value === "number" && Number.isFinite(value) && value > 20000 && value < 80000){
+        const date = XLSX.SSF.parse_date_code(value);
+        if (date?.y && date?.m) return `${date.y}-${String(date.m).padStart(2,"0")}`;
+      }
+
+      const text = String(value ?? "").trim();
+      if (!text) return "9999-99";
+
+      // Fecha ISO: yyyy-mm-dd o yyyy/mm/dd.
+      let match = text.match(/^(\d{4})[\/-](\d{1,2})/);
+      if (match){
+        const month = Number(match[2]);
+        if (month >= 1 && month <= 12) return `${match[1]}-${String(month).padStart(2,"0")}`;
+      }
+
+      // SIGA exporta dd/mm/aa. Se interpreta explícitamente como día/mes/año
+      // para que 01/02/25 no dependa del idioma del navegador ni se mezcle con 2026.
+      match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+      if (match){
+        const day = Number(match[1]);
+        const month = Number(match[2]);
+        const shortYear = Number(match[3]);
+        const year = match[3].length === 2 ? (shortYear <= 69 ? 2000 + shortYear : 1900 + shortYear) : shortYear;
+        const date = new Date(year, month - 1, day);
+        if (month >= 1 && month <= 12 && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return `${year}-${String(month).padStart(2,"0")}`;
+        }
+      }
+
+      // Algunos archivos normalizados guardan el serial de Excel como texto.
+      const serial = Number(text);
+      if (Number.isFinite(serial) && serial > 20000 && serial < 80000){
+        const date = XLSX.SSF.parse_date_code(serial);
+        if (date?.y && date?.m) return `${date.y}-${String(date.m).padStart(2,"0")}`;
+      }
+
+      // Último recurso para textos inequívocos que el navegador puede interpretar.
+      const parsed = new Date(text);
+      if (!Number.isNaN(parsed.getTime())) return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,"0")}`;
+      return "9999-99";
+    }
+
+    function monthLabelFromKey(key){
+      if (key === "9999-99") return "SIN MES";
+      const [year, month] = key.split("-");
+      const names = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+      return `${names[Number(month)-1] || month} ${year}`;
+    }
+
+    function toNum(v){
+      if (v === null || v === undefined || v === "") return null;
+      if (typeof v === "number") return Number.isFinite(v) ? v : null;
+      const cleaned = String(v).replace(/\u00a0/g, "").replace(/,/g,"").replace(/\$/g,"").trim();
+      if (cleaned === "") return null;
+      const num = Number(cleaned);
+      return Number.isFinite(num) ? num : null;
+    }
+
+    function isOriginalKardexAoA(aoa){
+      const title = String(aoa?.[0]?.[0] ?? "");
+      const header = (aoa?.[1] || []).map(norm);
+      return title.toLowerCase().includes("consulta por articulo con movimientos") &&
+             header.includes("envia") &&
+             header.includes("movimiento") &&
+             header.includes("entradas") &&
+             header.includes("salidas");
+    }
+
+    function normalizeOriginalKardex(aoa){
+      const rows = [];
+      let currentCode = "";
+      let currentDesc = "";
+
+      for (let i = 2; i < aoa.length; i++){
+        const row = aoa[i] || [];
+        const firstCell = textValue(row[0] ?? "").trim();
+        const movement = textValue(row[5] ?? "").trim();
+
+        if (firstCell && firstCell.toUpperCase() !== "TOTALES"){
+          currentCode = firstCell;
+          currentDesc = textValue(row[1] ?? "").trim();
+        }
+
+        if (movement !== "Entrada" && movement !== "Salida") continue;
+
+        const entradas = toNum(row[10]);
+        const salidas = toNum(row[11]);
+        const costo = toNum(row[13]);
+        const entradasMonto = entradas !== null && costo !== null ? entradas * costo : 0;
+        const salidasMonto = salidas !== null && costo !== null ? salidas * costo : 0;
+
+        rows.push({
+          Envia: row[0] ?? "",
+          codigo: currentCode,
+          prov: currentCode ? String(currentCode).substring(2,5) : "",
+          Folio: row[1] ?? "",
+          descripcion: currentDesc,
+          Factura: row[2] ?? "",
+          Bodega: compactText(row[3] ?? ""),
+          Fecha: row[4] ?? "",
+          Movimiento: movement,
+          Modulo: row[6] ?? "",
+          Tipo: compactText(row[7] ?? ""),
+          "Cia.": row[8] ?? "",
+          "Bod.": row[9] ?? "",
+          Entradas: entradas,
+          Salidas: salidas,
+          ExistenciaCalculada: toNum(row[12]) ?? row[12] ?? "",
+          Costo: costo,
+          Precio: toNum(row[14]) ?? row[14] ?? "",
+          "Entradas $": entradasMonto,
+          "Salidas $": salidasMonto,
+          Actualizada: row[15] ?? "",
+          Observaciones: row[16] ?? "",
+          Usuario: row[17] ?? "",
+          "Fecha Captura": row[18] ?? "",
+          Referencia: row[19] ?? "",
+          "Clien/Prov": row[20] ?? "",
+          OT: row[21] ?? "",
+          Equipo: row[22] ?? ""
+        });
+      }
+      return rows;
+    }
+
+    function parseNormalizedTable(raw){
+      if (!raw.length) throw new Error("El archivo no contiene filas legibles.");
+
+      const first = raw[0];
+      const keyMap = {};
+      Object.keys(first).forEach(k => keyMap[norm(k)] = k);
+      const keys = Object.keys(keyMap);
+
+      const colTipo = findKey(keys, ["tipo"]);
+      const colBodega = findKey(keys, ["bodega"]);
+      const colSalidas = findKey(keys, ["salidas"], ["salida"]);
+      const colEntradas = findKey(keys, ["entradas"], ["entrada"]);
+      const colCodigo = findKey(keys, ["codigos","codigo","código","cod"]);
+      const colDesc = findKey(keys, ["descripcion","descripción"]);
+      const colFolio = findKey(keys, ["folio"]);
+      const colFecha = findKey(keys, ["fecha"]);
+      const colSalidasMonto = findKey(keys, ["salidas $","salida $"], ["salida","$"]);
+      const colEntradasMonto = findKey(keys, ["entradas $","entrada $"], ["entrada","$"]);
+      const colObs = findKey(keys, ["observaciones","obs"]);
+
+      if (!colTipo || !colBodega) throw new Error("No pude identificar las columnas base (tipo y bodega).");
+
+      normalizedRows = raw.map(r => ({
+        Envia: r[keyMap["envia"]] ?? "",
+        codigo: colCodigo ? r[keyMap[colCodigo]] : "",
+        prov: keyMap["prov"] ? r[keyMap["prov"]] : (colCodigo ? String(r[keyMap[colCodigo]] ?? "").substring(2,5) : ""),
+        Folio: colFolio ? r[keyMap[colFolio]] : "",
+        descripcion: colDesc ? r[keyMap[colDesc]] : "",
+        Factura: keyMap["factura"] ? r[keyMap["factura"]] : "",
+        Bodega: String(r[keyMap[colBodega]] ?? "").trim(),
+        Fecha: colFecha ? String(r[keyMap[colFecha]] ?? "") : "",
+        Movimiento: keyMap["movimiento"] ? r[keyMap["movimiento"]] : "",
+        Modulo: keyMap["modulo"] ? r[keyMap["modulo"]] : "",
+        Tipo: r[keyMap[colTipo]] ?? "",
+        "Cia.": keyMap["cia."] ? r[keyMap["cia."]] : (keyMap["cia"] ? r[keyMap["cia"]] : ""),
+        "Bod.": keyMap["bod."] ? r[keyMap["bod."]] : (keyMap["bod"] ? r[keyMap["bod"]] : ""),
+        Entradas: toNum(colEntradas ? r[keyMap[colEntradas]] : ""),
+        Salidas: toNum(colSalidas ? r[keyMap[colSalidas]] : ""),
+        ExistenciaCalculada: keyMap["existenciacalculada"] ? (toNum(r[keyMap["existenciacalculada"]]) ?? r[keyMap["existenciacalculada"]]) : "",
+        Costo: keyMap["costo"] ? (toNum(r[keyMap["costo"]]) ?? r[keyMap["costo"]]) : "",
+        Precio: keyMap["precio"] ? (toNum(r[keyMap["precio"]]) ?? r[keyMap["precio"]]) : "",
+        "Entradas $": toNum(colEntradasMonto ? r[keyMap[colEntradasMonto]] : ""),
+        "Salidas $": toNum(colSalidasMonto ? r[keyMap[colSalidasMonto]] : ""),
+        Actualizada: keyMap["actualizada"] ? r[keyMap["actualizada"]] : "",
+        Observaciones: colObs ? r[keyMap[colObs]] : "",
+        Usuario: keyMap["usuario"] ? r[keyMap["usuario"]] : "",
+        "Fecha Captura": keyMap["fecha captura"] ? r[keyMap["fecha captura"]] : "",
+        Referencia: keyMap["referencia"] ? r[keyMap["referencia"]] : "",
+        "Clien/Prov": keyMap["clien/prov"] ? r[keyMap["clien/prov"]] : "",
+        OT: keyMap["ot"] ? r[keyMap["ot"]] : "",
+        Equipo: keyMap["equipo"] ? r[keyMap["equipo"]] : ""
+      }));
+
+      sourceRows = normalizedRows.map(r => {
+        const tipoText = String(r.Tipo ?? "");
+        const tipoNumMatch = tipoText.match(/^(\d+)/);
+        return {
+          Tipo_Num: tipoNumMatch ? Number(tipoNumMatch[1]) : null,
+          Bodega: lowerBodega.checked ? String(r.Bodega ?? "").trim().toLowerCase() : String(r.Bodega ?? "").trim(),
+          Prov: String(r.prov ?? "").trim().toLowerCase(),
+          Salidas: toNum(r.Salidas),
+          Entradas: toNum(r.Entradas),
+          CODIGO: r.codigo ?? "",
+          DESCRIPCION: r.descripcion ?? "",
+          Folio: r.Folio ?? "",
+          Costo: toNum(r.Costo),
+          Fecha_Texto: String(r.Fecha ?? ""),
+          "Salidas $": toNum(r["Salidas $"]),
+          "Entradas $": toNum(r["Entradas $"]),
+          Observaciones: r.Observaciones ?? ""
+        };
+      });
+    }
+
+    async function loadFile(file){
+      setStatus("Leyendo archivo...");
+      sourceName = file.name;
+      sourceMonthLabel = parseFileNameMonth(file.name);
+
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, {type:"array"});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:"", raw:true});
+
+      if (!aoa.length) throw new Error("El archivo no contiene filas legibles.");
+
+      if (isOriginalKardexAoA(aoa)){
+        sourceMode = "original";
+        normalizedRows = normalizeOriginalKardex(aoa);
+        parseNormalizedTable(normalizedRows.map(r => ({...r})));
+        btnPrepararOriginal.disabled = false;
+        fileInfo.innerHTML = `<strong>Archivo cargado:</strong> ${file.name}<br><span class="muted">Modo detectado: Kardex original SIGA</span><br><span class="muted">Movimientos válidos detectados: ${normalizedRows.length}</span>`;
+        setStatus("Archivo original detectado. Ya puedes prepararlo o generar reportes directamente.", "ok");
+      } else {
+        sourceMode = "normalizado";
+        const raw = XLSX.utils.sheet_to_json(ws, {defval:""});
+        parseNormalizedTable(raw);
+        btnPrepararOriginal.disabled = true;
+        fileInfo.innerHTML = `<strong>Archivo cargado:</strong> ${file.name}<br><span class="muted">Modo detectado: archivo listo para reportes</span><br><span class="muted">Filas detectadas: ${sourceRows.length}</span>`;
+        setStatus("Archivo listo. Ya puedes generar reportes.", "ok");
+      }
+
+      btn2949.disabled = false;
+      btn272850.disabled = false;
+      btn0460.disabled = false;
+      btnTipoResumen.disabled = false;
+      inputTipoDesde.disabled = false;
+      inputTipoHasta.disabled = false;
+      btnRangoProveedor.disabled = false;
+      inputProvDesde.disabled = false;
+      inputProvHasta.disabled = false;
+      inputProveedores.disabled = false;
+      btnProvConcentrado.disabled = false;
+      btnProvConcentradoPDF.disabled = false;
+      btnMetas.disabled = false;
+      inputConcDesde.disabled = false;
+      inputConcHasta.disabled = false;
+      inputConcProveedores.disabled = false;
+    }
+    drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+    drop.addEventListener("drop", async e => {
+      e.preventDefault(); drop.classList.remove("drag");
+      const file = e.dataTransfer.files[0];
+      if (file) { try { await loadFile(file); } catch(err){ setStatus(err.message, "err"); } }
+    });
+    fileInput.addEventListener("change", async e => {
+      const file = e.target.files[0];
+      if (file) { try { await loadFile(file); } catch(err){ setStatus(err.message, "err"); } }
+    });
+
+    function cloneRows(rows){ return rows.map(r => ({...r})); }
+    function round2(v){ if (v === null || v === undefined || v === "") return null; return Math.round(Number(v)*100)/100; }
+    function setColumnWidths(ws, widths){ widths.forEach((w,i)=>ws.getColumn(i+1).width = w); }
+    function applyFirstRowAutoFilter(ws){
+      const totalCols = Math.max(1, ws.columnCount || 1);
+      const totalRows = Math.max(1, ws.rowCount || 1);
+      ws.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: { row: totalRows, column: totalCols }
+      };
+    }
+    function sanitizeSheetName(name){
+      return String(name || "Hoja").replace(/[\\\/?*\[\]:]/g, "_").slice(0,31) || "Hoja";
+    }
+
+    function parseProviderList(text){
+      const items = String(text || "")
+        .replace(/\n/g, ",")
+        .split(/[;,]+/)
+        .map(v => String(v || "").trim().toLowerCase())
+        .filter(Boolean);
+      const unique = [...new Set(items)];
+      if (!unique.length) throw new Error("Escribe al menos un proveedor.");
+      if (unique.length > 5) throw new Error("Solo puedes indicar hasta 5 proveedores.");
+      return unique;
+    }
+
+    function countBusinessDaysElapsed(date = new Date()){
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const today = date.getDate();
+      let count = 0;
+      for (let day = 1; day <= today; day++){
+        const d = new Date(year, month, day);
+        const dow = d.getDay(); // 0 domingo, 6 sábado
+        if (dow !== 0 && dow !== 6) count += 1;
+      }
+      return Math.max(count, 1);
+    }
+
+
+    function addDetailSheet(wb, title, rows){
+      const ws = wb.addWorksheet(title);
+      ws.addRow(["bodega","salidas","entradas","codigo","descripcion","folio","fecha","salida $","entrada $","observaciones","revisar"]);
+      ws.getRow(1).font = {bold:true};
+
+      if (!rows.length){
+        ws.addRow(["TOTAL GENERAL",0,0,"","","","TOTAL",0,0,"",""]);
+        ws.addRow(["","","","","","","TOTAL BONO",0,"","",""]);
+        ws.getRow(ws.rowCount).font = {bold:true};
+        ws.getRow(ws.rowCount-1).font = {bold:true};
+        setColumnWidths(ws,[14,10,10,18,34,16,12,14,14,42,12]);
+        applyFirstRowAutoFilter(ws);
+        return;
+      }
+
+      const temp = cloneRows(rows).map(r => ({...r, totalTmp:(r["Salidas $"]||0)+(r["Entradas $"]||0)}));
+      const bodegaTotals = {};
+      temp.forEach(r => { bodegaTotals[r.Bodega] = (bodegaTotals[r.Bodega] || 0) + (r.totalTmp || 0); });
+      const bodegas = Object.entries(bodegaTotals).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+
+      const valsSalidas = rows.map(r => r["Salidas $"]).filter(v => typeof v === "number" && !Number.isNaN(v)).sort((a,b)=>a-b);
+      const thresholdSalidas = valsSalidas.length ? valsSalidas[Math.floor(0.9 * (valsSalidas.length - 1))] : null;
+      const valsEntradas = rows.map(r => r["Entradas $"]).filter(v => typeof v === "number" && !Number.isNaN(v)).sort((a,b)=>a-b);
+      const thresholdEntradas = valsEntradas.length ? valsEntradas[Math.floor(0.9 * (valsEntradas.length - 1))] : null;
+
+      bodegas.forEach(bodega => {
+        const grupo = cloneRows(rows).filter(r => r.Bodega === bodega).sort((a,b)=>(b["Salidas $"] ?? -Infinity) - (a["Salidas $"] ?? -Infinity));
+        grupo.forEach(r => {
+          const salidaMonto = r["Salidas $"];
+          const entradaMonto = r["Entradas $"];
+          const revisarSalida = typeof salidaMonto === "number" && (thresholdSalidas !== null && salidaMonto >= thresholdSalidas);
+          const revisarEntrada = typeof entradaMonto === "number" && (thresholdEntradas !== null && entradaMonto >= thresholdEntradas);
+          const revisarFlag = (revisarSalida || revisarEntrada) ? "REVISAR" : "";
+          const row = ws.addRow([r.Bodega, round2(r.Salidas), round2(r.Entradas), r.CODIGO, r.DESCRIPCION, r.Folio, r.Fecha_Texto, round2(salidaMonto), round2(entradaMonto), r.Observaciones, revisarFlag]);
+          row.eachCell({ includeEmpty: true }, cell => {
+            cell.border = {top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+          });
+          if (revisarFlag) row.getCell(11).font = {bold:true};
+          if (typeof salidaMonto === "number"){
+            const c = row.getCell(8);
+            if (salidaMonto > 0 && salidaMonto < 85) c.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"99CCFF"}};
+            else if (thresholdSalidas !== null && salidaMonto >= thresholdSalidas) c.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"FF9999"}};
+          }
+          if (typeof entradaMonto === "number"){
+            const c = row.getCell(9);
+            if (entradaMonto > 0 && entradaMonto < 85) c.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"99CCFF"}};
+            else if (thresholdEntradas !== null && entradaMonto >= thresholdEntradas) c.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"FF9999"}};
+          }
+        });
+
+        const totSal = grupo.reduce((s,r)=>s+(r.Salidas||0),0);
+        const totEnt = grupo.reduce((s,r)=>s+(r.Entradas||0),0);
+        const totSalM = grupo.reduce((s,r)=>s+(r["Salidas $"]||0),0);
+        const totEntM = grupo.reduce((s,r)=>s+(r["Entradas $"]||0),0);
+        const bono = totSalM - grupo.filter(r => (r["Salidas $"]||0) < 85).reduce((s,r)=>s+(r["Salidas $"]||0),0);
+
+        let row = ws.addRow([`Total ${bodega}`, round2(totSal), round2(totEnt), "", "", "", "TOTAL", round2(totSalM), round2(totEntM), "", ""]);
+        row.font = {bold:true};
+        row = ws.addRow(["","","","","","","TOTAL BONO", round2(bono), "", "", ""]);
+        row.font = {bold:true};
+        ws.addRow([]);
+        ws.addRow([]);
+      });
+
+      const gsal = rows.reduce((s,r)=>s+(r.Salidas||0),0);
+      const gent = rows.reduce((s,r)=>s+(r.Entradas||0),0);
+      const gsalM = rows.reduce((s,r)=>s+(r["Salidas $"]||0),0);
+      const gentM = rows.reduce((s,r)=>s+(r["Entradas $"]||0),0);
+      const bonoTotal = gsalM - rows.filter(r => (r["Salidas $"]||0) < 85).reduce((s,r)=>s+(r["Salidas $"]||0),0);
+
+      let row = ws.addRow(["TOTAL GENERAL", round2(gsal), round2(gent), "", "", "", "TOTAL", round2(gsalM), round2(gentM), "", ""]);
+      row.font = {bold:true};
+      row = ws.addRow(["","","","","","","TOTAL BONO", round2(bonoTotal), "", "", ""]);
+      row.font = {bold:true};
+
+      setColumnWidths(ws,[14,10,10,18,34,16,12,14,14,42,12]);
+      applyFirstRowAutoFilter(ws);
+    }
+
+    function addSummaryBlock(ws, title, rows){
+      const applyRowBorders = (row) => {
+        row.eachCell({ includeEmpty: true }, cell => {
+          cell.border = {top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+        });
+      };
+
+      ws.addRow([title]);
+      ws.getRow(ws.rowCount).font = {bold:true};
+
+      const header = ws.addRow(["bodega","conteo entradas","conteo salidas","entradas","salidas","entradas $","salidas $"]);
+      header.font = {bold:true};
+      applyRowBorders(header);
+
+      const map = new Map();
+      rows.forEach(r => {
+        const key = String(r.Bodega || '').trim();
+        if (!key) return;
+        if (!map.has(key)) map.set(key, {Bodega:key, ConteoEntradas:0, ConteoSalidas:0, Entradas:0, Salidas:0, EntradasM:0, SalidasM:0});
+        const cur = map.get(key);
+        const ent = Number(r.Entradas || 0);
+        const sal = Number(r.Salidas || 0);
+        const entM = Number(r["Entradas $"] || 0);
+        const salM = Number(r["Salidas $"] || 0);
+        if (ent !== 0) cur.ConteoEntradas += 1;
+        if (sal !== 0) cur.ConteoSalidas += 1;
+        cur.Entradas += ent;
+        cur.Salidas += sal;
+        cur.EntradasM += entM;
+        cur.SalidasM += salM;
+      });
+
+      const resumen = [...map.values()].sort((a,b)=>b.SalidasM-a.SalidasM || a.Bodega.localeCompare(b.Bodega));
+      if (!resumen.length){
+        const row = ws.addRow(["TOTAL GENERAL",0,0,0,0,0,0]);
+        row.font = {bold:true};
+        applyRowBorders(row);
+        ws.addRow([]);
+        ws.addRow([]);
+        return;
+      }
+
+      resumen.forEach(r => {
+        const row = ws.addRow([r.Bodega, r.ConteoEntradas, r.ConteoSalidas, round2(r.Entradas), round2(r.Salidas), round2(r.EntradasM), round2(r.SalidasM)]);
+        applyRowBorders(row);
+      });
+      const tot = resumen.reduce((a,r)=>({
+        ConteoEntradas:a.ConteoEntradas+r.ConteoEntradas,
+        ConteoSalidas:a.ConteoSalidas+r.ConteoSalidas,
+        Entradas:a.Entradas+r.Entradas,
+        Salidas:a.Salidas+r.Salidas,
+        EntradasM:a.EntradasM+r.EntradasM,
+        SalidasM:a.SalidasM+r.SalidasM
+      }), {ConteoEntradas:0,ConteoSalidas:0,Entradas:0,Salidas:0,EntradasM:0,SalidasM:0});
+      const row = ws.addRow(["TOTAL GENERAL", tot.ConteoEntradas, tot.ConteoSalidas, round2(tot.Entradas), round2(tot.Salidas), round2(tot.EntradasM), round2(tot.SalidasM)]);
+      row.font = {bold:true};
+      applyRowBorders(row);
+      ws.addRow([]);
+      ws.addRow([]);
+    }
+
+    // =========================
+    // METAS EDITABLES
+    // =========================
+    // Cambia aquí las metas cuando sea necesario.
+    // Nota importante:
+    // - El bloque "27 y 28" usa la meta del tipo 27.
+    // - Los bloques 50, 45 y 36 usan su propia meta.
+    const metasPorTipo = {
+      50: {
+        // Tipo 50
+        "25-ai": 3800,
+        "25-ci": 2375,
+        "25-cr": 513,
+        "30-ac": 990,
+        "30-cc": 600,
+        "35-as": 320,
+        "35-cs": 210,
+        "37-at": 400,
+        "37-ct": 210,
+        "40-am": 105,
+        "40-cm": 105,
+        "45-al": 990,
+        "45-cl": 570,
+        "50-ab": 1100,
+        "50-cb": 840,
+        "61-aj": 187,
+        "61-cj": 420,
+        "70-ag": 105,
+        "70-cg": 560,
+        "71-ah": 231,
+        "71-ch": 187,
+        "72-aa": 315,
+        "74-ad": 115.5,
+        "74-cd": 187
+      },
+      27: {
+        // Meta usada para el bloque TIPOS 27 Y 28
+        "25-ai": 475,
+        "25-ci": 7650,
+        "25-cr": 150,
+        "30-ac": 200,
+        "30-cc": 525,
+        "35-as": 50,
+        "35-cs": 100,
+        "37-at": 50,
+        "37-ct": 189,
+        "40-am": 50,
+        "40-cm": 50,
+        "45-al": 200,
+        "45-cl": 300,
+        "50-ab": 200,
+        "50-cb": 2300,
+        "61-aj": 50,
+        "61-cj": 800,
+        "70-ag": 50,
+        "70-cg": 1300,
+        "71-ah": 50,
+        "71-ch": 350,
+        "72-aa": 100,
+        "74-ad": 50,
+        "74-cd": 150
+      },
+      45: {
+        // Tipo 45
+        "25-ai": 110,
+        "25-ci": 230,
+        "25-cr": 20,
+        "30-ac": 70,
+        "30-cc": 45,
+        "35-as": 28,
+        "35-cs": 18,
+        "37-at": 22,
+        "37-ct": 18,
+        "40-am": 13,
+        "40-cm": 8,
+        "45-al": 70,
+        "45-cl": 35,
+        "50-ab": 80,
+        "50-cb": 108,
+        "61-aj": 18,
+        "61-cj": 30,
+        "70-ag": 5,
+        "70-cg": 50,
+        "71-ah": 40,
+        "71-ch": 18,
+        "72-aa": 20,
+        "74-ad": 10,
+        "74-cd": 10
+      },
+      36: {
+        // Tipo 36
+        "25-ai": 25,
+        "25-ci": 38,
+        "25-cr": 3,
+        "30-ac": 19,
+        "30-cc": 13,
+        "35-as": 6,
+        "35-cs": 4,
+        "37-at": 5,
+        "37-ct": 4,
+        "40-am": 3,
+        "40-cm": 1,
+        "45-al": 22,
+        "45-cl": 4,
+        "50-ab": 19,
+        "50-cb": 30,
+        "61-aj": 3,
+        "61-cj": 5,
+        "70-ag": 2,
+        "70-cg": 6,
+        "71-ah": 6,
+        "71-ch": 3,
+        "72-aa": 6,
+        "74-ad": 6,
+        "74-cd": 2
+      }
+    };
+
+    function addMetasBlock(ws, title, rows, metaTipo, tiposComparados){
+      const applyRowBorders = (row) => {
+        row.eachCell({ includeEmpty: true }, cell => {
+          cell.border = {top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+        });
+      };
+      const normalizeKey = (v) => String(v || '').trim().toLowerCase();
+      const diasHabilesTranscurridos = countBusinessDaysElapsed(new Date());
+      const diasHabilesMes = 22;
+
+      ws.addRow([title]);
+      ws.getRow(ws.rowCount).font = {bold:true};
+
+      const header = ws.addRow([
+        "bodega","conteo entradas","conteo salidas","entradas","salidas","entradas $","salidas $",
+        "meta salidas","diferencia","% uso meta","cumplimiento","",
+        "base actual","días hábiles","proyección cierre","dif. proyectada","% uso meta proy.","pronóstico"
+      ]);
+      header.font = {bold:true};
+      applyRowBorders(header);
+
+      const metas = metasPorTipo[metaTipo] || {};
+      const map = new Map();
+      Object.entries(metas).forEach(([bodega, meta]) => {
+        map.set(normalizeKey(bodega), {
+          Bodega:bodega, ConteoEntradas:0, ConteoSalidas:0, Entradas:0, Salidas:0, EntradasM:0, SalidasM:0, Meta:Number(meta || 0)
+        });
+      });
+
+      rows.filter(r => tiposComparados.includes(r.Tipo_Num)).forEach(r => {
+        const key = normalizeKey(r.Bodega);
+        if (!key) return;
+        if (!map.has(key)) {
+          map.set(key, {
+            Bodega:String(r.Bodega || '').trim(), ConteoEntradas:0, ConteoSalidas:0, Entradas:0, Salidas:0, EntradasM:0, SalidasM:0, Meta:0
+          });
+        }
+        const cur = map.get(key);
+        const ent = Number(r.Entradas || 0);
+        const sal = Number(r.Salidas || 0);
+        const entM = Number(r["Entradas $"] || 0);
+        const salM = Number(r["Salidas $"] || 0);
+        if (ent !== 0) cur.ConteoEntradas += 1;
+        if (sal !== 0) cur.ConteoSalidas += 1;
+        cur.Entradas += ent;
+        cur.Salidas += sal;
+        cur.EntradasM += entM;
+        cur.SalidasM += salM;
+      });
+
+      const resumen = [...map.values()]
+        .map(r => {
+          // Reglas de comparación por bloque:
+          // - Tipo 50 y Tipos 27/28: comparar contra (salidas $ - entradas $)
+          // - Tipo 45 y Tipo 36: comparar contra el mayor entre conteo entradas y conteo salidas
+          let baseActual = 0;
+          if (metaTipo === 50 || metaTipo === 27) {
+            baseActual = Number(r.SalidasM || 0) - Number(r.EntradasM || 0);
+          } else if (metaTipo === 45 || metaTipo === 36) {
+            baseActual = Math.max(r.ConteoEntradas, r.ConteoSalidas);
+          } else {
+            baseActual = r.ConteoSalidas;
+          }
+
+          const pct = r.Meta > 0 ? (baseActual / r.Meta) : 0;
+          const cumple = baseActual <= r.Meta ? 'Cumple' : 'No cumple';
+
+          const proyeccion = diasHabilesTranscurridos > 0
+            ? (baseActual / diasHabilesTranscurridos) * diasHabilesMes
+            : 0;
+
+          const pctProy = r.Meta > 0 ? (proyeccion / r.Meta) : 0;
+          let pronostico = 'Cumplirá';
+          if (pctProy > 1) pronostico = 'No cumplirá';
+          else if (pctProy > 0.95) pronostico = 'En riesgo';
+
+          return {...r, baseActual, pct, cumple, proyeccion, pctProy, pronostico};
+        })
+        .sort((a,b) => {
+          const aNoCumple = a.cumple === 'No cumple' ? 1 : 0;
+          const bNoCumple = b.cumple === 'No cumple' ? 1 : 0;
+          if (aNoCumple !== bNoCumple) return bNoCumple - aNoCumple;
+          if (b.pct !== a.pct) return b.pct - a.pct;
+          if (b.baseActual !== a.baseActual) return b.baseActual - a.baseActual;
+          return a.Bodega.localeCompare(b.Bodega);
+        });
+
+      resumen.forEach(r => {
+        const diff = round2(r.Meta - r.baseActual);
+        const diffProy = round2(r.Meta - r.proyeccion);
+        const row = ws.addRow([
+          r.Bodega, r.ConteoEntradas, r.ConteoSalidas, round2(r.Entradas), round2(r.Salidas), round2(r.EntradasM), round2(r.SalidasM),
+          round2(r.Meta), diff, r.pct, r.cumple, "",
+          r.baseActual, diasHabilesTranscurridos, round2(r.proyeccion), diffProy, r.pctProy, r.pronostico
+        ]);
+        row.getCell(10).numFmt = '0.00%';
+        row.getCell(17).numFmt = '0.00%';
+
+        row.getCell(11).font = {bold:true, color:{argb: r.cumple === 'Cumple' ? 'FF166534' : 'FFB91C1C'}};
+        if (r.pct > 1) row.getCell(10).font = {bold:true, color:{argb:'FFB91C1C'}};
+
+        const pronosticoCell = row.getCell(18);
+        if (r.pronostico === 'No cumplirá') {
+          pronosticoCell.font = {bold:true, color:{argb:'FFB91C1C'}};
+        } else if (r.pronostico === 'En riesgo') {
+          pronosticoCell.font = {bold:true, color:{argb:'FFB45309'}};
+        } else {
+          pronosticoCell.font = {bold:true, color:{argb:'FF166534'}};
+        }
+        if (r.pctProy > 1) row.getCell(17).font = {bold:true, color:{argb:'FFB91C1C'}};
+
+        applyRowBorders(row);
+      });
+
+      const tot = resumen.reduce((a,r)=>({
+        ConteoEntradas:a.ConteoEntradas+r.ConteoEntradas,
+        ConteoSalidas:a.ConteoSalidas+r.ConteoSalidas,
+        Entradas:a.Entradas+r.Entradas,
+        Salidas:a.Salidas+r.Salidas,
+        EntradasM:a.EntradasM+r.EntradasM,
+        SalidasM:a.SalidasM+r.SalidasM,
+        Meta:a.Meta+r.Meta,
+        BaseActual:a.BaseActual+r.baseActual,
+        Proyeccion:a.Proyeccion+r.proyeccion
+      }), {ConteoEntradas:0,ConteoSalidas:0,Entradas:0,Salidas:0,EntradasM:0,SalidasM:0,Meta:0,BaseActual:0,Proyeccion:0});
+
+      const totPct = tot.Meta > 0 ? (tot.BaseActual / tot.Meta) : 0;
+      const totCumple = tot.BaseActual <= tot.Meta ? 'Cumple' : 'No cumple';
+      const totPctProy = tot.Meta > 0 ? (tot.Proyeccion / tot.Meta) : 0;
+      let totPronostico = 'Cumplirá';
+      if (totPctProy > 1) totPronostico = 'No cumplirá';
+      else if (totPctProy > 0.95) totPronostico = 'En riesgo';
+
+      const totalRow = ws.addRow([
+        "TOTAL GENERAL", tot.ConteoEntradas, tot.ConteoSalidas, round2(tot.Entradas), round2(tot.Salidas), round2(tot.EntradasM), round2(tot.SalidasM),
+        round2(tot.Meta), round2(tot.Meta - tot.BaseActual), totPct, totCumple, "",
+        round2(tot.BaseActual), diasHabilesTranscurridos, round2(tot.Proyeccion), round2(tot.Meta - tot.Proyeccion), totPctProy, totPronostico
+      ]);
+      totalRow.font = {bold:true};
+      totalRow.getCell(10).numFmt = '0.00%';
+      totalRow.getCell(17).numFmt = '0.00%';
+      totalRow.getCell(11).font = {bold:true, color:{argb: totCumple === 'Cumple' ? 'FF166534' : 'FFB91C1C'}};
+      if (totPct > 1) totalRow.getCell(10).font = {bold:true, color:{argb:'FFB91C1C'}};
+
+      const totalPronosticoCell = totalRow.getCell(18);
+      if (totPronostico === 'No cumplirá') {
+        totalPronosticoCell.font = {bold:true, color:{argb:'FFB91C1C'}};
+      } else if (totPronostico === 'En riesgo') {
+        totalPronosticoCell.font = {bold:true, color:{argb:'FFB45309'}};
+      } else {
+        totalPronosticoCell.font = {bold:true, color:{argb:'FF166534'}};
+      }
+      if (totPctProy > 1) totalRow.getCell(17).font = {bold:true, color:{argb:'FFB91C1C'}};
+
+      applyRowBorders(totalRow);
+      ws.addRow([]);
+      ws.addRow([]);
+    }
+
+
+    function isDescripcionDescontinuada(descripcion){
+      return String(descripcion || '').trim().endsWith('*');
+    }
+
+    function sortConcentradoItems(items){
+      return [...items].sort((a,b) =>
+        (b.cantidad||0) - (a.cantidad||0) ||
+        a.codigo.localeCompare(b.codigo) ||
+        String(a.folio || '').localeCompare(String(b.folio || '')) ||
+        (Number(a.costo) || 0) - (Number(b.costo) || 0)
+      );
+    }
+
+    function splitConcentradoItemsPorEstatus(items){
+      return {
+        normales: sortConcentradoItems(items.filter(item => !item.descontinuado)),
+        descontinuados: sortConcentradoItems(items.filter(item => item.descontinuado))
+      };
+    }
+
+    function concentradoMovimientoEtiqueta(useEntradas){ return useEntradas ? "ENTRADAS" : "SALIDAS"; }
+    function concentradoMovimientoCampo(useEntradas){ return useEntradas ? "Entradas" : "Salidas"; }
+
+    function buildProviderConcentradoBlocks(prov, tipoDesde, tipoHasta, rows, separateByMonth = false, useEntradas = false){
+      const provNorm = String(prov || '').trim().toLowerCase();
+      const movimientoCampo = concentradoMovimientoCampo(useEntradas);
+      const allRows = cloneRows(rows).filter(r => (
+        Number.isFinite(r.Tipo_Num) && r.Tipo_Num >= tipoDesde && r.Tipo_Num <= tipoHasta &&
+        String(r.Prov || '').trim().toLowerCase() === provNorm &&
+        Number(r[movimientoCampo] || 0) !== 0
+      ));
+
+      const qtyOf = r => Number(r[movimientoCampo] || 0);
+
+      const blocks = [];
+      const monthGroups = separateByMonth
+        ? [...new Set(allRows.map(r => getMonthKey(r.Fecha_Texto)))].sort()
+        : [null];
+      monthGroups.forEach(monthKey => {
+      const monthRows = monthKey === null ? allRows : allRows.filter(r => getMonthKey(r.Fecha_Texto) === monthKey);
+      for (let tipo = tipoDesde; tipo <= tipoHasta; tipo++) {
+        const rowsTipo = monthRows.filter(r => r.Tipo_Num === tipo);
+        const mapTipo = new Map();
+        rowsTipo.forEach(r => {
+          const codigo = String(r.CODIGO || '').trim();
+          if (!codigo) return;
+          const folio = String(r.Folio || '').trim();
+          const costo = toNum(r.Costo);
+          // El mismo código puede aparecer en más de un movimiento o con distinto costo.
+          // Se conserva cada combinación para que el concentrado no pierda el folio ni el costo.
+          const key = `${codigo}|${folio}|${costo ?? ''}`;
+          const descripcion = String(r.DESCRIPCION || '').trim();
+          const esDescontinuado = isDescripcionDescontinuada(descripcion);
+          if (!mapTipo.has(key)) mapTipo.set(key, {
+            codigo,
+            descripcion,
+            folio,
+            costo,
+            cantidad:0,
+            descontinuado: esDescontinuado
+          });
+          const cur = mapTipo.get(key);
+          cur.cantidad += qtyOf(r);
+          if (!cur.descripcion && descripcion) cur.descripcion = descripcion;
+          if (esDescontinuado) {
+            cur.descontinuado = true;
+            cur.descripcion = descripcion || cur.descripcion;
+          }
+        });
+        const itemsTipo = sortConcentradoItems([...mapTipo.values()]);
+        blocks.push({ tipo, items: itemsTipo, monthKey, monthLabel: monthKey === null ? "" : monthLabelFromKey(monthKey) });
+      }
+      });
+      return { provNorm, blocks };
+    }
+
+    function sanitizeFilenamePart(v){
+      return String(v ?? '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'archivo';
+    }
+
+    async function saveProviderConcentradoPDFs(tipoDesde, tipoHasta, proveedores, rows, separateByMonth = false, useEntradas = false){
+      if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("No se pudo cargar la librería PDF.");
+      const { jsPDF } = window.jspdf;
+
+      proveedores.forEach((prov) => {
+        const { provNorm, blocks } = buildProviderConcentradoBlocks(prov, tipoDesde, tipoHasta, rows, separateByMonth, useEntradas);
+        // Evita generar bloques, columnas u hojas sin informacion de codigos.
+        // La separacion de descontinuados solo se dibuja cuando existen codigos normales y descontinuados.
+        const blocksWithCodes = blocks.filter(block => Array.isArray(block.items) && block.items.length > 0);
+        if (!blocksWithCodes.length) return;
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 10;
+        const gap = 6;
+        const usableWidth = pageWidth - (margin * 2) - gap;
+        const colWidth = usableWidth / 2;
+        const reservedFooter = 30;
+        let pageNo = 1;
+        let startY = 28;
+        let rowY = startY;
+        let colHeights = [startY, startY];
+
+        const drawHeader = () => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(14);
+          doc.text(`CONCENTRADO POR PROVEEDOR ${provNorm.toUpperCase()}`, margin, 14);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.text(`Tipos ${String(tipoDesde).padStart(2,'0')} a ${String(tipoHasta).padStart(2,'0')} | Solo ${concentradoMovimientoEtiqueta(useEntradas).toLowerCase()}${separateByMonth ? ' | Separado por mes' : ''}`, margin, 20);
+          doc.text(`Mes: ${sourceMonthLabel}`, pageWidth - margin, 20, { align: 'right' });
+          doc.text(`Página ${pageNo}`, pageWidth - margin, 14, { align: 'right' });
+          doc.setDrawColor(180);
+          doc.line(margin, 23, pageWidth - margin, 23);
+          startY = 28;
+          rowY = startY;
+          colHeights = [startY, startY];
+        };
+
+        const getPDFRowsForBlock = (block) => {
+          const { normales, descontinuados } = splitConcentradoItemsPorEstatus(block.items);
+          const totalTipo = block.items.reduce((acc, item) => acc + (Number(item.cantidad) || 0), 0);
+          const body = [];
+          let separatorIndex = -1;
+
+          normales.forEach(item => body.push([item.codigo, item.folio || '', round2(item.costo), round2(item.cantidad)]));
+          if (normales.length && descontinuados.length) {
+            separatorIndex = body.length;
+            body.push(['', '', '', '']);
+          }
+          descontinuados.forEach(item => body.push([item.codigo, item.folio || '', round2(item.costo), round2(item.cantidad)]));
+          body.push(['TOTAL', '', '', round2(totalTipo)]);
+
+          return { body, separatorIndex, totalIndex: body.length - 1 };
+        };
+
+        const estimateBlockHeight = (block) => {
+          const { body } = getPDFRowsForBlock(block);
+          const rowsCount = Math.max(1, body.length);
+          return 14 + 8 + (rowsCount * 6.2) + 6;
+        };
+
+        const placeBlock = (block, colIndex) => {
+          const x = margin + (colIndex * (colWidth + gap));
+          const { body, separatorIndex, totalIndex } = getPDFRowsForBlock(block);
+
+          const blockStartY = rowY;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.text(`${block.monthLabel ? block.monthLabel + ' | ' : ''}TIPO ${String(block.tipo).padStart(2,'0')}`, x, blockStartY);
+
+          doc.autoTable({
+            startY: blockStartY + 2,
+            head: [['Código', 'Folio', 'Costo $', 'Cantidad']],
+            body,
+            theme: 'grid',
+            tableWidth: colWidth,
+            margin: { left: x, right: pageWidth - x - colWidth },
+            styles: { font: 'helvetica', fontSize: 6.8, cellPadding: 1.2, valign: 'middle' },
+            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+            columnStyles: {
+              0: { cellWidth: colWidth - 63 },
+              1: { cellWidth: 19, halign: 'center' },
+              2: { cellWidth: 21, halign: 'right' },
+              3: { cellWidth: 23, halign: 'center' }
+            },
+            didParseCell: function(data) {
+              if (data.section !== 'body') return;
+              if (data.row.index === totalIndex) {
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (data.row.index === separatorIndex) {
+                data.cell.text = [''];
+                data.cell.styles.lineWidth = 0;
+                data.cell.styles.minCellHeight = 4;
+                data.cell.styles.fillColor = [255, 255, 255];
+              }
+            }
+          });
+          colHeights[colIndex] = doc.lastAutoTable.finalY + 5;
+        };
+
+        drawHeader();
+
+        for (let i = 0; i < blocksWithCodes.length; i += 2) {
+          const leftBlock = blocksWithCodes[i];
+          const rightBlock = blocksWithCodes[i + 1] || null;
+          const leftNeed = estimateBlockHeight(leftBlock);
+          const rightNeed = rightBlock ? estimateBlockHeight(rightBlock) : 0;
+          const rowNeed = Math.max(leftNeed, rightNeed);
+
+          // Si el primer bloque de una pagina es muy alto, dejamos que autoTable lo parta.
+          // Antes se agregaba una pagina antes de imprimirlo, generando una hoja solo con encabezado.
+          if (rowY > startY && rowY + rowNeed > pageHeight - reservedFooter) {
+            doc.addPage();
+            pageNo += 1;
+            drawHeader();
+          }
+
+          placeBlock(leftBlock, 0);
+          if (rightBlock) placeBlock(rightBlock, 1);
+          rowY = Math.max(colHeights[0], colHeights[1]) + 4;
+        }
+
+        // No agregamos una pagina solo para firma, porque eso genera hojas sin codigos.
+        // Si queda espacio suficiente en la ultima pagina con informacion, se imprime la firma.
+        // Si no queda espacio, se omite para conservar el PDF limpio y sin paginas vacias.
+        const firmaY = Math.max(rowY + 8, pageHeight - 24);
+        if (firmaY + 11 <= pageHeight - 8) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.text('Firma de autorización', margin, firmaY);
+          doc.line(margin, firmaY + 6, 90, firmaY + 6);
+          doc.text('Nombre y firma', margin, firmaY + 11);
+          doc.text(`Proveedor: ${provNorm.toUpperCase()}`, pageWidth - margin, firmaY + 11, { align: 'right' });
+        }
+
+        const filename = `Concentrado_${sourceMonthLabel}_Tipos_${String(tipoDesde).padStart(2,'0')}_a_${String(tipoHasta).padStart(2,'0')}_Prov_${sanitizeFilenamePart(provNorm.toUpperCase())}${separateByMonth ? '_PorMes' : ''}${useEntradas ? '_Entradas' : ''}.pdf`;
+        doc.save(filename);
+      });
+    }
+
+    function addProviderConcentradoSheet(wb, prov, tipoDesde, tipoHasta, rows, separateByMonth = false, useEntradas = false){
+      const { provNorm, blocks } = buildProviderConcentradoBlocks(prov, tipoDesde, tipoHasta, rows, separateByMonth, useEntradas);
+      const title = sanitizeSheetName(provNorm || 'prov');
+      const ws = wb.addWorksheet(title);
+
+      const addBordersToCols = (row, cols) => {
+        cols.forEach(col => {
+          const cell = row.getCell(col);
+          cell.border = {top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+        });
+      };
+
+      ws.addRow([`PROVEEDOR ${provNorm.toUpperCase()} | TIPOS ${String(tipoDesde).padStart(2,'0')} A ${String(tipoHasta).padStart(2,'0')} | SOLO ${concentradoMovimientoEtiqueta(useEntradas)}${separateByMonth ? ' | SEPARADO POR MES' : ''}`]);
+      ws.getRow(1).font = {bold:true, size:14};
+      ws.addRow([]);
+
+      if (separateByMonth){
+        let currentMonth = null;
+        let rowStart = 3;
+        blocks.forEach(block => {
+          if (block.monthKey !== currentMonth){
+            currentMonth = block.monthKey;
+            ws.getCell(rowStart, 1).value = block.monthLabel;
+            ws.getCell(rowStart, 1).font = {bold:true, size:12, color:{argb:'FF1E3A8A'}};
+            rowStart += 1;
+          }
+          const typeRow = ws.getRow(rowStart++);
+          typeRow.getCell(1).value = `TIPO ${String(block.tipo).padStart(2,'0')}`;
+          typeRow.getCell(1).font = {bold:true};
+          const h = ws.getRow(rowStart++);
+          ['codigo','descripcion','folio','costo $','cantidad'].forEach((value, index) => {
+            h.getCell(index + 1).value = value;
+            h.getCell(index + 1).font = {bold:true};
+          });
+          addBordersToCols(h, [1,2,3,4,5]);
+          if (block.items.length){
+            block.items.forEach(item => {
+              const row = ws.getRow(rowStart++);
+              row.getCell(1).value = item.codigo;
+              row.getCell(2).value = item.descripcion;
+              row.getCell(3).value = item.folio;
+              row.getCell(4).value = round2(item.costo);
+              row.getCell(5).value = round2(item.cantidad);
+              row.getCell(4).numFmt = '#,##0.00';
+              row.getCell(5).numFmt = '#,##0.00';
+              addBordersToCols(row, [1,2,3,4,5]);
+            });
+          } else {
+            const row = ws.getRow(rowStart++);
+            row.getCell(1).value = 'SIN DATOS';
+            addBordersToCols(row, [1]);
+          }
+          rowStart += 1;
+        });
+        setColumnWidths(ws,[18,38,16,14,12]);
+        applyFirstRowAutoFilter(ws);
+        return;
+      }
+
+      let colStart = 1;
+      blocks.forEach(block => {
+        ws.getCell(3, colStart).value = `TIPO ${String(block.tipo).padStart(2,'0')}`;
+        ws.getCell(3, colStart).font = {bold:true};
+
+        const h = ws.getRow(4);
+        h.getCell(colStart).value = 'codigo';
+        h.getCell(colStart+1).value = 'descripcion';
+        h.getCell(colStart+2).value = 'folio';
+        h.getCell(colStart+3).value = 'costo $';
+        h.getCell(colStart+4).value = 'cantidad';
+        h.getCell(colStart).font = {bold:true};
+        h.getCell(colStart+1).font = {bold:true};
+        h.getCell(colStart+2).font = {bold:true};
+        h.getCell(colStart+3).font = {bold:true};
+        h.getCell(colStart+4).font = {bold:true};
+        addBordersToCols(h, [colStart, colStart+1, colStart+2, colStart+3, colStart+4]);
+
+        let rix = 5;
+        if (block.items.length){
+          block.items.forEach(item => {
+            const row = ws.getRow(rix++);
+            row.getCell(colStart).value = item.codigo;
+            row.getCell(colStart+1).value = item.descripcion;
+            row.getCell(colStart+2).value = item.folio;
+            row.getCell(colStart+3).value = round2(item.costo);
+            row.getCell(colStart+4).value = round2(item.cantidad);
+            row.getCell(colStart+3).numFmt = '#,##0.00';
+            row.getCell(colStart+4).numFmt = '#,##0.00';
+            addBordersToCols(row, [colStart, colStart+1, colStart+2, colStart+3, colStart+4]);
+          });
+        } else {
+          const row = ws.getRow(rix++);
+          row.getCell(colStart).value = 'SIN DATOS';
+          addBordersToCols(row, [colStart]);
+        }
+
+        colStart += 6;
+      });
+
+      setColumnWidths(ws, blocks.flatMap(() => [18,38,16,14,12,4]));
+      applyFirstRowAutoFilter(ws);
+    }
+
+    function addMonthlyConcentradoSummarySheet(wb, proveedores, tipoDesde, tipoHasta, rows, useEntradas = false){
+      const ws = wb.addWorksheet("Resumen_Mensual");
+      const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      const movimientoCampo = concentradoMovimientoCampo(useEntradas);
+      ws.addRow([`RESUMEN MENSUAL | TIPOS ${String(tipoDesde).padStart(2,'0')} A ${String(tipoHasta).padStart(2,'0')} | SOLO ${concentradoMovimientoEtiqueta(useEntradas)}`]);
+      ws.getRow(1).font = {bold:true, size:14};
+      ws.addRow(["Proveedor", "Año", ...monthNames, "Total"]);
+      ws.getRow(2).font = {bold:true};
+
+      const filteredRows = rows.filter(r => Number.isFinite(r.Tipo_Num) && r.Tipo_Num >= tipoDesde && r.Tipo_Num <= tipoHasta && Number(r[movimientoCampo] || 0) !== 0);
+      const qtyOf = r => Number(r[movimientoCampo] || 0);
+
+      const groups = new Map();
+      const years = [...new Set(filteredRows
+        .map(r => getMonthKey(r.Fecha_Texto))
+        .filter(key => /^\d{4}-(0[1-9]|1[0-2])$/.test(key))
+        .map(key => key.slice(0, 4))
+      )].sort();
+
+      proveedores.forEach(prov => {
+        const provNorm = String(prov || '').trim().toLowerCase();
+        years.forEach(year => {
+          const key = `${provNorm}|${year}`;
+          groups.set(key, { prov: provNorm, year, totals: Array(12).fill(0) });
+        });
+        filteredRows
+          .filter(r => String(r.Prov || '').trim().toLowerCase() === provNorm)
+          .forEach(r => {
+            const monthKey = getMonthKey(r.Fecha_Texto);
+            const year = monthKey.split("-")[0];
+            const month = Number(monthKey.split("-")[1]) - 1;
+            if (month < 0 || month >= 12) return;
+            const key = `${provNorm}|${year}`;
+            if (!groups.has(key)) groups.set(key, { prov: provNorm, year, totals: Array(12).fill(0) });
+            groups.get(key).totals[month] += qtyOf(r);
+          });
+      });
+
+      const orderedGroups = [...groups.values()].sort((a,b) => a.prov.localeCompare(b.prov) || a.year.localeCompare(b.year));
+      orderedGroups.forEach(group => {
+        const totals = group.totals;
+        ws.addRow([group.prov.toUpperCase(), group.year, ...totals.map(round2), round2(totals.reduce((a,b) => a + b, 0))]);
+      });
+
+      const totalsByYear = new Map();
+      orderedGroups.forEach(group => {
+        if (!totalsByYear.has(group.year)) totalsByYear.set(group.year, Array(12).fill(0));
+        group.totals.forEach((value, index) => totalsByYear.get(group.year)[index] += value);
+      });
+      [...totalsByYear.keys()].sort().forEach(year => {
+        const totals = totalsByYear.get(year);
+        const row = ws.addRow(["TOTAL GENERAL", year, ...totals.map(round2), round2(totals.reduce((a,b) => a + b, 0))]);
+        row.font = {bold:true};
+      });
+
+      for (let col = 3; col <= 15; col++) ws.getColumn(col).numFmt = '#,##0.00';
+      setColumnWidths(ws, [18,10,12,12,12,12,12,12,12,12,12,12,12,12,12]);
+      applyFirstRowAutoFilter(ws);
+    }
+
+    function addMonthlyConcentradoCurrencySummarySheet(wb, proveedores, tipoDesde, tipoHasta, rows, useEntradas = false){
+      const ws = wb.addWorksheet("Resumen_Mensual_$");
+      const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      const movimientoCampo = concentradoMovimientoCampo(useEntradas);
+      const movimientoMontoCampo = useEntradas ? "Entradas $" : "Salidas $";
+      ws.addRow([`RESUMEN MENSUAL EN $ (CANTIDAD × COSTO) | TIPOS ${String(tipoDesde).padStart(2,'0')} A ${String(tipoHasta).padStart(2,'0')} | SOLO ${concentradoMovimientoEtiqueta(useEntradas)}`]);
+      ws.getRow(1).font = {bold:true, size:14};
+      ws.addRow(["Proveedor", "Año", ...monthNames, "Total $"]);
+      ws.getRow(2).font = {bold:true};
+
+      const filteredRows = rows.filter(r => Number.isFinite(r.Tipo_Num) && r.Tipo_Num >= tipoDesde && r.Tipo_Num <= tipoHasta && Number(r[movimientoCampo] || 0) !== 0);
+      const amountOf = r => {
+        const cantidad = Number(r[movimientoCampo] || 0);
+        const costo = toNum(r.Costo);
+        // La fuente principal es exactamente la columna "Costo" del Kardex SIGA.
+        if (costo !== null) return cantidad * costo;
+
+        // Solo se usa el importe existente cuando el archivo normalizado no trae Costo.
+        const movimientoMonto = Number(r[movimientoMontoCampo] || 0);
+        if (movimientoMonto !== 0) return movimientoMonto;
+        return 0;
+      };
+
+      const groups = new Map();
+      const years = [...new Set(filteredRows
+        .map(r => getMonthKey(r.Fecha_Texto))
+        .filter(key => /^\d{4}-(0[1-9]|1[0-2])$/.test(key))
+        .map(key => key.slice(0, 4))
+      )].sort();
+
+      proveedores.forEach(prov => {
+        const provNorm = String(prov || '').trim().toLowerCase();
+        years.forEach(year => {
+          const key = `${provNorm}|${year}`;
+          groups.set(key, { prov: provNorm, year, totals: Array(12).fill(0) });
+        });
+        filteredRows
+          .filter(r => String(r.Prov || '').trim().toLowerCase() === provNorm)
+          .forEach(r => {
+            const monthKey = getMonthKey(r.Fecha_Texto);
+            const year = monthKey.split("-")[0];
+            const month = Number(monthKey.split("-")[1]) - 1;
+            if (month < 0 || month >= 12) return;
+            const key = `${provNorm}|${year}`;
+            if (!groups.has(key)) groups.set(key, { prov: provNorm, year, totals: Array(12).fill(0) });
+            groups.get(key).totals[month] += amountOf(r);
+          });
+      });
+
+      const orderedGroups = [...groups.values()].sort((a,b) => a.prov.localeCompare(b.prov) || a.year.localeCompare(b.year));
+      orderedGroups.forEach(group => {
+        const totals = group.totals;
+        ws.addRow([group.prov.toUpperCase(), group.year, ...totals.map(round2), round2(totals.reduce((a,b) => a + b, 0))]);
+      });
+
+      const totalsByYear = new Map();
+      orderedGroups.forEach(group => {
+        if (!totalsByYear.has(group.year)) totalsByYear.set(group.year, Array(12).fill(0));
+        group.totals.forEach((value, index) => totalsByYear.get(group.year)[index] += value);
+      });
+      [...totalsByYear.keys()].sort().forEach(year => {
+        const totals = totalsByYear.get(year);
+        const row = ws.addRow(["TOTAL GENERAL", year, ...totals.map(round2), round2(totals.reduce((a,b) => a + b, 0))]);
+        row.font = {bold:true};
+      });
+
+      for (let col = 3; col <= 15; col++) ws.getColumn(col).numFmt = '"$"#,##0.00';
+      setColumnWidths(ws, [18,10,14,14,14,14,14,14,14,14,14,14,14,14,15]);
+      applyFirstRowAutoFilter(ws);
+    }
+
+    function addPreparedKardexSheet(wb, rows){
+      const ws = wb.addWorksheet("Kardex_Preparado");
+      const headers = ["codigo","prov","Folio","descripcion","Factura","Bodega","Fecha","Movimiento","Modulo","Tipo","Cia.","Bod.","Entradas","Salidas","ExistenciaCalculada","Costo","Precio","Entradas $","Salidas $","Actualizada","Observaciones","Usuario","Fecha Captura","Referencia","Clien/Prov","OT","Equipo"];
+      ws.addRow(headers);
+      ws.getRow(1).font = {bold:true};
+      ws.autoFilter = {from: "A1", to: "AA1"};
+
+      rows.forEach(r => {
+        ws.addRow([
+          r.codigo ?? "",
+          r.prov ?? (r.codigo ? String(r.codigo).substring(2,5) : ""),
+          r.Folio ?? "",
+          r.descripcion ?? "",
+          r.Factura ?? "",
+          r.Bodega ?? "",
+          r.Fecha ?? "",
+          r.Movimiento ?? "",
+          r.Modulo ?? "",
+          r.Tipo ?? "",
+          r["Cia."] ?? "",
+          r["Bod."] ?? "",
+          r.Entradas ?? null,
+          r.Salidas ?? null,
+          r.ExistenciaCalculada ?? "",
+          r.Costo ?? null,
+          r.Precio ?? null,
+          round2(r["Entradas $"] ?? null),
+          round2(r["Salidas $"] ?? null),
+          r.Actualizada ?? "",
+          r.Observaciones ?? "",
+          r.Usuario ?? "",
+          r["Fecha Captura"] ?? "",
+          r.Referencia ?? "",
+          r["Clien/Prov"] ?? "",
+          r.OT ?? "",
+          r.Equipo ?? ""
+        ]);
+      });
+
+      [13,14,16,17,18,19].forEach(col => {
+        ws.getColumn(col).numFmt = '#,##0.00';
+      });
+      setColumnWidths(ws,[18,10,16,34,16,14,12,12,18,26,8,8,12,12,16,12,12,14,14,14,42,18,22,16,16,10,12]);
+      applyFirstRowAutoFilter(ws);
+    }
+
+    async function saveWorkbook(wb, filename){
+      const buffer = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buffer], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}), filename);
+    }
+
+    document.getElementById("btnPrepararOriginal").addEventListener("click", async () => {
+      try{
+        if (!normalizedRows.length) throw new Error("Primero carga un archivo.");
+        setStatus("Preparando Kardex original...");
+        const wb = new ExcelJS.Workbook();
+        addPreparedKardexSheet(wb, normalizedRows);
+        await saveWorkbook(wb, `Kardex_Preparado_${sourceMonthLabel}.xlsx`);
+        setStatus("Kardex preparado correctamente.", "ok");
+      } catch(err){ setStatus("No pude preparar el Kardex original: " + err.message, "err"); }
+    });
+
+    document.getElementById("btn2949").addEventListener("click", async () => {
+      try{
+        setStatus("Generando reporte 29 y 49...");
+        const rows29 = cloneRows(sourceRows).filter(r => r.Tipo_Num === 29);
+        const rows49 = cloneRows(sourceRows).filter(r => r.Tipo_Num === 49);
+        const wb = new ExcelJS.Workbook();
+        addDetailSheet(wb, "Tipo_29", rows29);
+        addDetailSheet(wb, "Tipo_49", rows49);
+        await saveWorkbook(wb, `Reporte_${sourceMonthLabel}_Tipo_29_49_Formato_Estandar.xlsx`);
+        setStatus("Reporte generado correctamente.", "ok");
+      } catch(err){ setStatus("No pude generar el reporte 29 y 49: " + err.message, "err"); }
+    });
+
+    document.getElementById("btn272850").addEventListener("click", async () => {
+      try{
+        setStatus("Generando reporte 27, 28 y 50...");
+        const rows2728 = cloneRows(sourceRows).filter(r => r.Tipo_Num === 27 || r.Tipo_Num === 28);
+        const rows50 = cloneRows(sourceRows).filter(r => r.Tipo_Num === 50);
+        const wb = new ExcelJS.Workbook();
+        addDetailSheet(wb, "Tipos_27_28", rows2728);
+        addDetailSheet(wb, "Tipo_50", rows50);
+        const ws = wb.addWorksheet("Resumen_27_28_50");
+        addSummaryBlock(ws, "RESUMEN POR BODEGA - TIPOS 27 Y 28", rows2728);
+        addSummaryBlock(ws, "RESUMEN POR BODEGA - TIPO 50", rows50);
+        setColumnWidths(ws,[16,16,16,12,12,14,14]);
+        applyFirstRowAutoFilter(ws);
+        await saveWorkbook(wb, `Reporte_${sourceMonthLabel}_Tipo_27_28_50_Formato_Estandar.xlsx`);
+        setStatus("Reporte generado correctamente.", "ok");
+      } catch(err){ setStatus("No pude generar el reporte 27, 28 y 50: " + err.message, "err"); }
+    });
+
+    document.getElementById("btn0460").addEventListener("click", async () => {
+      try{
+        setStatus("Generando reporte 04 al 60...");
+        const tipos = [...new Set(sourceRows.map(r => r.Tipo_Num).filter(v => Number.isFinite(v) && v >= 4 && v <= 60))].sort((a,b)=>a-b);
+        const wb = new ExcelJS.Workbook();
+        tipos.forEach(tipo => {
+          const rows = cloneRows(sourceRows).filter(r => r.Tipo_Num === tipo);
+          if (!rows.length) return;
+          addDetailSheet(wb, `Tipo_${String(tipo).padStart(2,"0")}`, rows);
+          const ws = wb.addWorksheet(`Resumen_${String(tipo).padStart(2,"0")}`);
+          addSummaryBlock(ws, `RESUMEN POR BODEGA - TIPO ${String(tipo).padStart(2,"0")}`, rows);
+          setColumnWidths(ws,[16,16,16,12,12,14,14]);
+          applyFirstRowAutoFilter(ws);
+        });
+        await saveWorkbook(wb, `Reporte_${sourceMonthLabel}_Tipos_04_al_60_Formato_Estandar.xlsx`);
+        setStatus("Reporte generado correctamente.", "ok");
+      } catch(err){ setStatus("No pude generar el reporte 04 al 60: " + err.message, "err"); }
+    });
+
+
+    document.getElementById("btnRangoProveedor").addEventListener("click", async () => {
+      try{
+        const tipoDesde = Number(String(inputProvDesde.value || "").trim());
+        const tipoHasta = Number(String(inputProvHasta.value || "").trim());
+        if (!Number.isFinite(tipoDesde) || !Number.isFinite(tipoHasta)) throw new Error("Escribe un rango válido de tipos.");
+        if (tipoDesde > tipoHasta) throw new Error("El tipo inicial no puede ser mayor que el tipo final.");
+
+        const proveedores = parseProviderList(inputProveedores.value);
+        setStatus(`Generando reporte de ${String(tipoDesde).padStart(2,"0")} a ${String(tipoHasta).padStart(2,"0")} por proveedor...`);
+
+        const wb = new ExcelJS.Workbook();
+        proveedores.forEach(prov => {
+          const rowsProv = cloneRows(sourceRows).filter(r => r.Tipo_Num >= tipoDesde && r.Tipo_Num <= tipoHasta && String(r.Prov || "").trim().toLowerCase() === prov);
+          addDetailSheet(wb, sanitizeSheetName(`Prov_${prov}`), rowsProv);
+          const ws = wb.addWorksheet(sanitizeSheetName(`Res_${prov}`));
+          addSummaryBlock(ws, `RESUMEN POR BODEGA - PROV ${prov.toUpperCase()} - TIPOS ${String(tipoDesde).padStart(2,"0")} A ${String(tipoHasta).padStart(2,"0")}`, rowsProv);
+          setColumnWidths(ws,[16,16,16,12,12,14,14]);
+          applyFirstRowAutoFilter(ws);
+        });
+
+        const nombreProv = proveedores.map(p => p.toUpperCase()).join("_");
+        const nombreArchivo = `Reporte_${sourceMonthLabel}_Tipos_${String(tipoDesde).padStart(2,"0")}_a_${String(tipoHasta).padStart(2,"0")}_Prov_${nombreProv}.xlsx`;
+        await saveWorkbook(wb, nombreArchivo);
+        setStatus(`Reporte por proveedores generado correctamente.`, "ok");
+      } catch(err){ setStatus("No pude generar el reporte por proveedor: " + err.message, "err"); }
+    });
+
+    document.getElementById("btnProvConcentrado").addEventListener("click", async () => {
+      try{
+        const tipoDesde = Number(String(inputConcDesde.value || "").trim());
+        const tipoHasta = Number(String(inputConcHasta.value || "").trim());
+        if (!Number.isFinite(tipoDesde) || !Number.isFinite(tipoHasta)) throw new Error("Escribe un rango válido de tipos.");
+        if (tipoDesde > tipoHasta) throw new Error("El tipo inicial no puede ser mayor que el tipo final.");
+        const proveedores = parseProviderList(inputConcProveedores.value);
+        const separateByMonth = separarConcPorMes.checked;
+        const useEntradas = concEntradas.checked;
+        setStatus(`Generando concentrado de ${String(tipoDesde).padStart(2,"0")} a ${String(tipoHasta).padStart(2,"0")} por proveedor...`);
+
+        const wb = new ExcelJS.Workbook();
+        proveedores.forEach(prov => addProviderConcentradoSheet(wb, prov, tipoDesde, tipoHasta, sourceRows, separateByMonth, useEntradas));
+        if (separateByMonth) {
+          addMonthlyConcentradoSummarySheet(wb, proveedores, tipoDesde, tipoHasta, sourceRows, useEntradas);
+          addMonthlyConcentradoCurrencySummarySheet(wb, proveedores, tipoDesde, tipoHasta, sourceRows, useEntradas);
+        }
+
+        const nombreProv = proveedores.map(p => p.toUpperCase()).join("_");
+        const nombreArchivo = `Concentrado_${sourceMonthLabel}_Tipos_${String(tipoDesde).padStart(2,"0")}_a_${String(tipoHasta).padStart(2,"0")}_Prov_${nombreProv}${separateByMonth ? '_PorMes' : ''}${useEntradas ? '_Entradas' : ''}.xlsx`;
+        await saveWorkbook(wb, nombreArchivo);
+        setStatus(`Concentrado por proveedor generado correctamente.`, "ok");
+      } catch(err){ setStatus("No pude generar el concentrado por proveedor: " + err.message, "err"); }
+    });
+
+    document.getElementById("btnProvConcentradoPDF").addEventListener("click", async () => {
+      try{
+        const tipoDesde = Number(String(inputConcDesde.value || "").trim());
+        const tipoHasta = Number(String(inputConcHasta.value || "").trim());
+        if (!Number.isFinite(tipoDesde) || !Number.isFinite(tipoHasta)) throw new Error("Escribe un rango válido de tipos.");
+        if (tipoDesde > tipoHasta) throw new Error("El tipo inicial no puede ser mayor que el tipo final.");
+        const proveedores = parseProviderList(inputConcProveedores.value);
+        const separateByMonth = separarConcPorMes.checked;
+        const useEntradas = concEntradas.checked;
+        setStatus(`Generando PDF de ${String(tipoDesde).padStart(2,"0")} a ${String(tipoHasta).padStart(2,"0")} por proveedor...`);
+        await saveProviderConcentradoPDFs(tipoDesde, tipoHasta, proveedores, sourceRows, separateByMonth, useEntradas);
+        setStatus(`PDF por proveedor generado correctamente.`, "ok");
+      } catch(err){ setStatus("No pude generar el PDF por proveedor: " + err.message, "err"); }
+    });
+
+    document.getElementById("btnMetas").addEventListener("click", async () => {
+      try{
+        setStatus("Generando reporte de metas...");
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet("Metas");
+        addMetasBlock(ws, "METAS TIPO 50", sourceRows, 50, [50]);
+        addMetasBlock(ws, "METAS TIPOS 27 Y 28", sourceRows, 27, [27,28]);
+        addMetasBlock(ws, "METAS TIPO 45", sourceRows, 45, [45]);
+        addMetasBlock(ws, "METAS TIPO 36", sourceRows, 36, [36]);
+        setColumnWidths(ws,[16,16,16,12,12,14,14,14,12,12,14,4,12,12,14,14,14,14]);
+        applyFirstRowAutoFilter(ws);
+        await saveWorkbook(wb, `Reporte_${sourceMonthLabel}_Metas.xlsx`);
+        setStatus("Reporte de metas generado correctamente.", "ok");
+      } catch(err){ setStatus("No pude generar el reporte de metas: " + err.message, "err"); }
+    });
+
+    document.getElementById("btnTipoResumen").addEventListener("click", async () => {
+      try{
+        const tipoDesde = Number(String(inputTipoDesde.value || "").trim());
+        const tipoHasta = Number(String(inputTipoHasta.value || "").trim());
+        if (!Number.isFinite(tipoDesde) || !Number.isFinite(tipoHasta)) throw new Error("Escribe un rango válido de tipos.");
+        if (tipoDesde > tipoHasta) throw new Error("El tipo inicial no puede ser mayor que el tipo final.");
+
+        setStatus(`Generando reporte de ${String(tipoDesde).padStart(2,"0")} a ${String(tipoHasta).padStart(2,"0")} con resumen por bodega...`);
+        const tiposConDatos = [...new Set(
+          sourceRows
+            .filter(r => Number.isFinite(r.Tipo_Num) && r.Tipo_Num >= tipoDesde && r.Tipo_Num <= tipoHasta)
+            .map(r => r.Tipo_Num)
+        )].sort((a,b) => a - b);
+        if (!tiposConDatos.length) throw new Error("No hay datos para ningún tipo dentro del rango solicitado.");
+
+        const wb = new ExcelJS.Workbook();
+        tiposConDatos.forEach(tipo => {
+          const rowsTipo = cloneRows(sourceRows).filter(r => r.Tipo_Num === tipo);
+          if (!rowsTipo.length) return;
+          addDetailSheet(wb, `Tipo_${String(tipo).padStart(2,"0")}`, rowsTipo);
+          const ws = wb.addWorksheet(`Resumen_${String(tipo).padStart(2,"0")}`);
+          addSummaryBlock(ws, `RESUMEN POR BODEGA - TIPO ${String(tipo).padStart(2,"0")}`, rowsTipo);
+          setColumnWidths(ws,[16,16,16,12,12,14,14]);
+          applyFirstRowAutoFilter(ws);
+        });
+
+        const nombreArchivo = tipoDesde === tipoHasta
+          ? `Reporte_${sourceMonthLabel}_Tipo_${String(tipoDesde).padStart(2,"0")}_Resumen_Bodega.xlsx`
+          : `Reporte_${sourceMonthLabel}_Tipos_${String(tipoDesde).padStart(2,"0")}_a_${String(tipoHasta).padStart(2,"0")}_Resumen_Bodega.xlsx`;
+        await saveWorkbook(wb, nombreArchivo);
+        setStatus(`Reporte de ${String(tipoDesde).padStart(2,"0")} a ${String(tipoHasta).padStart(2,"0")} generado correctamente.`, "ok");
+      } catch(err){ setStatus("No pude generar el reporte por rango de tipos: " + err.message, "err"); }
+    });
+  </script>
+</body>
+</html>
